@@ -1,9 +1,10 @@
+import { cliWriterExecutionMatcher, type CliWriterExecutionMatches } from './cli-writer-observation'
 import type {
   AgentStatusClearIpcPayload,
   AgentStatusIpcPayload
-} from '../../../shared/agent-status-types'
-import type { ClaudeStatusLineRateLimits } from '../../../shared/claude-statusline-rate-limits'
-import type { HookTransportInterferenceReport } from '../../../shared/agent-hook-transport-interference'
+} from '../../../shared/agent-status/contracts/agent-status-ipc-payload'
+import type { ClaudeStatusLineRateLimits } from '../../../shared/agent-usage/rate-limits/claude-statusline-rate-limits'
+import type { HookTransportInterferenceReport } from '../../../shared/agent-hook-listener/transport/agent-hook-transport-interference'
 import type { HookListenerState } from '../../../shared/agent-hook-listener/listener-state'
 import type {
   AgentHookAuthorityEvidence,
@@ -14,14 +15,80 @@ import type {
   StatusDropListener
 } from './server-types'
 import { toAgentStatusIpcPayload } from './server-status-identity'
-import { AgentHookServerState } from './server-state'
+import { combinedAgentStatusEntries } from './combined-agent-status-entries'
+import { PaneTimers } from './program-status/pane-timers'
+import { ProgramStatusFacetStore } from './program-status/facet-store'
+import { AgentHookServerAgentIdentities } from './server-agent-identities'
+import { publishedOrcaSessionId } from '../identity/pane-agent-identities'
 
-export abstract class AgentHookServerListeners extends AgentHookServerState {
-  /**
-   * Notified once per process when repeated hook POSTs are cut off mid-body (#11217).
-   * Why: the listener fails open on every request error, so without this the only symptom is
-   * agent status quietly going stale — for every runtime at once, since they share this transport.
-   */
+export abstract class AgentHookServerListeners extends AgentHookServerAgentIdentities {
+  protected statusChangeNotificationVersion = 0
+  protected cliWriterExecutionMatches: CliWriterExecutionMatches | null = null
+
+  setCliWriterExecutionMatcher(...args: Parameters<typeof cliWriterExecutionMatcher>): void {
+    this.cliWriterExecutionMatches = cliWriterExecutionMatcher(...args)
+  }
+  protected readonly programStatusFacets = new ProgramStatusFacetStore()
+  /** Retry yielded OSC 7501 reports when hook precedence expires; programs may not resend. */
+  protected readonly hookSilenceRechecks = new PaneTimers()
+  /** Coalesce facet-only ticks that arrive at PTY chunk rate. */
+  protected readonly programStatusFacetRepublishes = new PaneTimers()
+
+  setStartupPromptClaimListener(
+    listener: (body: unknown) => boolean | 'pending',
+    clear: () => void
+  ): void {
+    this.onStartupPromptClaim = listener
+    this.clearStartupPromptClaims = clear
+  }
+
+  protected emitEnrichedStatus(row: EnrichedAgentHookEventPayload): void {
+    const enriched = this.programStatusFacets.stitch(row)
+    this.onAgentStatus?.(enriched)
+    for (const listener of this.enrichedStatusListeners) {
+      try {
+        listener(enriched)
+      } catch (err) {
+        console.error('[agent-hooks] enriched status listener threw', err)
+      }
+    }
+  }
+
+  getCanonicalStatusSnapshot() {
+    return this.canonicalStatusStore.getSnapshot()
+  }
+
+  _resetCanonicalStatusForTests(): void {
+    this.resetCanonicalStatus()
+  }
+
+  protected override resetCanonicalStatus(): void {
+    super.resetCanonicalStatus()
+    this.statusQueryIndex = null
+    this.agentIdentities.dropCanonical()
+    this.providerRowsByTab = null
+  }
+
+  /** `withAgentIds` false: an internal notification that outputs no ID does no ID work. */
+  private combinedStatusEntries(
+    paneKey?: string,
+    withAgentIds = true
+  ): EnrichedAgentHookEventPayload[] {
+    return combinedAgentStatusEntries(
+      {
+        state: this.state,
+        programStatusFacets: this.programStatusFacets,
+        ...(withAgentIds
+          ? { canonicalIdentity: (key: string) => this.agentIdentities.canonicalIdentity(key) }
+          : {}),
+        canonicalStatusStore: this.canonicalStatusStore,
+        canonicalSubjectsByPane: this.canonicalSubjectsByPane,
+        canonicalListingOrder: this.canonicalListingOrder
+      },
+      paneKey
+    )
+  }
+  /** Report repeated hook-body truncation once per process; fail-open handling otherwise hides it (#11217). */
   setTransportInterferenceListener(
     listener: ((report: HookTransportInterferenceReport) => void) | null
   ): void {
@@ -33,18 +100,17 @@ export abstract class AgentHookServerListeners extends AgentHookServerState {
     if (!listener) {
       return
     }
-    // Why: replay is best-effort per pane so one throwing listener can't starve the rest.
-    for (const payload of this.state.lastStatusByPaneKey.values()) {
+    // One failing replay subscriber must not starve other panes.
+    for (const payload of this.combinedStatusEntries()) {
       try {
-        // Why: cache always holds enriched payloads; the map's declared type is the bare shape only because the shared module never reads it.
-        listener({ ...(payload as EnrichedAgentHookEventPayload), isReplay: true })
+        listener({ ...payload, isReplay: true })
       } catch (err) {
         console.error('[agent-hooks] replay listener threw', err)
       }
     }
   }
 
-  // Why: statusline posts carry live Claude usage windows, not agent status; they feed RateLimitService directly.
+  // Claude statusline carries usage windows for RateLimitService, not agent status.
   setClaudeStatusLineListener(
     listener: ((event: ClaudeStatusLineRateLimits) => void) | null
   ): void {
@@ -87,9 +153,7 @@ export abstract class AgentHookServerListeners extends AgentHookServerState {
     }
   }
 
-  /** Multi-subscriber tap on definitive live-row deletions. `dropStatusEntry` is a user
-   * dismissal, so it never routes through the pane-status-clear fan-out — pane-owned
-   * cleanup (synthetic spinners) still has to retire with the row it was driving. */
+  /** Include user-dismissed rows, which bypass pane-clear events but must still retire pane-owned UI. */
   subscribeStatusDrop(listener: StatusDropListener): () => void {
     this.statusDropListeners.add(listener)
     return () => {
@@ -99,7 +163,6 @@ export abstract class AgentHookServerListeners extends AgentHookServerState {
 
   protected emitStatusDropped(paneKey: string): void {
     for (const listener of this.statusDropListeners) {
-      // Why: matches every other fan-out here — one throwing subscriber must not strand the rest.
       try {
         listener(paneKey)
       } catch (err) {
@@ -108,7 +171,7 @@ export abstract class AgentHookServerListeners extends AgentHookServerState {
     }
   }
 
-  /** Multi-subscriber tap on every enriched status change (no replay). */
+  /** Enriched changes only; no replay. */
   subscribeEnrichedStatus(listener: (payload: EnrichedAgentHookEventPayload) => void): () => void {
     this.enrichedStatusListeners.add(listener)
     return () => {
@@ -127,9 +190,7 @@ export abstract class AgentHookServerListeners extends AgentHookServerState {
     this.onPaneStatusCleared = listener
   }
 
-  /** Multi-subscriber tap on pane status clears. Unlike `setPaneStatusClearListener`
-   *  (a single slot the main window owns and drops on close) this survives window
-   *  teardown and exists at all under headless serve, which never opens one. */
+  /** Survives window teardown and works under headless serve, unlike the window's single listener slot. */
   subscribePaneStatusClear(listener: (clear: AgentStatusClearIpcPayload) => void): () => void {
     this.paneStatusClearListeners.add(listener)
     return () => {
@@ -140,8 +201,7 @@ export abstract class AgentHookServerListeners extends AgentHookServerState {
   protected emitPaneStatusCleared(clear: AgentStatusClearIpcPayload): void {
     this.onPaneStatusCleared?.(clear)
     for (const listener of this.paneStatusClearListeners) {
-      // Why: callers are pane/connection teardown paths; one throwing subscriber must
-      // not strand the rest, matching every other fan-out here.
+      // One throwing subscriber must not interrupt teardown for the others.
       try {
         listener(clear)
       } catch (err) {
@@ -150,22 +210,64 @@ export abstract class AgentHookServerListeners extends AgentHookServerState {
     }
   }
 
-  /** Snapshot of cached statuses in IPC shape. Used by `agentStatus:getSnapshot` after tabs hydrate so the
-   *  dashboard catches up on hook events that fired during startup. */
   getStatusSnapshot(): AgentStatusIpcPayload[] {
-    return Array.from(this.state.lastStatusByPaneKey.values(), (entry) =>
-      toAgentStatusIpcPayload(entry as EnrichedAgentHookEventPayload)
-    )
+    return this.combinedStatusEntries().map(toAgentStatusIpcPayload)
   }
 
-  /** Provider-session identities, including Pi's metadata-only rows. */
+  /** Include metadata-only provider identities. */
   getProviderSessionIdentities(): AgentHookProviderSessionIdentity[] {
     return this.buildStatusChangeNotification().providerSessions
   }
 
+  getStatusRowsForPaneOrHandle(
+    paneKey: string,
+    terminalHandle?: string | null
+  ): AgentStatusIpcPayload[] {
+    const handlePaneKey = terminalHandle
+      ? this.paneKeyByTerminalHandle.get(terminalHandle)
+      : undefined
+    return Array.from(new Set([paneKey, ...(handlePaneKey ? [handlePaneKey] : [])]))
+      .flatMap((key) => this.combinedStatusEntries(key))
+      .map(toAgentStatusIpcPayload)
+  }
+
+  getPublicStatusSnapshotForPane(
+    paneKey: string,
+    terminalHandle?: string | null
+  ): AgentStatusIpcPayload[] {
+    return this.getStatusRowsForPaneOrHandle(paneKey, terminalHandle).filter(
+      (row) => row.providerSessionOnly !== true
+    )
+  }
+
   getStatusSnapshotForPane(paneKey: string): AgentStatusIpcPayload[] {
-    const entry = this.state.lastStatusByPaneKey.get(paneKey)
-    return entry ? [toAgentStatusIpcPayload(entry as EnrichedAgentHookEventPayload)] : []
+    const legacy = this.state.lastStatusByPaneKey.get(paneKey)
+    if (legacy) {
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Main admits enriched legacy rows; the shared view declares their base event type.
+      const row = legacy as EnrichedAgentHookEventPayload
+      return [toAgentStatusIpcPayload(this.programStatusFacets.stitch(row))]
+    }
+    const rows: AgentStatusIpcPayload[] = []
+    for (const [subjectKey, subject] of this.canonicalSubjectsByPane.get(paneKey) ?? []) {
+      const status = this.canonicalStatusStore.getParent(subject)?.status
+      const identity = status?.structuredHost
+        ? undefined
+        : this.agentIdentities.canonicalIdentity(subjectKey)
+      if (status) {
+        const orcaSessionId = publishedOrcaSessionId(identity)
+        rows.push(orcaSessionId !== undefined ? { ...status, orcaSessionId } : status)
+      }
+    }
+    return rows
+  }
+
+  /** The lead's full final reply for the finished turn `leadTurnKey` names, when this runtime admitted one. */
+  getAcceptedReply(paneKey: string, leadTurnKey: number): string | undefined {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Main admits enriched legacy rows; the shared view declares their base event type.
+    const row = this.state.lastStatusByPaneKey.get(paneKey) as
+      | EnrichedAgentHookEventPayload
+      | undefined
+    return row?.acceptedReply?.leadTurnKey === leadTurnKey ? row.acceptedReply.text : undefined
   }
 
   getHydratedAuthorityCommitments(): readonly AgentHookAuthorityEvidence[] {
@@ -184,8 +286,8 @@ export abstract class AgentHookServerListeners extends AgentHookServerState {
   } {
     const statuses: AgentHookStatusChangeEntry[] = []
     const providerSessions: AgentHookProviderSessionIdentity[] = []
-    for (const [paneKey, entry] of this.state.lastStatusByPaneKey) {
-      const enriched = entry as EnrichedAgentHookEventPayload
+    for (const enriched of this.combinedStatusEntries(undefined, false)) {
+      const paneKey = enriched.paneKey
       if (enriched.providerSession) {
         providerSessions.push({
           paneKey,
@@ -201,7 +303,8 @@ export abstract class AgentHookServerListeners extends AgentHookServerState {
           paneKey,
           state: enriched.payload.state,
           receivedAt: enriched.receivedAt,
-          observedInCurrentRuntime: this.runtimeObservedStatusPaneKeys.has(paneKey)
+          observedInCurrentRuntime:
+            Boolean(enriched.structuredHost) || this.runtimeObservedStatusPaneKeys.has(paneKey)
         })
       }
     }
@@ -209,6 +312,8 @@ export abstract class AgentHookServerListeners extends AgentHookServerState {
   }
 
   protected notifyStatusChangeListeners(): void {
+    this.providerRowsByTab = null
+    this.statusChangeNotificationVersion++
     if (this.statusChangeListeners.size === 0 && this.providerSessionChangeListeners.size === 0) {
       return
     }
@@ -233,7 +338,6 @@ export abstract class AgentHookServerListeners extends AgentHookServerState {
     return this.buildStatusChangeNotification().statuses
   }
 
-  /** Test-only accessor for the per-instance listener state (narrow getter avoids an `as unknown` cast). */
   _getStateForTests(): HookListenerState {
     return this.state
   }

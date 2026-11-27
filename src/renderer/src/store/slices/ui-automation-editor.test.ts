@@ -9,6 +9,8 @@ describe('automation editor navigation', () => {
     let state = {
       activeView: 'artifacts',
       previousViewBeforeAutomations: 'terminal',
+      worktreeNavHistory: [],
+      worktreeNavHistoryIndex: -1,
       recordViewVisit: vi.fn()
     } as unknown as AppState
     const set: UISliceSet = (next) => {

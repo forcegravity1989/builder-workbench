@@ -1,7 +1,7 @@
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { parseTaskItemLink, type TaskItemLink } from '../../../shared/task-item-link'
-import { WORKBENCH_RELEASE_REPO } from '../../../shared/release-channel'
+import { WORKBENCH_RELEASE_REPO } from '../../../shared/updater/release-channel'
 import { isWorkbenchShell } from './is-workbench-shell'
 
 let navigationRequest = 0

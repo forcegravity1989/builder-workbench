@@ -6,20 +6,20 @@
 
 G1 的用户结果、范围和行为规格已确认。源码已接入统一原生添加、无名片上墙、本机个人／团队类型与共享来源过滤、项目负责人、版本目标及进展、当前项目侧栏、卡片原生菜单和总览共用编辑器。普通文件夹不新增名片保存，任务开工、团队权限和额外统计不在本特性范围。
 
-原型和源码静态检查已完成，已有 Windows Electron 用例入口。真实远端名片评审、共享主机与多设备读回、分组多仓操作、完整进程重启和性能边界仍待对应环境验证。原型演示、renderer 重载和单机配置读回不替代这些证据。
+原型和源码静态检查已完成，已有 Windows Electron 用例入口。W01 的 Windows dev 名片提交已在专用 GitHub 沙箱两轮运行并独立读回 PR 和远端提交；人工合入、共享主机与多设备读回、分组多仓操作、完整进程重启和性能边界仍待对应环境验证。原型演示、renderer 重载和单机配置读回不替代这些证据。
 
 卡片按已确认原型整理信息，提供全局紧凑／详情切换、短目标预览点击展开及来源头像动画；来源明确为主机，不伪造真人名册，缺发布日期为“—”。本机真壳、组件样例及未验范围见 PR #713；主干更新后的复验与独立检视尚未完成，不以旧证据代替。
 
 ## 六环登记
 
-| 环 | 状态 | 当前依据与入口 |
-| --- | --- | --- |
-| 1 intent | ● | 用户结果、价值范围与排除见 [intent](intent.md)。 |
-| 2 spec | ● | 当前行为、PW-01—PW-09 判据及可点原型见 [spec](spec.md)。 |
-| 3 实现设计 | ◐ | 复用原生添加、项目墙、菜单、工作区和版本材料来源；多主机、分组和失败恢复尚未完整真壳验证。 |
-| 4 协议看护 | ◐ | 项目负责人 TOML 保真写入、原文冲突保护、个人／团队配置与来源过滤已有用例入口；远端评审和跨主机读回待验。 |
-| 5 验收点 E2E | ◐ | 旅程 ID W01；文件 `tests/e2e/workbench/acceptance/project-settings.spec.ts`，标题 `BW project settings: reviewed edits, conflict protection and filesystem read-back`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为项目文件系统内容和 renderer 重载后的设置入口。 |
-| 6 用户旅程 E2E | ◐ | 旅程 ID W01；文件 `tests/e2e/workbench/journeys/w01-project-handoff.spec.ts`，标题 `BW first-run project handoff`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为项目卡留在墙上、用户点击后进入工作区。探索演示不计作真实旅程证据。 |
+| 环             | 状态 | 当前依据与入口                                                                                                                                                                                                                                                                             |
+| -------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1 intent       | ●    | 用户结果、价值范围与排除见 [intent](intent.md)。                                                                                                                                                                                                                                           |
+| 2 spec         | ●    | 当前行为、PW-01—PW-09 判据及可点原型见 [spec](spec.md)。                                                                                                                                                                                                                                   |
+| 3 实现设计     | ◐    | 复用原生添加、项目墙、菜单、工作区和版本材料来源；多主机、分组和失败恢复尚未完整真壳验证。                                                                                                                                                                                                 |
+| 4 协议看护     | ◐    | 项目负责人 TOML 保真写入、原文冲突保护、个人／团队配置与来源过滤已有用例入口；远端评审和跨主机读回待验。                                                                                                                                                                                   |
+| 5 验收点 E2E   | ◐    | 旅程 ID W01；文件 `tests/e2e/workbench/acceptance/project-settings.spec.ts`，标题 `BW project settings: reviewed edits, conflict protection and filesystem read-back`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为项目文件系统内容和 renderer 重载后的设置入口。 |
+| 6 用户旅程 E2E | ◐ | 旅程 ID W01；文件 `tests/e2e/workbench/journeys/w01-project-handoff.spec.ts`，标题 `BW first-run project handoff › hands off the first project, agrees on direction and prepares milestone review`；执行项目 `electron-headless` 的真实 Electron / CI fixture；覆盖首次添加交接、项目总览、名片和里程碑草稿，独立读回磁盘材料并核对主分支未变化。远端录制复用 `workbench-direction.ts` 操作步骤，读回 GitHub PR；合入仍需人确认。运行结果见 [#758](https://github.com/forcegravity1989/builder-workbench/pull/758#issuecomment-7091322345)，探索播放不计作真实旅程证据。 |
 
 ## W01 交叉索引
 
@@ -29,4 +29,4 @@ W01 的主链是「找到项目 → 明确共同方向 → 安排阶段成果 �
 
 - 已有原型批注和本机真壳局部验证覆盖墙卡搜索、筛选清除、进入工作区和总览、总览打开共用编辑器、无远端名片本地保存及 renderer 重载读回。
 - 当前 E2E 入口覆盖首次添加交接、项目设置编辑、负责人保真写入、并发原文冲突、短确认、全局通知和退出保护。具体运行结果随 PR 验证评论维护。
-- 未验证项包括真实远端评审、普通文件夹在全部入口的无名片可达、跨主机同仓和同 ID、共享来源过滤、多仓分组菜单、完整进程重启和真实数据性能。未验证不记为通过。
+- 未验证项包括远端人工合入与多人读回、普通文件夹在全部入口的无名片可达、跨主机同仓和同 ID、共享来源过滤、多仓分组菜单、完整进程重启和真实数据性能。未验证不记为通过。

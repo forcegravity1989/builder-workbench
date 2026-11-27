@@ -1,4 +1,4 @@
-import type { TaskSourceContext } from '../task-source-context'
+import type { TaskSourceContext } from '../work-items/task-source-context'
 import {
   WORKBENCH_VERSION_BINDING_SCHEMA_VERSION,
   WorkbenchVersionBindingSchema,

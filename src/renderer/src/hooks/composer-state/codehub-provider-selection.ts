@@ -6,7 +6,7 @@ type CodeHubProviderSelectionInput = Pick<
   | 'lastAutoNameRef'
   | 'name'
   | 'selectedRepoCodeHubSourceContext'
-  | 'smartGitHubPrStartPointSelectionRef'
+  | 'smartSourceSelectionRef'
   | 'setBaseBranch'
   | 'setBranchNameOverride'
   | 'setBranchNameOverridePreservesNameEdits'
@@ -24,12 +24,12 @@ type CodeHubProviderSelectionInput = Pick<
 
 import { useCallback } from 'react'
 import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
-import type { TaskSourceContext } from '../../../../shared/task-source-context'
+import type { TaskSourceContext } from '../../../../shared/work-items/task-source-context'
 import {
   getLinkedWorkItemSuggestedName,
-  getLinkedWorkItemWorkspaceName,
-  type LinkedWorkItemSummary
-} from '@/lib/new-workspace'
+  getLinkedWorkItemWorkspaceName
+} from '../../../../shared/workspace/naming/workspace-name'
+import type { LinkedWorkItemSummary } from '@/lib/workspace/creation/new-workspace'
 import { shouldApplyWorkspaceSourceAutoName } from '../../../../shared/new-workspace/workspace-source'
 
 // Why: CodeHub links an issue through the generic linkedWorkItem + task-source
@@ -40,7 +40,7 @@ export function useCodeHubProviderSelection(input: CodeHubProviderSelectionInput
     lastAutoNameRef,
     name,
     selectedRepoCodeHubSourceContext,
-    smartGitHubPrStartPointSelectionRef,
+    smartSourceSelectionRef,
     setBaseBranch,
     setBranchNameOverride,
     setBranchNameOverridePreservesNameEdits,
@@ -60,7 +60,7 @@ export function useCodeHubProviderSelection(input: CodeHubProviderSelectionInput
     (item: CodeHubTaskItem, sourceContext: TaskSourceContext | null): void => {
       // Why: invalidate any in-flight GitHub PR start-point resolution so a late
       // result cannot overwrite this CodeHub selection's context/base branch.
-      smartGitHubPrStartPointSelectionRef.current = null
+      smartSourceSelectionRef.current = null
       const linkedItem: LinkedWorkItemSummary = {
         type: 'issue',
         provider: 'codehub',
@@ -101,7 +101,7 @@ export function useCodeHubProviderSelection(input: CodeHubProviderSelectionInput
       lastAutoNameRef,
       name,
       selectedRepoCodeHubSourceContext,
-      smartGitHubPrStartPointSelectionRef,
+      smartSourceSelectionRef,
       setBaseBranch,
       setBranchNameOverride,
       setBranchNameOverridePreservesNameEdits,

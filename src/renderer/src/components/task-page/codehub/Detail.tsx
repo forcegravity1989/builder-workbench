@@ -1,9 +1,8 @@
-import { useCodeHubDetail } from './use-codehub-detail'
+import { useCodeHubDetail, type CodeHubDetailModel } from './use-codehub-detail'
 import { attachedCodeHubDetailWorkspace } from '@/workbench/scoped-task-workspace'
 import { CodeHubChecksTab } from './ChecksTab'
 import { CodeHubConversation } from './Conversation'
 import { CodeHubFilesTab } from './FilesTab'
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
@@ -24,11 +23,15 @@ import {
   MessageSquare,
   Pencil
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
-import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page-github-work-item-status-badge'
-import { formatRelativeTime } from '../../task-page-source-context'
+import { cn } from '@/lib/class-names'
+import { getWorktreeAttachmentLabel } from '@/lib/workspace/display/worktree-attachment-label'
+import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page/github/listing/task-page-github-work-item-status-badge'
+import { formatRelativeTime } from '../task-page-source-context'
 import type { Worktree } from '../../../../../shared/worktree/types'
+import {
+  getRepoExecutionHostId,
+  getWorktreeExecutionHostId
+} from '../../../../../shared/execution-host/execution-host'
 
 const NO_WORKTREES: readonly Worktree[] = []
 
@@ -61,7 +64,7 @@ function CopyLinkButton({
 export function TaskPageCodeHubDetail({
   model
 }: {
-  model: TaskPageComposerActionsModel
+  model: CodeHubDetailModel
 }): React.JSX.Element | null {
   const repoId = model.codehubDetailItem?.repoId ?? null
   const repoWorktrees = useAppStore((state) =>
@@ -69,7 +72,18 @@ export function TaskPageCodeHubDetail({
   )
   // G2（P4 详情往返携带范围）：范围态归属呈现与任务屏行/板面箭头同一解析核。
   const workbenchTaskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
-  const repo = useAppStore((s) => (repoId ? (s.repos.find((r) => r.id === repoId) ?? null) : null))
+  const sourceHostId = model.pageData?.openCodeHubSourceContext?.hostId
+  const repo = useAppStore((s) =>
+    repoId
+      ? (s.repos.find(
+          (candidate) =>
+            candidate.id === repoId &&
+            (!model.codehubDetailItem?.repoPath ||
+              candidate.path === model.codehubDetailItem.repoPath) &&
+            (!sourceHostId || getRepoExecutionHostId(candidate) === sourceHostId)
+        ) ?? null)
+      : null
+  )
   const detailState = useCodeHubDetail(model)
   if (!detailState) {
     return null
@@ -105,7 +119,11 @@ export function TaskPageCodeHubDetail({
   } = detailState
   const attached = attachedCodeHubDetailWorkspace({
     scope: workbenchTaskScope,
-    worktrees: repoWorktrees,
+    worktrees: sourceHostId
+      ? repoWorktrees.filter(
+          (worktree) => getWorktreeExecutionHostId(worktree, repo ?? undefined) === sourceHostId
+        )
+      : repoWorktrees,
     repo,
     item
   })
@@ -216,7 +234,7 @@ export function TaskPageCodeHubDetail({
                 onClick={() => handleUseCodeHubItem(item)}
               >
                 {translate(
-                  'auto.components.GitHubItemDialog.0ab4664a8b',
+                  'auto.components.TaskPage.codehubStartWorkspaceFromIssue',
                   'Start workspace from issue'
                 )}
                 <ArrowRight className="size-3.5" />
@@ -331,12 +349,12 @@ export function TaskPageCodeHubDetail({
                 className="gap-1.5 whitespace-nowrap"
                 onClick={() => handleUseCodeHubItem(item)}
                 aria-label={translate(
-                  'auto.components.GitHubItemDialog.0caac1a18f',
+                  'auto.components.TaskPage.codehubStartWorkspaceFromPr',
                   'Start workspace from PR'
                 )}
               >
                 {translate(
-                  'auto.components.GitHubItemDialog.0caac1a18f',
+                  'auto.components.TaskPage.codehubStartWorkspaceFromPr',
                   'Start workspace from PR'
                 )}
                 <ArrowRight className="size-3.5" />

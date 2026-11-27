@@ -1,4 +1,4 @@
-import type { TaskSourceContext } from '../../../../../shared/task-source-context'
+import type { TaskSourceContext } from '../../../../../shared/work-items/task-source-context'
 import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import {

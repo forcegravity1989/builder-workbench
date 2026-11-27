@@ -2,7 +2,7 @@ import { RefreshCw, Trash2 } from 'lucide-react'
 import type {
   RuntimeAccessAuditEntry,
   RuntimeAccessAuditResult
-} from '../../../../shared/runtime-access-grants'
+} from '../../../../shared/remote-runtime/host-catalog/runtime-access-grants'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
@@ -80,7 +80,7 @@ export function RuntimeAccessAuditLog({
             disabled={isLoading || entries.length === 0}
           >
             <Trash2 className="size-3.5" />
-            {translate('auto.components.settings.RuntimeAccessAuditLog.clear', '清理日志')}
+            {translate('auto.components.settings.RuntimeAccessAuditLog.clear', 'Clear log')}
           </Button>
         </div>
       </div>

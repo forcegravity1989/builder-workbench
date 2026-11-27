@@ -19,10 +19,10 @@ import {
   openProjectWall,
   subscribeProjectPage
 } from './project-page-state'
-import { findRepoForHost } from '@/store/slices/repo-host-identity'
-import { getTaskEligibleRepos } from '@/components/task-page-default-repo-selection'
-import { isGitRepoKind } from '../../../shared/repo-kind'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { findRepoForHost } from '@/store/repos/repo-host-identity'
+import { getTaskEligibleRepos } from '../../../shared/work-items/task-repo-selection'
+import { isGitRepoKind } from '../../../shared/repository/repo-kind'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { currentProjectRepo } from './project-source-resolution'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import { activateVersionWorktree } from './version-worktree-host'

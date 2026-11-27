@@ -5,7 +5,7 @@ import type {
   RuntimeAccessAuditEntry,
   RuntimeAccessAuditResult,
   RuntimeAccessGrant
-} from '../../../../shared/runtime-access-grants'
+} from '../../../../shared/remote-runtime/host-catalog/runtime-access-grants'
 import { useRuntimePairingLinkRecall } from './use-runtime-pairing-link-recall'
 import { Label } from '../ui/label'
 import { RuntimeAccessGrantList } from './RuntimeAccessGrantList'

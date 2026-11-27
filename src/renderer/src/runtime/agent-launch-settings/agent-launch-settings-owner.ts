@@ -1,6 +1,6 @@
 import type { AppState } from '@/store/types'
 import type { AgentLaunchSettingsOwner } from './agent-launch-settings-transport'
-import { getRuntimeEnvironmentRevision } from '../runtime-environment-revision'
+import { getRuntimeEnvironmentRevision } from '../rpc/environment-revisions/runtime-environment-revision'
 
 export function assertAgentLaunchSettingsOwner(
   state: Pick<AppState, 'runtimeStatusByEnvironmentId'>,

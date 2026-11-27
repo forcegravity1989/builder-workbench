@@ -2,7 +2,7 @@ import { readFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FeedbackSubmitBody } from '../../ipc/feedback'
+import type { FeedbackSubmitBody } from '../../ipc/feedback/feedback-request'
 import type * as oneboxClientModule from './welink-onebox-client'
 
 const {

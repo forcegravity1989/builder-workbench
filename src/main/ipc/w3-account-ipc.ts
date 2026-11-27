@@ -12,9 +12,10 @@ import {
   type W3StartLoginResult
 } from '../../shared/w3-account'
 import { ensureActiveOrcaProfile } from '../orca-profiles/profile-index-store'
-import { browserSessionRegistry } from '../browser/browser-session-registry'
+import { clearBrowserCookieJar } from '../browser/cookies/session-restore/browser-session-cookie-clear'
+import { browserSessionRegistry } from '../browser/sessions/profiles/browser-session-registry'
 import { isDashboardPopoutRenderer } from '../window/dashboard-popout-window'
-import { isTrustedBrowserRenderer } from './browser-renderer-trust'
+import { isTrustedBrowserRenderer } from './browser/browser-renderer-trust'
 import { getW3AccountConfig, type W3AccountConfig } from '../w3-account/w3-account-config'
 import { ensureW3SessionProfile } from '../w3-account/w3-account-session-store'
 import type { W3FetchInit, W3FetchResponse } from '../w3-account/w3-account-identity'
@@ -37,6 +38,7 @@ function broadcast(status: W3AccountStatus): void {
     }
     const contents = window.webContents
     if (
+      !isTrustedBrowserRenderer(contents) ||
       isDashboardPopoutRenderer(contents) ||
       isW3LoginWindow(contents) ||
       isW3WebWindow(contents)
@@ -218,9 +220,7 @@ function syncSessionFromSystemChrome(
         removeDir: (path) => rm(path, { recursive: true, force: true }),
         fetchJson: async (url) => {
           const timeout = AbortSignal.timeout(5000)
-          const requestSignal = collectSignal
-            ? AbortSignal.any([collectSignal, timeout])
-            : timeout
+          const requestSignal = collectSignal ? AbortSignal.any([collectSignal, timeout]) : timeout
           const response = await fetch(url, { signal: requestSignal })
           return response.json()
         },
@@ -309,11 +309,9 @@ function getService(): W3AccountService {
       },
       clearDedicatedStorage: async (partition) => {
         const sess = session.fromPartition(partition)
-        // Why: clear all local auth storage of the dedicated partition — the
-        // W3 login lives in its cookies AND possibly its web storage. Other
-        // partitions are never touched.
+        await clearBrowserCookieJar(sess)
         await sess.clearStorageData({
-          storages: ['cookies', 'localstorage', 'indexdb', 'serviceworkers', 'cachestorage']
+          storages: ['localstorage', 'indexdb', 'serviceworkers', 'cachestorage']
         })
         await sess.clearCache()
       },

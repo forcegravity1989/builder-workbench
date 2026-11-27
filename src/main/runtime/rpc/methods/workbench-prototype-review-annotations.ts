@@ -13,11 +13,13 @@ import {
 export const WORKBENCH_PROTOTYPE_REVIEW_ANNOTATION_METHODS = [
   defineWorkbenchMethod({
     name: 'workbench.prototypeReview.annotations.list',
+    permission: 'workspace',
     params: PrototypeReviewAnnotationListSchema,
     handler: ({ documentKey }) => readPrototypeReviewAnnotations(documentKey)
   }),
   defineWorkbenchMethod({
     name: 'workbench.prototypeReview.annotations.add',
+    permission: 'workspace',
     params: PrototypeReviewAnnotationAddSchema,
     handler: (
       { id, documentKey, comment, intent, priority, payload, hostName, author },
@@ -42,6 +44,7 @@ export const WORKBENCH_PROTOTYPE_REVIEW_ANNOTATION_METHODS = [
   }),
   defineWorkbenchMethod({
     name: 'workbench.prototypeReview.annotations.delete',
+    permission: 'workspace',
     params: PrototypeReviewAnnotationDeleteSchema,
     handler: async ({ documentKey, annotationId }) => ({
       deleted: await deletePrototypeReviewAnnotation(documentKey, annotationId)

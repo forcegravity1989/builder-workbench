@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test } from 'vitest'
-import { OrchestrationDb } from '../../../src/main/runtime/orchestration/db'
+import { OrchestrationDb } from '../../../src/main/runtime/orchestration/db/orchestration-db'
 import { importReleaseCheckoutModule, materializeReleaseCheckout } from './release-checkout'
 
 // Pin the last pre-v41 implementation: this contract specifically exercises status-only readers.

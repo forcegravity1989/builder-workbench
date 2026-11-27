@@ -1,7 +1,7 @@
 import { Check, CircleDot, GitBranch, GitPullRequest, Plus, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CreateHostedReviewComposer } from '@/components/right-sidebar/CreateHostedReviewComposer'
+import { CreateHostedReviewComposer } from '@/components/right-sidebar/hosted-review/creation/CreateHostedReviewComposer'
 import { CommitMessageComposer } from '@/components/right-sidebar/source-control/commit/commit-message-composer'
 import { IncomingReviewItem } from '../pr-review-notifications/PrReviewNotificationItems'
 import type { ReviewIncomingNote } from '../pr-review-notifications/model'

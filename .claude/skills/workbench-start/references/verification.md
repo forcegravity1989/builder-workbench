@@ -22,9 +22,9 @@ Claude 使用 `--assistant claude`。脚本定位记录并检查现有 profile/�
    ```
 
    它使用持久 `workbench-dev` profile。启动后等待窗口和 Vite 就绪，确认窗口加载的是本次 task worktree 的源码；只有“进程已启动”不能作为验证证据。
+
 3. 需要自动化或让窗口不抢前台时，使用 [Codex 执行参考](codex.md) 的后台 CDP 入口。runner 会自动探测未占用端口（如需固定端口再显式设置 `REMOTE_DEBUGGING_PORT`），启动日志出现 `Remote debugging on http://127.0.0.1:<port>` 后，再用 CDP 读取页面、窗口和 renderer 地址，并核对源码 HEAD。后台实例仍沿用已确认的 profile；并行实例若发生 Electron 单实例或 profile 锁冲突，按宿主实际支持的独立 profile/端口运行，不为每个 Issue 随意新建空 profile。
 4. 本次 Issue 的截图、日志、CDP 读数和复现步骤放在 `.bw/runtime/verification/<issue>/`；`environment.json` 只放机器级观察，不覆盖任务证据。关闭或重启实例前保留 PID、端口与结果，不能把历史 `uiEvidence` 当成本次验证。
-
 
 ## 截图发布与读回
 

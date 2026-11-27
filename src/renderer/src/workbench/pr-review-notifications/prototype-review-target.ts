@@ -1,11 +1,11 @@
-import { useAppStore } from '@/store'
-import { openFileInBrowserTab } from '@/lib/file-preview'
-import { getRuntimeEnvironmentIdForWorktree } from '@/lib/worktree-runtime-owner'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
-import { refreshWebRuntimeSessionTabsSnapshot } from '@/runtime/web-runtime-session'
-import { isWebRuntimeSessionActive } from '@/runtime/web-runtime-session-environment'
-import { selectWebRuntimeSessionBrowserWorktree } from '@/runtime/web-runtime-session-workspace-selection'
+import { openFileInBrowserTab } from '@/lib/browser/documents/file-preview'
+import { runtimeEnvironmentIdOrLocalUnlessTwin as getRuntimeEnvironmentIdForWorktree } from '@/lib/workspace/ownership/worktree-runtime-owner'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import { basename } from '@/lib/path'
+import { useAppStore } from '@/store'
+import { refreshWebRuntimeSessionTabsSnapshot } from '@/runtime/web-session-tabs-sync/inventory/web-runtime-session-snapshot'
+import { isWebRuntimeSessionActive } from '@/runtime/web-session-tabs-sync/identity/web-runtime-session-environment'
+import { selectWebRuntimeSessionBrowserWorktree } from '@/runtime/web-session-tabs-sync/workspace-selection/web-runtime-session-workspace-selection'
 import type { PrototypeReviewPageRef } from '../../../../shared/workbench/prototype-review-request'
 
 /** The name this client knows the worktree's host by: the saved connection name, never the raw host id. */

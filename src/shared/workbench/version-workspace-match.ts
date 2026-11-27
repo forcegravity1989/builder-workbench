@@ -1,7 +1,7 @@
 import type { Worktree } from '../worktree/types'
-import type { TaskSourceContext } from '../task-source-context'
-import { areTaskSourceContextsEqual } from '../task-source-context'
-import { isWorkspaceLinkedItemSourceContextMatch } from '../workspace-linked-item-source-context'
+import type { TaskSourceContext } from '../work-items/task-source-context'
+import { areTaskSourceContextsEqual } from '../work-items/task-source-context'
+import { isWorkspaceLinkedItemSourceContextMatch } from '../workspace-attachments/workspace-linked-item-source-context'
 import { normalizeStoredWorkbenchVersionBinding } from './version-binding'
 
 /**

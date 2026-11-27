@@ -32,8 +32,15 @@ export function useCliInstall(cli: BwCliInstallId): {
   const [installing, setInstalling] = useState(false)
 
   useEffect(() => {
-    void window.api.cliInstall.isRunning({ cli }).then(setInstalling)
-    return window.api.cliInstall.onFinished((payload) => {
+    const cliInstall = window.api.cliInstall
+    if (!cliInstall) {
+      return
+    }
+    void cliInstall
+      .isRunning({ cli })
+      .then(setInstalling)
+      .catch(() => setInstalling(false))
+    return cliInstall.onFinished((payload) => {
       if (payload.cli !== cli) {
         return
       }
@@ -66,9 +73,12 @@ export function useCliInstall(cli: BwCliInstallId): {
   }, [cli])
 
   const startInstall = useCallback((): void => {
-    void window.api.cliInstall.start({ cli }).then((result) => {
-      setInstalling(result.started)
-    })
+    void window.api.cliInstall
+      ?.start({ cli })
+      .then((result) => {
+        setInstalling(result.started)
+      })
+      .catch(() => setInstalling(false))
   }, [cli])
 
   return { installing, startInstall }

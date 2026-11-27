@@ -8,7 +8,7 @@ import {
   type PrototypeReviewAnnotation
 } from '../../shared/workbench/prototype-review-annotation'
 import type { dismissReviewRequest, readReviewInbox, receiveReviewRequest } from './review-inbox'
-import { installFakeAppEnvironment } from '../../../config/scripts/vitest-host-ports-setup'
+import { installFakeAppEnvironment } from '../../../config/scripts/test-runtime/environment/vitest-host-ports-setup'
 
 type InboxModule = {
   dismissReviewRequest: typeof dismissReviewRequest

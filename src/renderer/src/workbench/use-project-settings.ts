@@ -3,13 +3,13 @@ import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-host-ownership'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { CharterReadResult, CharterStatus } from '../../../shared/workbench/charter'
 import {
   getRepoExecutionHostId,
   getRepoSshConnectionId,
   parseExecutionHostId
-} from '../../../shared/execution-host'
+} from '../../../shared/execution-host/execution-host'
 import { CHARTER_BRANCH, EMPTY_CHARTER, type ProjectCharter } from './project-charter'
 import { EDITABLE_CHARTER_FIELDS } from '../../../shared/workbench/project-charter-edit'
 import { readCharterPrStatus, submitProjectCharter } from './charter-port'
@@ -17,10 +17,10 @@ import { charterSourceKey, getRepoCharterSnapshot, loadRepoCharter } from './cha
 import { ensureNamedWorktree, nativeWorkspaceScope } from './version-cycle/native-workspace'
 import { updateTrunkCode, trunkUpdateNotice } from './version-cycle/trunk-update-port'
 import { useDefaultAgentForTarget } from './version-cycle/metrics-setup'
-import type { AgentDetectionTarget } from '@/hooks/useDetectedAgents'
-import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
+import type { AgentDetectionTarget } from '@/lib/agent-session/launch/inventory/useDetectedAgents'
+import { activateWebRuntimeSessionWorktree } from '@/runtime/web-session-tabs-sync/actions/web-runtime-worktree-activation'
 import { openWorkflowDraft } from './open-workflow-draft'
-import { isIntentionalAppRestartInProgress } from '@/lib/updater-beforeunload'
+import { isIntentionalAppRestartInProgress } from '@/app-shell/updates/updater-beforeunload'
 
 type Draft = {
   raw: string | null
@@ -311,6 +311,7 @@ export function useProjectSettings(repo: Repo, onChanged: (charterUpdated: boole
             await openWorkflowDraft(
               agent,
               main.id,
+              scope.hostId,
               [
                 '请检查当前项目的项目信息提交失败，先读取仓库规则并确认已有 bw/project 分支和 PR/MR，避免重复提交。',
                 `错误：${error}`,

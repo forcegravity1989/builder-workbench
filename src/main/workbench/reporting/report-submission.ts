@@ -5,15 +5,13 @@ import { join } from 'node:path'
 import { app } from 'electron'
 import { withSpan, type ActiveSpan } from '../../observability/tracer'
 import { runPreflightCheck } from '../../preflight/agent-detection'
-import {
-  FEEDBACK_IMAGE_EXTENSIONS,
-  type FeedbackImageAttachment
-} from '../../ipc/feedback-image-attachments'
+import { FEEDBACK_IMAGE_EXTENSIONS } from '../../ipc/feedback/feedback-image-attachments'
 import type {
+  FeedbackImageAttachment,
   FeedbackRequestFailure,
-  FeedbackSubmitBody,
   FeedbackSubmitResult
-} from '../../ipc/feedback'
+} from '../../../shared/feedback/feedback-submit-contract'
+import type { FeedbackSubmitBody } from '../../ipc/feedback/feedback-request'
 import { resolveWelinkReportConfig } from './welink-report-config'
 import {
   ensureReportFolder,

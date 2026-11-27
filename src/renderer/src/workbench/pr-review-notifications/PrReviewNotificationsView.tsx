@@ -17,8 +17,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import {
   WorktreeCardDetailSection,
   WorktreeCardDetailSectionContent
-} from '@/components/sidebar/WorktreeCardDetailSection'
-import { DetailHeader, MetadataActionIcon } from '@/components/sidebar/WorktreeCardMetadataControls'
+} from '@/components/sidebar/workspace-card/details/WorktreeCardDetailSection'
+import { DetailHeader, MetadataActionIcon } from '@/components/sidebar/workspace-card/metadata/WorktreeCardMetadataControls'
 import type { ReviewIncomingNote, ReviewOutgoingNote, ReviewNotificationsState } from './model'
 import { reviewNotificationCount } from './model'
 import { IncomingReviewItem, OutgoingReviewItem, SectionCount } from './PrReviewNotificationItems'

@@ -1,10 +1,10 @@
-import type { Repo } from '../../shared/repo-types'
+import type { Repo } from '../../shared/repository/repo-types'
 import {
   getRepoExecutionHostId,
   getWorktreeExecutionHostId,
   type ExecutionHostId
-} from '../../shared/execution-host'
-import { mergeExternalWorktreeInboxPaths } from '../../shared/external-worktree-inbox'
+} from '../../shared/execution-host/execution-host'
+import { mergeExternalWorktreeInboxPaths } from '../../shared/worktree/visibility/external-worktree-inbox'
 import type {
   GitWorktreeInfo,
   Worktree,
@@ -17,8 +17,8 @@ import {
   type FixedWorkspaceEnsureRequest,
   type FixedWorkspaceEnsureResult
 } from '../../shared/workbench/fixed-workspace'
-import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/runtime-managed-worktree-create-types'
-import { areWorktreePathsEqual } from '../ipc/worktree-logic'
+import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/workspaces/creation/runtime-managed-worktree-create-types'
+import { areWorktreePathsEqual } from '../git/worktrees/catalog/worktree-path-comparison'
 import { createWorkbenchRepoResolver, nativeWorkbenchWorkspaceHost } from './workspace-resolver'
 import { ensureFixedBranch, type FixedWorkspaceGit } from './fixed-workspace-branch'
 import { WorkspaceScopeError } from './workspace-scope-error'

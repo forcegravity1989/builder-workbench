@@ -9,6 +9,10 @@ it('accepts a configured W3 shortcut while refusing untrusted credential targets
   }
   expect(isAllowedW3ShortcutUrl('https://intra.example/home', config)).toBe(true)
   expect(isAllowedW3ShortcutUrl('https://evil.example/home', config)).toBe(false)
-  expect(getW3AccountConfig({ ORCA_W3_ACCOUNT_API_URL: 'file:///etc/passwd' }).configured).toBe(false)
-  expect(getW3AccountConfig({ ORCA_W3_LOGIN_URL: 'https://user:pw@w3.huawei.com/' }).configured).toBe(false)
+  expect(getW3AccountConfig({ ORCA_W3_ACCOUNT_API_URL: 'file:///etc/passwd' }).configured).toBe(
+    false
+  )
+  expect(
+    getW3AccountConfig({ ORCA_W3_LOGIN_URL: 'https://user:pw@w3.huawei.com/' }).configured
+  ).toBe(false)
 })

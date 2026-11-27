@@ -1,14 +1,18 @@
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import type { CodeHubApi } from '../../../shared/codehub-api'
+import type { Repo } from '../../../shared/repository/repo-types'
+import { projectHostSetupProjectionFromRepos } from '../../../shared/project/host-setup/project-host-setup-projection'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { useAppStore } from '@/store'
-import { getExplicitRuntimeOwnerEnvironmentId } from './repo-runtime-owner'
-import { callRuntimeRpc, getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
+import { isTwinRepo, resolveRepoRuntimeOwner } from './workspace/ownership/repo-runtime-owner'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
+import { runtimeTargetForOwnerEnvironment } from '@/runtime/rpc/targets/runtime-client-target'
 import {
   getTaskSourceRuntimeSettings,
+  normalizeTaskSourceContext,
   type TaskSourceContext
-} from '../../../shared/task-source-context'
+} from '../../../shared/work-items/task-source-context'
 
 type CodeHubTaskRepository = { host?: string | null; project?: string | null }
 
@@ -73,16 +77,15 @@ function route<K extends keyof CodeHubApi>(
     }
     return call({ ...routedArgs, remoteUrl })
   }
-  const target = getActiveRuntimeTarget(
-    sourceContext
-      ? getTaskSourceRuntimeSettings(sourceContext)
-      : {
-          activeRuntimeEnvironmentId: getExplicitRuntimeOwnerEnvironmentId(
-            useAppStore.getState(),
-            args.repoId
-          )
-        }
-  )
+  const state = useAppStore.getState()
+  const owner = sourceContext ? null : resolveRepoRuntimeOwner(state, repoId)
+  if (owner && !owner.repo && isTwinRepo(state, repoId)) {
+    return Promise.reject(new Error('无法确认 CodeHub 仓库所属主机，请重新打开任务。'))
+  }
+  const environmentId = sourceContext
+    ? (getTaskSourceRuntimeSettings(sourceContext).activeRuntimeEnvironmentId ?? null)
+    : (owner?.environmentId ?? null)
+  const target = runtimeTargetForOwnerEnvironment(environmentId)
   if (target.kind === 'environment') {
     return callRuntimeRpc(target, `codehub.${method}`, routedArgs, { timeoutMs: 60_000 })
   }
@@ -124,6 +127,24 @@ export function createCodeHubApi(
 }
 
 export const codehubApi = createCodeHubApi()
+
+export function getCodeHubRepoSourceContext(repo: Repo | null | undefined): TaskSourceContext | null {
+  if (!repo) {
+    return null
+  }
+  const { projects: [project], setups: [setup] } = projectHostSetupProjectionFromRepos([repo])
+  const remote =
+    parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ??
+    parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey)
+  return normalizeTaskSourceContext({
+    provider: 'codehub',
+    projectId: setup?.projectId ?? project?.id ?? repo.id,
+    hostId: setup?.hostId ?? getRepoExecutionHostId(repo),
+    projectHostSetupId: setup?.id,
+    repoId: repo.id,
+    providerIdentity: remote ? { provider: 'codehub', host: remote.host, project: remote.project } : null
+  })
+}
 export function createTaskPageCodeHubApi(
   sourceContext?: TaskSourceContext | null,
   taskRepository?: CodeHubTaskRepository

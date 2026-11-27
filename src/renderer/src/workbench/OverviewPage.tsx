@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
+import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host/execution-host'
 import {
   worktreeHostMatchOptions,
   worktreeMatchesHost
@@ -15,7 +15,7 @@ import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import { findRepoForHost } from '@/store/repos/repo-host-identity'
 import { updateTrunkCode, notifyTrunkUpdate } from './version-cycle/trunk-update-port'
 import {
   nativeWorkspaceScope,

@@ -1,5 +1,5 @@
 import type { Browser, BrowserContext, Page } from 'playwright-core'
-import { getAppEnvironment } from '../../shared/app-environment'
+import { getAppEnvironment } from '../../shared/app-lifecycle/app-environment'
 import { PackagePipelineError, failureText } from './package-pipeline-error'
 
 /**

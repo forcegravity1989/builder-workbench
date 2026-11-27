@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:f
 import type * as NodeOs from 'node:os'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { getDefaultSettings } from '../../shared/constants'
+import { getDefaultSettings } from '../../shared/orca-profiles/constants'
 
 const testState = vi.hoisted(() => ({ fakeHomeDir: '' }))
 
@@ -20,7 +20,7 @@ vi.mock('node:os', async () => {
   return { ...actual, homedir: () => testState.fakeHomeDir }
 })
 
-import { CodexConfigMirror } from './codex-config-mirror'
+import { CodexConfigMirror } from './managed-homes/codex-config-mirror'
 
 const OVERRIDE_LINE = 'daemon_auto_start = false # orca: CODEX_HOME too long for the daemon socket'
 
@@ -56,8 +56,8 @@ describe('CodexConfigMirror without ~/.codex/config.toml', () => {
     rmSync(root, { recursive: true, force: true })
   })
 
-  it('still guards every managed home against the daemon socket limit', () => {
-    mirror.safeSyncToManagedHomes()
+  it('still guards every managed home against the daemon socket limit', async () => {
+    await mirror.safeSyncToManagedHomes()
 
     expect(readFileSync(join(managedHomePath, 'config.toml'), 'utf-8')).toBe(
       `[features]\n${OVERRIDE_LINE}\n`
@@ -65,14 +65,14 @@ describe('CodexConfigMirror without ~/.codex/config.toml', () => {
     expect(existsSync(join(testState.fakeHomeDir, '.codex'))).toBe(false)
   })
 
-  it('leaves a WSL home to launch prep instead of running its blocking ownership check', () => {
+  it('leaves a WSL home to launch prep instead of running its blocking ownership check', async () => {
     const assertManagedHomePath = vi.fn((path: string) => path)
     const wslMirror = new CodexConfigMirror(
       { getSettings: () => getDefaultSettings(testState.fakeHomeDir) },
       assertManagedHomePath
     )
 
-    wslMirror.safeSyncIntoManagedHome(
+    await wslMirror.safeSyncIntoManagedHome(
       '\\\\wsl.localhost\\Ubuntu\\home\\u\\.local\\share\\orca\\codex-accounts\\acct\\home',
       undefined,
       'acct'

@@ -1,17 +1,17 @@
-import { getRepoTaskSourceContext } from '@/components/task-page-source-context'
+import { getRepoTaskSourceContext } from './task-source-context'
 import { parseCodeHubRemote } from '../../../shared/codehub'
-import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
+import { normalizeGitRemoteUrl } from '../../../shared/git/remotes/git-remote-identity'
 import {
   getRepoExecutionHostId,
   getRepoSshConnectionId,
   parseExecutionHostId,
   toRuntimeExecutionHostId
-} from '../../../shared/execution-host'
-import { parseGitHubRemoteUrl } from '../../../shared/project-host-setup-projection'
-import type { GitHubOwnerRepo } from '../../../shared/github/pull-request-types'
-import type { Repo } from '../../../shared/repo-types'
+} from '../../../shared/execution-host/execution-host'
+import { parseGitHubRemoteUrl } from '../../../shared/project/host-setup/project-host-setup-projection'
+import type { GitHubRepositoryIdentity as GitHubOwnerRepo } from '../../../shared/github/repositories/repository-identity'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
-import type { TaskSourceContext } from '../../../shared/task-source-context'
+import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'
 import type { TaskPortDeps } from './task-port'
 import type { CycleScope, CycleTaskReference } from './version-cycle/ports'
 

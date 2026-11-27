@@ -1,8 +1,8 @@
 import { z } from 'zod'
-import { areTaskSourceContextsEqual, type TaskSourceContext } from '../task-source-context'
-import { TaskSourceContextSchema } from '../task-source-context-schema'
-import { WorkspaceLinkedItemSchema } from '../workspace-linked-item-schema'
-import { isWorkspaceLinkedItemSourceContextMatch } from '../workspace-linked-item-source-context'
+import { areTaskSourceContextsEqual, type TaskSourceContext } from '../work-items/task-source-context'
+import { TaskSourceContextSchema } from '../work-items/task-source-context-schema'
+import { WorkspaceLinkedItemSchema } from '../workspace-attachments/workspace-linked-item-schema'
+import { isWorkspaceLinkedItemSourceContextMatch } from '../workspace-attachments/workspace-linked-item-source-context'
 import { Id, MaterialVersion } from './version-material-common'
 
 /**

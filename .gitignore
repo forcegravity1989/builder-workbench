@@ -28,6 +28,7 @@ out/
 /build/
 release/
 native/**/.build/
+native/windows-cli-launcher/target/
 # node-gyp output for the vendored Windows registry addon; generated per host and ABI.
 native/windows-registry/build/
 native/windows-registry/bin/
@@ -113,6 +114,8 @@ playwright-report/
 /.claude/skills/*
 !/.claude/skills/workbench-start/
 !/.claude/skills/workbench-start/**
+!/.claude/skills/orca-sync/
+!/.claude/skills/orca-sync/**
 !/.claude/skills/improve-workbench/
 !/.claude/skills/improve-workbench/**
 !/.claude/skills/journey-review/

@@ -1,6 +1,6 @@
 import { hostname, userInfo } from 'node:os'
 import { getRemoteRuntimeCallerIdentity } from '../../../../shared/remote-runtime-caller-identity'
-import { PullRequest } from '../../../../shared/rpc-contract/github-pull-request-params'
+import { PullRequest } from '../../../../shared/rpc-contract/github/github-pull-request-params'
 import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import {
   ReviewDismissSchema,
@@ -15,6 +15,7 @@ import {
 export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
   defineWorkbenchMethod({
     name: 'workbench.review.comments',
+    permission: 'workspace',
     params: PullRequest,
     handler: async (params, { runtime }) => ({
       complete: true,
@@ -28,6 +29,7 @@ export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
   }),
   defineWorkbenchMethod({
     name: 'workbench.review.identity',
+    permission: 'workspace',
     params: null,
     handler: () => ({
       sender: (
@@ -37,6 +39,7 @@ export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
   }),
   defineWorkbenchMethod({
     name: 'workbench.review.receive',
+    permission: 'workspace',
     params: ReviewRequestSchema,
     handler: async (request, { pairedDeviceId, authenticatedCallerFingerprint }) => {
       const accepted = await receiveReviewRequest({
@@ -49,11 +52,13 @@ export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
   }),
   defineWorkbenchMethod({
     name: 'workbench.review.inbox',
+    permission: 'workspace',
     params: null,
     handler: () => readReviewInbox()
   }),
   defineWorkbenchMethod({
     name: 'workbench.review.dismiss',
+    permission: 'workspace',
     params: ReviewDismissSchema,
     handler: async ({ repo, prNumber, seenReceivedAt }) => ({
       dismissed: await dismissReviewRequest(repo, prNumber, seenReceivedAt)

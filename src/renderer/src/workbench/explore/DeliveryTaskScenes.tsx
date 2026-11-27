@@ -1,10 +1,10 @@
 import { CircleDot, CircleCheck, GitBranch, Plus, Search, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import StatusIndicator from '@/components/sidebar/StatusIndicator'
-import { NewWorkspaceComposerFooter } from '@/components/new-workspace/NewWorkspaceComposerFooter'
+import StatusIndicator from '@/components/sidebar/workspace-card/surface/StatusIndicator'
+import { NewWorkspaceComposerFooter } from '@/components/new-workspace/composer/NewWorkspaceComposerFooter'
 import { ProjectWallCard, type WallCardView } from '../ProjectWallCard'
-import { sampleCharter } from './DirectionCharterDemo'
+import { sampleCharter } from './sample-charter'
 import '../workbench-wall.css'
 
 export const sampleVersion = 'v0.2'
