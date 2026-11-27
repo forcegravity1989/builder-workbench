@@ -4,6 +4,7 @@ import { applyDocumentTheme } from '@/app-shell/appearance/document-theme'
 import { track } from '@/diagnostics/telemetry/telemetry'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store/index'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { getExecutionHostIdForWorktree } from '@/lib/workspace/ownership/worktree-runtime-owner'
 import { launchOnboardingCompletionAgent } from './onboarding-completion-agent-launch'
 import { ONBOARDING_FINAL_STEP } from '../../../../shared/onboarding/onboarding-defaults'
@@ -212,6 +213,8 @@ export function useOnboardingFlowActions({
       return
     }
     nextInFlightRef.current = true
+    const openAddProject =
+      !worktreeId && isWorkbenchShell() && useAppStore.getState().repos.length === 0
     const workspaceExecutionHostId = worktreeId
       ? getExecutionHostIdForWorktree(useAppStore.getState(), worktreeId)
       : undefined
@@ -221,7 +224,14 @@ export function useOnboardingFlowActions({
     const stepNumber = currentStep.stepNumber
     const valueKind = currentStep.valueKind
     setError(null)
-    setBusyLabel(translate('components.onboarding.flow.actions.continue', 'Continue'))
+    setBusyLabel(
+      openAddProject
+        ? translate(
+            'components.onboarding.flow.actions.openingAddProject',
+            'Opening Add Project...'
+          )
+        : translate('components.onboarding.flow.actions.continue', 'Continue')
+    )
     try {
       const preferencesSaved = await prepareSkippedOnboardingPreferences({
         currentStepId: stepId,
@@ -235,7 +245,14 @@ export function useOnboardingFlowActions({
         updateSettings,
         setError
       })
-      if (!preferencesSaved || !(await complete(workspaceExecutionHostId, 'workspace', agent))) {
+      if (
+        !preferencesSaved ||
+        !(await complete(
+          workspaceExecutionHostId,
+          openAddProject ? 'add_project_modal' : 'workspace',
+          agent
+        ))
+      ) {
         return
       }
       track('onboarding_step_skipped', {
