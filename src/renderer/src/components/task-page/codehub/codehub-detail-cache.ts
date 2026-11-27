@@ -1,11 +1,11 @@
 import {
   getTaskSourceCacheScope,
   type TaskSourceContext
-} from '../../../../../shared/task-source-context'
+} from '../../../../../shared/work-items/task-source-context'
 import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import type { CodeHubMrFileChange } from '../../../../../shared/codehub-mr-detail'
 import type { CodeHubComment, CodeHubTaskDetail } from '../../../../../shared/codehub-tasks'
-import type { PRCheckDetail } from '../../../../../shared/github/check-types'
+import type { PRCheckDetail } from '../../../../../shared/github/checks/check-types'
 
 /**
  * SWR cache for the CodeHub detail, modeled on

@@ -5,12 +5,12 @@ import { translate } from '@/i18n/i18n'
 import {
   isElementRevealedInScrollContainer,
   revealElementInScrollContainer
-} from '@/components/sidebar/worktree-sidebar-reveal'
-import { REVEAL_SCROLL_SETTLE_TIMEOUT_MS } from '@/components/sidebar/worktree-sidebar-reveal-scroll-settle'
+} from '@/components/sidebar/worktree-list/navigation/worktree-sidebar-reveal'
+import { REVEAL_SCROLL_SETTLE_TIMEOUT_MS } from '@/components/sidebar/worktree-list/navigation/worktree-sidebar-reveal-scroll-settle'
 import { useSidebarRevealHighlight } from '@/components/sidebar/worktree-list/navigation/use-reveal-highlight'
 import { MAX_REVEAL_RETRIES } from '@/components/sidebar/worktree-list/navigation/pending-reveal-inputs'
-import { getWorktreeLineageGroupKey } from '@/components/sidebar/worktree-list/grouping/group-keys'
-import { getWorktreeLineageAncestors } from '@/components/sidebar/worktree-lineage-projection'
+import { getWorktreeLineageGroupKey } from '../../../shared/sidebar-list/sections/group-keys'
+import { getWorktreeLineageAncestors } from '../../../shared/sidebar-list/lineage/worktree-lineage-projection'
 import { useAfterPinnedScroll } from '@/components/sidebar/worktree-list/viewport/after-pinned-scroll-context'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { WorktreeLineage } from '../../../shared/worktree/lineage-types'
@@ -119,12 +119,12 @@ export function useVersionTreeWorktreeReveal(args: VersionTreeWorktreeRevealArgs
 
     let cancelled = false
     const queryRow = (): HTMLElement | null =>
-      document.querySelector<HTMLElement>(
+      (scrollApiRef.current?.scrollRef.current ?? document).querySelector<HTMLElement>(
         `[data-workbench-version-section] [data-worktree-host-identity="${CSS.escape(request.worktreeIdentity)}"]`
       )
     const finish = (): void => {
       const rowKey = queryRow()?.dataset.worktreeRowKey
-      if (rowKey) {
+      if (rowKey && request.highlight) {
         flashRevealedRow(rowKey)
       }
       retryRef.current = null
@@ -165,7 +165,13 @@ export function useVersionTreeWorktreeReveal(args: VersionTreeWorktreeRevealArgs
           schedulePendingRevealFrame(verify)
           return
         }
-        revealElementInScrollContainer(container, row, 'auto', api?.markRevealScroll)
+        revealElementInScrollContainer(
+          container,
+          row,
+          'auto',
+          api?.markRevealScroll,
+          api?.scrollToReveal
+        )
         prevScrollTop = null
         schedulePendingRevealFrame(verify)
       }
@@ -179,7 +185,15 @@ export function useVersionTreeWorktreeReveal(args: VersionTreeWorktreeRevealArgs
       const api = scrollApiRef.current
       const container = api?.scrollRef.current ?? null
       if (row && container) {
-        if (revealElementInScrollContainer(container, row, 'smooth', api?.markRevealScroll)) {
+        if (
+          revealElementInScrollContainer(
+            container,
+            row,
+            'smooth',
+            api?.markRevealScroll,
+            api?.scrollToReveal
+          )
+        ) {
           verifyRevealLanded()
           return
         }

@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { resolve } from 'node:path'
-import { getLocalBuildIdentity } from './build-mac-local.mjs'
+import { getLocalBuildIdentity } from './desktop-distribution/macos/build-mac-local.mjs'
 
 // Local Workbench trial package: arm64 only (skips missing x64 native variants).
 const identity = getLocalBuildIdentity()

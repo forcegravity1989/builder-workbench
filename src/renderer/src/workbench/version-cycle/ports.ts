@@ -1,5 +1,5 @@
-import type { ExecutionHostId } from '../../../../shared/execution-host'
-import type { TaskSourceContext } from '../../../../shared/task-source-context'
+import type { ExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import type { TaskSourceContext } from '../../../../shared/work-items/task-source-context'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'

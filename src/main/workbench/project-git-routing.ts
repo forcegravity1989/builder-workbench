@@ -1,10 +1,8 @@
-import type { Project } from '../../shared/project-types'
-import type { Repo } from '../../shared/repo-types'
-import {
-  getLocalProjectWorktreeGitOptionsForRuntime,
-  resolveLocalProjectRuntimeForRepo
-} from '../project-runtime-git-options'
-import { parseWslPath } from '../wsl'
+import type { Project } from '../../shared/project/project-types'
+import type { Repo } from '../../shared/repository/repo-types'
+import { getLocalProjectWorktreeGitOptionsForRuntime } from '../workspaces/execution-host/project-runtime-git-options'
+import { resolveLocalProjectRuntimeForRepo } from '../workspaces/execution-host/local-project-runtime-resolution'
+import { parseWslPath } from '../wsl/filesystem/unc-path-access'
 import type { WorkbenchWorkspaceRepo } from './workspace-resolver'
 
 export type WorkbenchGitRoutingRuntime = {

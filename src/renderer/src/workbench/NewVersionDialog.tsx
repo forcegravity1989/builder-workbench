@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { Plus, LoaderCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import { track } from '@/lib/telemetry'
+import { track } from '@/diagnostics/telemetry/telemetry'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -18,7 +18,7 @@ import {
   versionFlowBranch,
   type VersionWorkspacePrepareResult
 } from '../../../shared/workbench/version-workspace-prepare'
-import { activateAndRevealWorktree } from '@/lib/worktree-activation'
+import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
 import { nativeVersionWorkspacePort } from './version-workspace-port'
 import { setBrowsedVersion } from './version-context-state'
 import { WORKFLOW_TREE_LABELS } from './version-labels'

@@ -4,11 +4,11 @@ import type { WorktreeMeta } from '../../shared/worktree/meta-types'
 import {
   fillDefaultWorktreeMetaFields,
   omitDefaultWorktreeMetaFields
-} from '../../shared/worktree/meta-persisted-defaults'
+} from '../../shared/worktree/metadata/meta-persisted-defaults'
 import { normalizeStoredWorkbenchVersionBinding } from '../../shared/workbench/version-binding'
-import type { TaskSourceContext } from '../../shared/task-source-context'
-import { mergeWorktreeMetaForWrite } from '../persistence/loading-store/worktree-meta-write-normalization'
-import { mergeWorktree } from '../ipc/worktree-metadata-merge'
+import type { TaskSourceContext } from '../../shared/work-items/task-source-context'
+import { mergeWorktreeMetaForWrite } from '../persistence/loading-store/worktree-metadata/worktree-meta-write-normalization'
+import { mergeWorktree } from '../ipc/worktrees/metadata/worktree-metadata-merge'
 import { nativeVersionBindingService, type VersionBindingRuntime } from './version-binding-service'
 
 /** 环 4 数据协议看护：绑定的 owner/实例校验与读回确认（G2 P1a，#383）。 */

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Check, ChevronDown, LoaderCircle } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { toast } from 'sonner'
 import type { CodeHubProjectMember } from '../../../../../shared/codehub-api'
-import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
+import type { CodeHubTaskRow } from '../../use-task-page-codehub-loading'
 
 /**
  * 任务列表行的负责人单元格。CLI `issue update --assignee` 是单值替换语义
@@ -18,7 +18,7 @@ export function CodeHubAssigneesCell({
   item,
   onChanged
 }: {
-  item: CodeHubTaskItem
+  item: CodeHubTaskRow
   onChanged: () => void
 }): React.JSX.Element {
   const [open, setOpen] = useState(false)
@@ -26,7 +26,7 @@ export function CodeHubAssigneesCell({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pendingUsername, setPendingUsername] = useState<string | null>(null)
-  const { host, project } = item
+  const { host, project, sourceContext } = item
   // 候选名单在 popover 打开时拉取（重开重拉），与详情页标签选择器一致。
   useEffect(() => {
     if (!open || !item.repoPath) {
@@ -35,7 +35,7 @@ export function CodeHubAssigneesCell({
     let stale = false
     setLoading(true)
     setError(null)
-    createTaskPageCodeHubApi(null, { host, project })
+    createTaskPageCodeHubApi(sourceContext, { host, project })
       .listMembers({ repoPath: item.repoPath, repoId: item.repoId })
       .then((list) => {
         if (!stale) {
@@ -56,7 +56,7 @@ export function CodeHubAssigneesCell({
     return () => {
       stale = true
     }
-  }, [open, item.repoPath, item.repoId, host, project])
+  }, [open, item.repoPath, item.repoId, host, project, sourceContext])
 
   const assign = useCallback(
     async (member: CodeHubProjectMember): Promise<void> => {
@@ -71,7 +71,7 @@ export function CodeHubAssigneesCell({
       }
       setPendingUsername(member.username)
       try {
-        await createTaskPageCodeHubApi(null, { host, project }).assignIssue({
+        await createTaskPageCodeHubApi(sourceContext, { host, project }).assignIssue({
           repoPath: item.repoPath,
           repoId: item.repoId,
           iid: item.iid,
@@ -94,6 +94,7 @@ export function CodeHubAssigneesCell({
       item.repoPath,
       host,
       project,
+      sourceContext,
       onChanged,
       pendingUsername
     ]

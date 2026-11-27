@@ -91,7 +91,7 @@ export function prepareEnvironment(root, { assistant, devProfile, machine = os.h
     machine,
     assistant: assistant ?? previous.assistant ?? 'unknown',
     network: previous.network ?? 'unknown',
-    maxConcurrentHeavyJobs: previous.maxConcurrentHeavyJobs ?? 1,
+    maxConcurrentHeavyJobs: previous.maxConcurrentHeavyJobs ?? null,
     memoryGiB: Math.round((os.totalmem() / 1024 ** 3) * 10) / 10,
     devProfile,
     projectRepo,
@@ -283,7 +283,12 @@ async function main() {
     console.log(
       '[verification] 启动原生 dev runner，沿用持久 workbench-dev profile；不是一次性 fixture，也不表示验证通过。'
     )
-    const result = run(root, path.join(root, 'config/scripts/run-electron-vite-dev.mjs'), [], env)
+    const result = run(
+      root,
+      path.join(root, 'config/scripts/development/launch/run-electron-vite-dev.mjs'),
+      ['--workbench'],
+      env
+    )
     process.exitCode = result.exitCode ?? 1
     return
   }

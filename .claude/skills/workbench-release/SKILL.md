@@ -40,6 +40,7 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
    ```
 
    workflow 在 GitHub runner 上出包并创建 Release：tag `v<version>` 指向主干 HEAD、标题 `Workbench <version>`、上传 `workbench-windows-setup.exe` / `.exe.blockmap` / `latest.yml` 三资产；版本号含 `-rc` 时自动标记 prerelease。**包内与 `latest.yml` 的版本就是输入的 `<version>`——tag / 清单 / 包内自报三处必须一致，应用内更新链靠这一个字符串比新旧（#338）**；版本格式非法或清单账本不一致时 workflow 拒绝发布。
+
 3. 监控运行（约 6-10 分钟）：
 
    ```bash
@@ -51,7 +52,7 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
 
 ### C. 兜底：本地出包与外携发布（仅当 GitHub Actions 不可用）
 
-1. 本地出包：`node config/scripts/build-win-workbench.mjs --version <version>`（注入产品版本号，与 workflow 同口径），核对三产物（`dist/workbench-windows-setup.exe`、`.exe.blockmap`、`dist/latest.yml`），汇报产物路径、大小、HEAD 和未验证项。**不创建标签或 Release**。
+1. 本地出包：`node config/scripts/build-win-workbench.mjs` 默认用仓内 [BW 发布基线](../../../config/workbench-release-baseline.json)加 `-local.<时间戳>.<构建提交>`。可用 `--version <version>` 或 `WORKBENCH_RELEASE_VERSION` 显式指定版本。核对三产物（`dist/workbench-windows-setup.exe`、`.exe.blockmap`、`dist/latest.yml`），汇报产物路径、大小、HEAD 和未验证项。**不创建标签或 Release**。
 2. 预演：`node config/scripts/release-win-workbench.mjs --version <version>`；授权后 `--publish --version <version> --notes-file release-notes.md`（rc 版自动 `--prerelease`）。脚本自带账本门禁：`latest.yml` 版本与发布版本不一致即阻断。
 3. 本机网络传不了大资产（公司代理限制上传体积）时，把三产物 + `release-notes.md` + 发布命令打成套件 zip，交不受限网络执行，发布后读回核对。
 
@@ -73,18 +74,18 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
 
 ## 6. error_handling
 
-| 现象 | 处理 |
-|---|---|
-| 出包脚本失败 | 保留首个真实错误，定位构建或依赖问题；不发布旧产物 |
-| 任一发布资产缺失 | 停止发布，重新出包并核对 `dist/` |
-| `latest.yml` 版本与发布版本不一致 | 账本门禁阻断（workflow 与本地脚本同口径）；用注入版本重新出包，不改 tag 迁就脏包，不手改清单 |
-| 标签或 Release 已存在 | 停止并报告现状，不覆盖、不删除 |
-| workflow 运行失败 | `gh run view <run-id> --log-failed` 定位首错；远端可能有半成品 Release，如实报告，不覆盖、不删除 |
-| `gh workflow run` 找不到 bw-release.yml | 该 workflow 须先合入目标分支，才能在该 ref 上触发 |
-| HEAD 不在远端 / `gh` 未登录 / 工作区脏 | 停止发布，说明需要的 push、登录或清理动作 |
-| `--publish` 未带 `--notes-file` | 脚本拒绝，不回退 `--generate-notes`；先按规范写正文 |
-| 正文不是【这版有什么变化】单节 / 是 PR 罗列 / 混入旅程编号·文件名·issue 号·六环矩阵 | 不合版本描述规范（非人话），退回重写，不发布 |
-| 验收报告事实无来源 | 留空标注 Unknown，不编造读数/编号/哈希；不预填达成 |
+| 现象                                                                                | 处理                                                                                             |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 出包脚本失败                                                                        | 保留首个真实错误，定位构建或依赖问题；不发布旧产物                                               |
+| 任一发布资产缺失                                                                    | 停止发布，重新出包并核对 `dist/`                                                                 |
+| `latest.yml` 版本与发布版本不一致                                                   | 账本门禁阻断（workflow 与本地脚本同口径）；用注入版本重新出包，不改 tag 迁就脏包，不手改清单     |
+| 标签或 Release 已存在                                                               | 停止并报告现状，不覆盖、不删除                                                                   |
+| workflow 运行失败                                                                   | `gh run view <run-id> --log-failed` 定位首错；远端可能有半成品 Release，如实报告，不覆盖、不删除 |
+| `gh workflow run` 找不到 bw-release.yml                                             | 该 workflow 须先合入目标分支，才能在该 ref 上触发                                                |
+| HEAD 不在远端 / `gh` 未登录 / 工作区脏                                              | 停止发布，说明需要的 push、登录或清理动作                                                        |
+| `--publish` 未带 `--notes-file`                                                     | 脚本拒绝，不回退 `--generate-notes`；先按规范写正文                                              |
+| 正文不是【这版有什么变化】单节 / 是 PR 罗列 / 混入旅程编号·文件名·issue 号·六环矩阵 | 不合版本描述规范（非人话），退回重写，不发布                                                     |
+| 验收报告事实无来源                                                                  | 留空标注 Unknown，不编造读数/编号/哈希；不预填达成                                               |
 
 ## 7. 示例
 
@@ -92,6 +93,6 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
 
 ## 8. 纪律表
 
-| 必须 | 禁止 | 越界信号 | 你不做的事 |
-|---|---|---|---|
+| 必须                                                                                                                                           | 禁止                                                                                                                                                             | 越界信号                                                 | 你不做的事                                                      |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------- |
 | 区分出包 / 发布 / 版本描述 / 验收报告；固定动作触发 bw-release.yml，不本地复刻；发布后读回；正文说人话、只有【这版有什么变化】一节、按功能组织 | 未授权触发发布 workflow 或打 tag；上传旧包；用 `--generate-notes`；把 issue/目标/用例扁平罗列当正文；把旅程编号·文件名·issue 号·六环矩阵等黑话写进正文；编造读数 | 需覆盖标签、删 Release、改官方 release-cut、无来源写成绩 | 不合并 PR、不关闭 Issue、不替用户决定版本号、不替人确认版本达成 |

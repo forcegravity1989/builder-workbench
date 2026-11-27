@@ -1,6 +1,6 @@
 import type { CycleTaskReference, CycleTaskSnapshot } from '../version-cycle/ports'
-import { normalizeGitRemoteUrl } from '../../../../shared/git-remote-identity'
-import { parseGitHubIssueOrPRLink } from '../../../../shared/github/links'
+import { normalizeGitRemoteUrl } from '../../../../shared/git/remotes/git-remote-identity'
+import { parseGitHubIssueOrPRLink } from '../../../../shared/github/repositories/links'
 import { normalizeCodeHubMergeRequestRoute } from '../../../../shared/codehub'
 
 export type FeaturePhase = 'design' | 'development'

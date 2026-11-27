@@ -7,14 +7,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { ReviewNotesSendMenuContent } from '@/components/editor/ReviewNotesSendMenuContent'
-import { preventAgentSendTargetOutsideDismiss } from '@/components/browser-pane/annotate/prevent-agent-send-target-outside-dismiss'
+import { ReviewNotesSendMenuContent } from '@/components/editor/review-note-delivery/ReviewNotesSendMenuContent'
+import { preventAgentSendTargetOutsideDismiss } from '@/components/browser-pane/annotate/delivery/prevent-agent-send-target-outside-dismiss'
 import { revealPlanChat } from './plan-column-resize'
-import { track } from '@/lib/telemetry'
+import { track } from '@/diagnostics/telemetry/telemetry'
 import type {
   BwAssistantRequestActionId,
   BwAssistantRequestScreen
-} from '../../../shared/telemetry-events'
+} from '../../../shared/workbench/telemetry-event-schemas'
 // Owns .g3-send-preview; imported here so the preview is styled on every board
 // that uses this menu, not only where board-ui happens to be loaded first.
 import './board-ui.css'

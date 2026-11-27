@@ -4,20 +4,23 @@ import type { VersionTreeDisplayInput } from './VersionNativeTrees'
 import { WorkbenchVersionNav } from './WorkbenchVersionNav'
 import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-list/viewport/virtual-rows'
 import { publishVersionSidebarProjection } from './version-sidebar-state'
-import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
-import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import {
+  isWorkbenchBotWorkspace,
+  resolveProjectSource,
+  workbenchSidebarProjectRepo
+} from './project-source-resolution'
+import { findRepoForHost } from '@/store/repos/repo-host-identity'
 import { useProjectPage } from './project-page-state'
-import { toRuntimeExecutionHostId } from '../../../shared/execution-host'
-import { parseWorkspaceKey } from '../../../shared/workspace-scope'
+import { toRuntimeExecutionHostId } from '../../../shared/execution-host/execution-host'
+import { parseWorkspaceKey } from '../../../shared/workspace/identity/workspace-scope'
 
 /**
  * Project identity stays beside the native toolbar, outside the tree scroller.
  */
 export function WorkbenchSidebarNav(): React.JSX.Element {
-  const projectName = useAppStore((s) => {
-    const active = s.activeRepoId ?? s.repos[0]?.id ?? null
-    return s.repos.find((repo) => repo.id === active)?.displayName?.trim() || null
-  })
+  const projectName = useAppStore(
+    (s) => workbenchSidebarProjectRepo(s)?.displayName?.trim() || null
+  )
 
   return (
     <div
@@ -47,10 +50,7 @@ export function WorkbenchSidebarNav(): React.JSX.Element {
  * Only the business directory is inserted between native Pinned and native project groups.
  */
 export function WorkbenchSidebarVersions({
-  visibleWorktrees,
-  filterOptions,
-  sortedIds,
-  sortNow
+  visibleWorktrees
 }: VersionTreeDisplayInput): React.JSX.Element {
   const page = useProjectPage()
   const versionRepo = useAppStore((s) => {
@@ -74,10 +74,14 @@ export function WorkbenchSidebarVersions({
         return resolveProjectSource(s, repo)
       }
     }
-    if (s.activeWorkspaceKey && parseWorkspaceKey(s.activeWorkspaceKey)?.type === 'folder') {
+    if (
+      s.activeWorkspaceKey &&
+      parseWorkspaceKey(s.activeWorkspaceKey)?.type === 'folder' &&
+      !isWorkbenchBotWorkspace(s.activeWorkspaceKey)
+    ) {
       return null
     }
-    const repo = currentProjectRepo(s)
+    const repo = workbenchSidebarProjectRepo(s)
     return repo && repo.kind !== 'folder' ? resolveProjectSource(s, repo) : null
   })
   const versionRepoId = versionRepo?.id ?? null
@@ -86,10 +90,7 @@ export function WorkbenchSidebarVersions({
       publishVersionSidebarProjection({ repoId: null, worktreeIdentities: new Set() })
     }
   }, [versionRepoId])
-  const display = useMemo(
-    () => ({ visibleWorktrees, filterOptions, sortedIds, sortNow }),
-    [visibleWorktrees, filterOptions, sortedIds, sortNow]
-  )
+  const display = useMemo(() => ({ visibleWorktrees }), [visibleWorktrees])
   return (
     <div
       className="flex min-w-0 flex-col pt-2"

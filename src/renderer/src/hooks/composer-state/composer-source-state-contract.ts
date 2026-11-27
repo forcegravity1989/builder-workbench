@@ -16,12 +16,13 @@ export type ComposerSourceState = {
     | 'uploadComposerPaths'
     | 'handleAddAttachment'
     | 'applyLocalComposerDrop'
+    | 'applyNativeDrop'
   >
   targetChangeActions: Pick<
     ComposerModel,
     'handleRepoChange' | 'handleFolderSourceRepoChange' | 'handleProjectHostSetupChange'
   >
-  projectTargetActions: Pick<ComposerModel, 'handleProjectChange'>
+  projectTargetActions: Pick<ComposerModel, 'handleProjectChange' | 'selectAddedProjectGroup'>
   branchStartPointActions: Pick<
     ComposerModel,
     | 'showProjectRequiredError'
@@ -47,9 +48,6 @@ export type ComposerSourceState = {
   >
   composerNavigationActions: Pick<
     ComposerModel,
-    | 'handleOpenAgentSettings'
-    | 'handleOpenJiraSettings'
-    | 'applyWorktreeMeta'
-    | 'folderCreateDisabled'
+    'handleOpenAgentSettings' | 'handleOpenJiraSettings' | 'folderCreateDisabled'
   >
 }

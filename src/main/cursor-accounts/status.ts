@@ -1,12 +1,10 @@
-import type { CursorAccountStatus } from '../../shared/rate-limit-types'
-import { readCursorAuthSession } from '../rate-limits/cursor-auth'
-import { cursorAuthProvenance } from '../rate-limits/cursor-usage-account-policy'
-import { isCursorSessionTokenExpired } from '../rate-limits/cursor-session-token'
+import type { CursorAccountStatus } from '../../shared/agent-usage/rate-limits/rate-limit-types'
+import { readCursorAuthSession } from '../rate-limits/providers/cursor/cursor-auth'
+import { isCursorSessionTokenExpired } from '../rate-limits/providers/cursor/cursor-session-token'
 
 function signedOut(error: string | null): CursorAccountStatus {
   return {
     signedIn: false,
-    authProvenance: null,
     email: null,
     displayName: null,
     credentialSource: null,
@@ -24,7 +22,6 @@ export async function getCursorAccountStatus(): Promise<CursorAccountStatus> {
   const session = readResult.session
   return {
     signedIn: true,
-    authProvenance: cursorAuthProvenance(readResult),
     email: session.email,
     displayName: session.displayName,
     credentialSource: session.source,

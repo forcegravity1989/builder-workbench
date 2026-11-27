@@ -55,23 +55,25 @@ function renderCss() {
 
 // ── main.css drift check ──────────────────────────────────────────────
 function declarations(css, selector) {
-  const m = new RegExp(`(?:^|\\n)${selector.replace('.', '\\.')}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(
-    css
+  const blocks = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(
+    (match) => match[1].split(',').some((part) => part.trim() === selector)
   )
-  if (!m) {
+  if (!blocks.length) {
     throw new Error(`main.css: no ${selector} block`)
   }
   const map = new Map()
-  for (const d of m[1].replace(/\/\*[\s\S]*?\*\//g, '').split(';')) {
-    const i = d.indexOf(':')
-    if (i > 0) {
-      map.set(
-        d.slice(0, i).trim().replace(/^--/, ''),
-        d
-          .slice(i + 1)
-          .trim()
-          .replace(/\s+/g, ' ')
-      )
+  for (const [, , body] of blocks) {
+    for (const declaration of body.split(';')) {
+      const i = declaration.indexOf(':')
+      if (i > 0) {
+        map.set(
+          declaration.slice(0, i).trim().replace(/^--/, ''),
+          declaration
+            .slice(i + 1)
+            .trim()
+            .replace(/\s+/g, ' ')
+        )
+      }
     }
   }
   return map
@@ -208,7 +210,8 @@ if (process.argv.includes('--write')) {
 }
 const errors = driftErrors()
 // Whitespace-insensitive: the commit hook reflows tokens.css with oxfmt.
-const squash = (text) => text.replace(/\s+/g, ' ').trim()
+const squash = (text) =>
+  text.replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').trim()
 if (
   !process.argv.includes('--write') &&
   (!fs.existsSync(CSS_OUT) || squash(fs.readFileSync(CSS_OUT, 'utf8')) !== squash(css))

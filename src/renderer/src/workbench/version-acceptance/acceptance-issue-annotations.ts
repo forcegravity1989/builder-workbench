@@ -1,5 +1,5 @@
 import { parseCodeHubRemote } from '../../../../shared/codehub'
-import { normalizeGitRemoteUrl } from '../../../../shared/git-remote-identity'
+import { normalizeGitRemoteUrl } from '../../../../shared/git/remotes/git-remote-identity'
 import type {
   AcceptanceIssueMarks,
   AcceptanceMaterial,

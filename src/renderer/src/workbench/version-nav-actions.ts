@@ -1,4 +1,4 @@
-import { toRuntimeExecutionHostId } from '../../../shared/execution-host'
+import { toRuntimeExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { notifyWorkbenchError } from './error-feedback'
 import { readVersionMembership } from './version-cycle/version-membership'
 import { toast } from 'sonner'

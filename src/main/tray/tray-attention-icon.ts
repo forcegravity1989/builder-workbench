@@ -1,33 +1,48 @@
 import { nativeImage, type NativeImage } from 'electron'
 
-// Why: amber-500 (#f59e0b) is Orca's "needs attention / unread" color, matching
-// the renderer launcher dot and the tab-unread bell. Kept in sync with the
-// bg-amber-500 used in FloatingTerminalToggleButton.
+// Match renderer attention/unread amber-500, including FloatingTerminalToggleButton.
 const DOT_RGB = { r: 0xf5, g: 0x9e, b: 0x0b }
 // A near-white halo separates the dot from the icon glyph on any tray theme.
 const RING_RGB = { r: 0xff, g: 0xff, b: 0xff }
 
-/**
- * Returns a copy of `base` with a small amber attention dot composited into the
- * top-right corner. Electron's NativeImage has no compositing API, so we merge
- * the dot directly into the raw BGRA bitmap. Returns `base` unchanged if it has
- * no pixels (e.g. a failed icon load) so the tray never shows a blank image.
- */
-export function composeTrayAttentionIcon(base: NativeImage, scaleFactor = 1): NativeImage {
-  const size = base.getSize()
-  const width = size.width * scaleFactor
-  const height = size.height * scaleFactor
+/** Non-template attention images need literal glyph pixels because macOS no longer tints them. */
+export function tintTrayTemplateForAttention(
+  base: NativeImage,
+  useLightGlyph: boolean,
+  scaleFactor = 1
+): NativeImage {
+  const { width, height } = base.getSize()
   if (width <= 0 || height <= 0) {
     return base
   }
 
-  // toBitmap()/createFromBitmap both use BGRA; the round-trip preserves format.
   const bitmap = Buffer.from(base.toBitmap({ scaleFactor }))
+  for (let offset = 0; offset < bitmap.length; offset += 4) {
+    // Premultiplied alpha uses coverage for light channels; 0xff would overbrighten antialiased edges.
+    const channel = useLightGlyph ? bitmap[offset + 3] : 0x00
+    bitmap[offset] = channel
+    bitmap[offset + 1] = channel
+    bitmap[offset + 2] = channel
+  }
+
+  return nativeImage.createFromBitmap(bitmap, {
+    width: width * scaleFactor,
+    height: height * scaleFactor
+  })
+}
+
+/** Composite BGRA directly because NativeImage has no layering API; preserve the base on empty input so tray creation never blanks it. */
+export function composeTrayAttentionIcon(base: NativeImage): NativeImage {
+  const { width, height } = base.getSize()
+  if (width <= 0 || height <= 0) {
+    return base
+  }
+
+  // Keep Electron's BGRA format through the bitmap round trip.
+  const bitmap = Buffer.from(base.toBitmap())
   const dotRadius = Math.max(2, Math.round(Math.min(width, height) * 0.2))
   const ringRadius = dotRadius + 1
-  // Hug the top-right corner so the dot reads as a badge and leaves the app
-  // glyph (bottom-left) visible. The dot stays fully on-canvas; the outer ring
-  // may clip a pixel at the very corner, which is expected for a corner badge.
+  // Top-right badge preserves the main bottom-left glyph; only the outer ring may clip a corner pixel.
   const centerX = width - 1 - dotRadius
   const centerY = dotRadius
   const dotRadiusSq = dotRadius * dotRadius

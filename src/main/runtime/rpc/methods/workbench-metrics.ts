@@ -7,12 +7,14 @@ import { metricReadingFailureCode } from '../../../workbench/metrics/collector-s
 export const WORKBENCH_METRICS_METHODS = [
   defineWorkbenchMethod({
     name: 'workbench.metrics.list',
+    permission: 'workspace',
     params: MetricScopeSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => nativeMetricsService(runtime).list(params))
   }),
   defineWorkbenchMethod({
     name: 'workbench.metrics.read',
+    permission: 'workspace',
     params: MetricReadRequestSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => nativeMetricsService(runtime).read(params))
@@ -20,6 +22,7 @@ export const WORKBENCH_METRICS_METHODS = [
   defineWorkbenchMethod(
     {
       name: 'workbench.metrics.refresh',
+      permission: 'workspace',
       params: MetricReadRequestSchema,
       handler: (params, { runtime }) =>
         workbenchRuntimeResult(() => nativeMetricsService(runtime).refresh(params))

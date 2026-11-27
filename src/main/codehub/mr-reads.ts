@@ -4,7 +4,7 @@ import {
   mapCodeHubMrChanges,
   type CodeHubMrFileChange
 } from '../../shared/codehub-mr-detail'
-import type { PRCheckDetail } from '../../shared/github/check-types'
+import type { PRCheckDetail } from '../../shared/github/checks/check-types'
 import { parseJson, projectArgs } from './mutations'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 

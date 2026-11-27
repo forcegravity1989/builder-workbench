@@ -30,6 +30,9 @@ test.describe('BW first-run project handoff', () => {
     const addFirstProject = onboarding.locator('footer').getByRole('button', {
       name: /^(Add your first project|添加第一个项目)/
     })
+    await expect(title).toHaveText(/How do you want to work with agents|如何.*智能体/)
+    await onboarding.getByRole('radio', { name: /Terminal|终端/ }).click()
+    await next.click()
     await expect(title).toHaveText(/Pick your default agent|选择默认智能体/)
     for (let step = 0; step < 4 && !(await addFirstProject.isVisible()); step++) {
       const previousTitle = await title.innerText()

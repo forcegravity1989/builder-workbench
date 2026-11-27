@@ -2,7 +2,7 @@ import { mkdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { z } from 'zod'
 import { getCanonicalUserDataPath } from '../persistence/loading-store/user-data-path'
-import { writePluginFileAtomically } from '../plugins/plugin-atomic-file-write'
+import { writePluginFileAtomically } from '../plugins/installation/plugin-atomic-file-write'
 import {
   PrototypeReviewAnnotationSchema,
   type PrototypeReviewAnnotation
@@ -30,7 +30,9 @@ const annotationsPath = () =>
 function loadAnnotations(): Promise<void> {
   loading ??= (async () => {
     try {
-      const stored = AnnotationListSchema.parse(JSON.parse(await readFile(annotationsPath(), 'utf8')))
+      const stored = AnnotationListSchema.parse(
+        JSON.parse(await readFile(annotationsPath(), 'utf8'))
+      )
       for (const annotation of stored) {
         const key = keyOf(annotation.documentKey)
         annotations.set(key, [...(annotations.get(key) ?? []), annotation])

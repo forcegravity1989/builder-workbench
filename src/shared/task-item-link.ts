@@ -1,9 +1,9 @@
 import { isCodeHubHost, isCodeHubGitRemote, parseCodeHubRemote } from './codehub'
-import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from './execution-host'
-import { parseGitHubIssueOrPRLink } from './github/links'
-import { githubRepoIdentityKey } from './github/repository-identity-key'
-import { getProjectProviderIdentity, parseGitHubRemoteUrl } from './project-host-setup-projection'
-import type { Repo } from './repo-types'
+import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from './execution-host/execution-host'
+import { parseGitHubIssueOrPRLink } from './github/repositories/links'
+import { githubRepoIdentityKey } from './github/repositories/repository-identity-key'
+import { getProjectProviderIdentity, parseGitHubRemoteUrl } from './project/host-setup/project-host-setup-projection'
+import type { Repo } from './repository/repo-types'
 
 export type TaskItemLink = {
   provider: 'github' | 'codehub'

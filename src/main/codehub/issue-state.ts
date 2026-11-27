@@ -1,4 +1,4 @@
-import type { GitHubIssueCloseReason } from '../../shared/issue-mutation-types'
+import type { GitHubIssueCloseReason } from '../../shared/work-items/issue-mutation-types'
 import { codeHubIssueCloseComment } from '../../shared/codehub'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 

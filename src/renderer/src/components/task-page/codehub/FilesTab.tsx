@@ -10,8 +10,8 @@ import { PRFilesCombinedDiffBody } from '@/components/github-item-dialog/inspect
 import { getCombinedDiffBranchEntriesInTreeOrder } from '@/components/editor/combined-diff/browse-files/combined-diff-file-tree-filter'
 import { useCombinedDiffSectionIndexMap } from '@/components/editor/combined-diff/resolve-changes/use-combined-diff-section-index-map'
 import { handleCombinedDiffFileTreeNavigation } from '@/components/editor/combined-diff/browse-files/combined-diff-file-tree-navigation'
-import { getDiffSectionRowEstimatedHeight } from '@/components/editor/diff-section-layout'
-import type { DiffSection } from '@/components/editor/diff-section-types'
+import { getDiffSectionRowEstimatedHeight } from '@/components/editor/diff/sections/diff-section-layout'
+import type { DiffSection } from '@/components/editor/diff/sections/diff-section-types'
 import type { CombinedDiffFileTreeEntry } from '@/components/editor/combined-diff/resolve-changes/combined-diff-section-identity'
 import type { DecoratedDiffComment } from '@/components/diff-comments/decorated-diff-comment'
 import { formatRelativeTime } from '@/components/github/work-item-state-presentation'
@@ -22,7 +22,7 @@ import {
 } from '@/components/github/pr-file-diff-mapping'
 import { parseCodeHubPatch } from '../../../../../shared/codehub-mr-detail'
 import type { CodeHubMrFileChange } from '../../../../../shared/codehub-mr-detail'
-import type { GitBranchChangeEntry } from '../../../../../shared/git-diff-compare-types'
+import type { GitBranchChangeEntry } from '../../../../../shared/git/diff/git-diff-compare-types'
 import type { CodeHubDetailState } from './use-codehub-detail'
 
 const EMPTY_VIEWED_KEYS: Set<string> = new Set<string>()
@@ -311,7 +311,6 @@ function CodeHubFilesSections({
       virtualizer={virtualizer}
       sections={sections}
       isDark={isDark}
-      settings={settings}
       sectionHeights={sectionHeights}
       inlineReviewComments={inlineReviewComments}
       loadSection={noOp}

@@ -1,6 +1,6 @@
-import { commandExecFileAsync } from '../git/command-runner/command-exec-file'
-import { extractExecError, isMissingCommandBinaryError } from '../git/exec-error'
-import { withCodeHubSpan } from '../observability/instrumentation'
+import { commandExecFileAsync } from '../git/command-runner/process-capture/command-exec-file'
+import { extractExecError, isMissingCommandBinaryError } from '../git/command-runner/process-capture/exec-error'
+import { withCodeHubSpan } from './exec-observability'
 
 export type CodeHubExecOptions = { cwd?: string; wslDistro?: string; stdin?: string }
 

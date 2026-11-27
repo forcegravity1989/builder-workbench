@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { normalizeExecutionHostId, type ExecutionHostId } from '../execution-host'
+import { normalizeExecutionHostId, type ExecutionHostId } from '../execution-host/execution-host'
 import { Id, MaterialVersion, VersionTaskReferenceSchema } from './version-material-common'
 import {
   type ParsedTaskQuery,
@@ -7,7 +7,7 @@ import {
   tokenizeSearchQuery,
   tokenizeSearchQueryWithRaw,
   withQualifier
-} from '../task-query'
+} from '../work-items/task-query'
 
 /** Goal projection owns @me; native optimistic membership must not substitute the local viewer. */
 export function workbenchGoalMutationQuery(
@@ -17,7 +17,9 @@ export function workbenchGoalMutationQuery(
   return goalScoped
     ? {
         ...query,
-        author: query.author?.toLowerCase() === '@me' ? null : query.author,
+        authors: query.authors.some((author) => author.toLowerCase() === '@me')
+          ? []
+          : query.authors,
         assignee: query.assignee?.toLowerCase() === '@me' ? null : query.assignee
       }
     : query
@@ -124,7 +126,10 @@ export function matchesWorkbenchTaskQuery(
     const target = login.toLowerCase() === '@me' ? viewerLogin : login.replace(/^@/, '')
     return !!target && values.some((value) => value.toLowerCase() === target.toLowerCase())
   }
-  if (!loginMatches(query.author, item.author ? [item.author] : [])) {
+  if (
+    query.authors.length > 0 &&
+    !query.authors.some((author) => loginMatches(author, item.author ? [item.author] : []))
+  ) {
     return false
   }
   if (!loginMatches(query.assignee, item.assignees)) {

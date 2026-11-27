@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
-import type { CursorAuthReadResult, CursorAuthSession } from './cursor-auth'
-import type { ProviderRateLimits } from '../../shared/rate-limit-types'
+import type { CursorAuthReadResult, CursorAuthSession } from './providers/cursor/cursor-auth'
+import type { ProviderRateLimits } from '../../shared/agent-usage/rate-limits/rate-limit-types'
 
 /** A failed credential read cannot prove that the previous account is still selected. */
 export function previousCursorUsageForAccount(

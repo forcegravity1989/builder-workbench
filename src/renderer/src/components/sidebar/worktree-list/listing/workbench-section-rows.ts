@@ -1,10 +1,12 @@
-import type { Repo } from '../../../../../../shared/repo-types'
-import type { ProjectGroup } from '../../../../../../shared/project-group-types'
-import type { HostSectionRow } from '../../host-section-rows'
-import { PINNED_GROUP_KEY } from '../grouping/group-keys'
-import { getProjectHeaderRevealTarget } from '../grouping/project-grouping'
-import type { ProjectGroupingModel } from '../grouping/project-grouping'
-import type { Row, WorktreeGroupBy } from '../grouping/row-types'
+import type { Repo } from '../../../../../../shared/repository/repo-types'
+import type { ProjectGroup } from '../../../../../../shared/project/groups/project-group-types'
+import type { HostSectionRow } from '../../../../../../shared/sidebar-list/hosts/host-section-rows'
+import { PINNED_GROUP_KEY } from '../../../../../../shared/sidebar-list/sections/group-keys'
+import {
+  getProjectHeaderRevealTarget,
+  type ProjectGroupingModel
+} from '../../../../../../shared/sidebar-list/sections/project-section-grouping'
+import type { Row, WorktreeGroupBy } from '../../../../../../shared/sidebar-list/row-types'
 
 /** Reposition complete native sections without changing saved project or worktree order. */
 export function buildWorkbenchSectionRows({

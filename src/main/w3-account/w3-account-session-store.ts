@@ -4,6 +4,10 @@
 // The registry is injected so this module stays free of electron imports.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import type {
+  BrowserSessionProfile,
+  BrowserSessionProfileCreateOptions
+} from '../../shared/browser/workspaces/browser-workspace-types'
 
 const FILE_NAME = 'w3-account-session.json'
 const SCHEMA_VERSION = 1
@@ -19,7 +23,8 @@ export type W3SessionRegistry = {
   createProfile(
     scope: 'isolated' | 'imported',
     label: string,
-    options?: { internal?: boolean }
+    owner?: BrowserSessionProfile['owner'],
+    options?: BrowserSessionProfileCreateOptions
   ): Promise<{ id: string; partition: string } | null>
 }
 
@@ -77,7 +82,9 @@ export async function ensureW3SessionProfile(args: {
       return { profileId: existing.id, partition: existing.partition }
     }
   }
-  const created = await args.registry.createProfile('isolated', 'W3 Account', { internal: true })
+  const created = await args.registry.createProfile('isolated', 'W3 Account', undefined, {
+    internal: true
+  })
   if (!created) {
     throw new Error('w3_session_profile_unavailable')
   }
