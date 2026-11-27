@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
-import { mapWithConcurrency } from '../../shared/map-with-concurrency'
-import { gitExecFileAsync } from '../git/runner'
-import { readGitBlobAtOidPath } from '../git/source-control/git-blob-read'
+import { mapWithConcurrency } from '../../shared/concurrency/map-with-concurrency'
+import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
+import { readGitBlobAtOidPath } from '../git/source-control/diffs/git-blob-read'
 import {
   PlanningMaterialSchema,
   type PlanningMaterial

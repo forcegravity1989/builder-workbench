@@ -1,8 +1,8 @@
 import { z } from 'zod'
-import { getRepoExecutionHostId, normalizeExecutionHostId } from '../execution-host'
-import type { Repo } from '../repo-types'
-import type { ProjectGroup } from '../project-group-types'
-import { getProjectGroupSubtreeIds } from '../project-groups'
+import { getRepoExecutionHostId, normalizeExecutionHostId } from '../execution-host/execution-host'
+import type { Repo } from '../repository/repo-types'
+import type { ProjectGroup } from '../project/groups/project-group-types'
+import { getProjectGroupSubtreeIds } from '../project/groups/project-groups'
 import { requiredString } from '../rpc-contract/rpc-param-primitives'
 
 export const WorkbenchRepoRemoval = z.object({
@@ -20,6 +20,9 @@ export const WorkbenchRepoRemoval = z.object({
 })
 
 export type ConfirmedRepoRegistration = z.output<typeof WorkbenchRepoRemoval>
+export const WorkbenchGuardedRepoRemoval = WorkbenchRepoRemoval.omit({ hostId: true })
+export const RepoRegistrationSnapshotSchema = WorkbenchGuardedRepoRemoval.omit({ repoId: true })
+export type RepoRegistrationSnapshot = z.output<typeof RepoRegistrationSnapshotSchema>
 
 export const WorkbenchGroupRemoval = z.object({
   groupId: requiredString('Missing project group ID'),

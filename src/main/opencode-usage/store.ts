@@ -1,4 +1,4 @@
-import { app } from 'electron'
+import { codexOpenCodeTokenDays } from '../usage/reporting/token-usage/agent-token-usage'
 import { join } from 'node:path'
 import type {
   OpenCodeUsageBreakdownKind,
@@ -9,8 +9,8 @@ import type {
   OpenCodeUsageSessionRow,
   OpenCodeUsageSnapshot,
   OpenCodeUsageSummary
-} from '../../shared/opencode-usage-types'
-import type { Store } from '../persistence'
+} from '../../shared/agent-usage/analytics/opencode-usage-types'
+import type { UsageStoreHost } from '../usage/usage-store-host'
 import type {
   OpenCodeUsageDailyAggregate,
   OpenCodeUsagePersistedState,
@@ -28,36 +28,28 @@ import {
   buildOpenCodeUsageRecentSessions,
   buildOpenCodeUsageSummary
 } from './snapshot-rollups'
-import { UsageProviderStoreLifecycle } from '../usage/usage-provider-store-lifecycle'
-
-let _openCodeUsageFile: string | null = null
-
-export function initOpenCodeUsagePath(): void {
-  _openCodeUsageFile = join(app.getPath('userData'), 'orca-opencode-usage.json')
-}
-
-function getOpenCodeUsageFile(): string {
-  if (!_openCodeUsageFile) {
-    _openCodeUsageFile = join(app.getPath('userData'), 'orca-opencode-usage.json')
-  }
-  return _openCodeUsageFile
-}
+import { UsageProviderStoreLifecycle } from '../usage/provider-lifecycle/usage-provider-store-lifecycle'
+import { splitUsageCacheFileViaWorker } from '../usage/scan-worker/usage-scan-worker-spawn'
 
 export class OpenCodeUsageStore extends UsageProviderStoreLifecycle<
   'processedDatabases',
   OpenCodeUsagePersistedState,
   'hasAnyOpenCodeData'
 > {
-  constructor(store: Pick<Store, 'getRepos' | 'getAllWorktreeMeta'>) {
-    super(store, {
+  constructor(host: UsageStoreHost) {
+    super(host, {
+      tokenUsage: {
+        provider: 'opencode',
+        selectDays: (state) => codexOpenCodeTokenDays(state.dailyAggregates)
+      },
       logTag: '[opencode-usage]',
-      resolveCacheFile: getOpenCodeUsageFile,
+      resolveCacheFile: () => join(host.userDataPath, 'orca-opencode-usage.json'),
       createDefaultState: getDefaultState,
       normalizeState: normalizePersistedState,
       sourceKey: 'processedDatabases',
       dataPresenceKey: 'hasAnyOpenCodeData',
-      jsonIndent: 2,
-      scan: openCodeUsageProvider.scan
+      scan: openCodeUsageProvider.scan,
+      splitCacheFile: splitUsageCacheFileViaWorker
     })
   }
 

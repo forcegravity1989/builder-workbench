@@ -1,6 +1,6 @@
-import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
-import { taskPageWorkItemKey } from '@/components/task-page-work-item-signatures'
-import { withQualifier } from '../../../shared/task-query'
+import type { GitHubWorkItem } from '../../../shared/github/work-items/work-item-types'
+import { taskPageWorkItemKey } from '@/components/task-page/task-page-work-item-signatures'
+import { withQualifier } from '../../../shared/work-items/task-query'
 import {
   matchesWorkbenchTaskQuery,
   hasUnsupportedWorkbenchTaskSearch,
@@ -69,7 +69,11 @@ export function buildCodeHubGoalQuery(model: {
     'state',
     model.codehubState === 'opened' ? 'open' : model.codehubState
   )
-  query = withQualifier(query, 'author', model.codehubAuthor.trim() || null)
+  query = withQualifier(
+    query,
+    'authors',
+    model.codehubAuthor.trim() ? [model.codehubAuthor.trim()] : []
+  )
   query = withQualifier(query, 'assignee', model.codehubAssignee.trim() || null)
   return withQualifier(query, 'labels', model.codehubLabels.length > 0 ? model.codehubLabels : null)
 }

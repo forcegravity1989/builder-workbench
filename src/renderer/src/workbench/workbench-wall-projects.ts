@@ -1,18 +1,17 @@
-import type { ProjectGroup } from '../../../shared/project-group-types'
-import type { Repo } from '../../../shared/repo-types'
-import { stripCredentialsFromMessage } from '../../../shared/git-remote-error'
+import type { ProjectGroup } from '../../../shared/project/groups/project-group-types'
+import type { Repo } from '../../../shared/repository/repo-types'
+import { stripCredentialsFromMessage } from '../../../shared/git/remotes/git-remote-error'
 import {
   getRepoExecutionHostId,
   LOCAL_EXECUTION_HOST_ID,
   parseExecutionHostId
-} from '../../../shared/execution-host'
+} from '../../../shared/execution-host/execution-host'
 import {
   getProjectIdentityKey,
   isHostLocalProjectId
-} from '../../../shared/project-host-setup-projection'
+} from '../../../shared/project/host-setup/project-host-setup-projection'
 import { versionRepoIdentity } from '../../../shared/workbench/version-repo-identity'
 import { remoteUrlToWebHref, repoLinkLabel } from './wall-repo-links'
-import { getProjectGroupHostId } from '@/store/slices/project-group-owner-routing'
 
 export type WallRepoSlot = {
   /** 展示行(优先本机注册)的 repo id。 */
@@ -169,7 +168,7 @@ type UnionFind = {
 }
 
 const rowKey = (repo: Repo): string => `${rowHostId(repo)}::${repo.id}`
-const groupKey = (group: ProjectGroup): string => `${getProjectGroupHostId(group)}::${group.id}`
+const groupKey = (group: ProjectGroup): string => `${getRepoExecutionHostId(group)}::${group.id}`
 const rowGroupKey = (repo: Repo): string => `${rowHostId(repo)}::${repo.projectGroupId}`
 
 /** Shared-host visibility is only a wall filter, never an execution permission. */
@@ -295,8 +294,8 @@ export function buildWallProjects(
       .filter((g): g is ProjectGroup => Boolean(g))
       .sort(
         (a, b) =>
-          Number(getProjectGroupHostId(b) === 'local') -
-            Number(getProjectGroupHostId(a) === 'local') ||
+          Number(getRepoExecutionHostId(b) === 'local') -
+            Number(getRepoExecutionHostId(a) === 'local') ||
           a.tabOrder - b.tabOrder ||
           a.name.localeCompare(b.name)
       )

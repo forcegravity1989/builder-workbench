@@ -1,10 +1,11 @@
 import React from 'react'
 import { BookOpen, CalendarClock, LayoutDashboard, LayoutGrid, PackageCheck } from 'lucide-react'
 import { useAppStore } from '@/store'
-import { cn } from '@/lib/utils'
-import { SidebarSettingsHelpMenu } from '@/components/sidebar/SidebarSettingsHelpMenu'
-import { SshStatusSegment } from '@/components/status-bar/SshStatusSegment'
-import { SidebarTaskNavButton } from '@/components/sidebar/SidebarTaskNavButton'
+import { cn } from '@/lib/class-names'
+import { SidebarSettingsHelpMenu } from '@/components/sidebar/chrome/SidebarSettingsHelpMenu'
+import { SidebarTaskNavButton } from '@/components/sidebar/chrome/SidebarTaskNavButton'
+import { WORKBENCH_RAIL_WIDTH } from '@/components/app-rail/app-rail-layout'
+import { SshStatusSegment } from '@/components/status-bar/host-connections/SshStatusSegment'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { isWorkbenchShell } from './is-workbench-shell'
 import {
@@ -15,8 +16,6 @@ import {
   useProjectPage
 } from './project-page-state'
 import { useWorkbenchObjectContext } from './workbench-object-context'
-
-export const WORKBENCH_RAIL_WIDTH = 64
 
 type RailEntry = {
   id: string
@@ -120,7 +119,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
   return (
     <aside
       aria-label="Workbench 导航"
-      className="flex shrink-0 flex-col items-center border-r border-worktree-sidebar-border bg-worktree-sidebar py-2.5"
+      className="scrollbar-sleek flex min-h-0 flex-1 flex-col items-center overflow-y-auto border-r border-worktree-sidebar-border bg-worktree-sidebar py-2.5"
       style={{ width: WORKBENCH_RAIL_WIDTH }}
       data-workbench-rail
     >
@@ -142,7 +141,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
           <RailButton key={entry.id} entry={entry} />
         ))}
         <SidebarTaskNavButton
-          variant="rail"
+          variant="workbench-rail"
           active={activeView === 'tasks' && !taskScope?.version}
           onBeforeNavigate={closeProjectPage}
         />
@@ -153,7 +152,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
       <div className="flex-1" />
       <TooltipProvider delayDuration={400}>
         <div className="flex flex-col items-center gap-0.5 [&>div]:flex-col [&>div>button]:size-10 [&>div>button>svg]:size-4.5">
-          <SshStatusSegment compact iconOnly variant="rail" />
+          <SshStatusSegment variant="rail" />
           <SidebarSettingsHelpMenu />
         </div>
       </TooltipProvider>

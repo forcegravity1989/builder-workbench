@@ -8,9 +8,7 @@ export const KEYBINDING_DEFINITION_CORE_3: readonly KeybindingDefinition[] = [
     group: 'Browser',
     scope: 'browser',
     searchKeywords: ['shortcut', 'browser', 'reload', 'refresh'],
-    // F5 is a non-text function key, so the parser must allow bare bindings.
-    defaultBindings: platformBindings(['Mod+R', 'F5']),
-    allowBareKeybindings: true
+    defaultBindings: platformBindings(['Mod+R'])
   },
   {
     id: 'browser.hardReload',
@@ -35,6 +33,19 @@ export const KEYBINDING_DEFINITION_CORE_3: readonly KeybindingDefinition[] = [
     scope: 'browser',
     searchKeywords: ['shortcut', 'browser', 'grab', 'copy', 'element'],
     defaultBindings: platformBindings(['Mod+C'])
+  },
+  {
+    id: 'browser.annotateElement',
+    title: 'Annotate Page Element',
+    group: 'Browser',
+    scope: 'browser',
+    searchKeywords: ['shortcut', 'browser', 'annotate', 'comment', 'element'],
+    // Why: Ctrl+Shift+C is terminal copy on Linux/Windows, including web terminals in the page.
+    defaultBindings: {
+      darwin: ['Mod+Shift+C'],
+      linux: ['Alt+Shift+N'],
+      win32: ['Alt+Shift+N']
+    }
   },
   {
     id: 'editor.find',
@@ -83,6 +94,15 @@ export const KEYBINDING_DEFINITION_CORE_3: readonly KeybindingDefinition[] = [
     defaultBindings: platformBindings(['Alt+Z'])
   },
   {
+    id: 'editor.toggleChangesView',
+    title: 'Toggle Changes View',
+    group: 'Editors',
+    scope: 'editor',
+    searchKeywords: ['shortcut', 'editor', 'changes', 'diff', 'diff viewer', 'uncommitted', 'edit'],
+    // Why: unbound by default so it never collides with existing chords; users opt in via Settings.
+    defaultBindings: platformBindings([])
+  },
+  {
     id: 'editor.copyContext',
     title: 'Copy Context',
     group: 'Editors',
@@ -123,7 +143,7 @@ export const KEYBINDING_DEFINITION_CORE_3: readonly KeybindingDefinition[] = [
     title: 'Send Review Notes to Agent',
     group: 'Global',
     scope: 'global',
-    // Why: fires from the global capture handler even while the editor is focused, so Settings must warn on collisions with editor chords (e.g. Add Review Note) too, not just global ones.
+    // Global capture also fires in editors; include editor collisions such as Add Review Note in Settings warnings.
     conflictGroup: 'editor',
     searchKeywords: [
       'shortcut',
@@ -249,7 +269,7 @@ export const KEYBINDING_DEFINITION_CORE_3: readonly KeybindingDefinition[] = [
     group: 'Terminal Panes',
     scope: 'terminal',
     searchKeywords: ['shortcut', 'pane', 'clear'],
-    defaultBindings: platformBindings(['Mod+K'])
+    defaultBindings: platformBindings([])
   },
   {
     id: 'terminal.focusNextPane',
@@ -273,22 +293,6 @@ export const KEYBINDING_DEFINITION_CORE_3: readonly KeybindingDefinition[] = [
     group: 'Terminal Panes',
     scope: 'terminal',
     searchKeywords: ['shortcut', 'pane', 'split', 'equalize', 'resize', 'balance', 'size'],
-    defaultBindings: platformBindings([])
-  },
-  {
-    id: 'terminal.expandPane',
-    title: 'Expand / collapse pane',
-    group: 'Terminal Panes',
-    scope: 'terminal',
-    searchKeywords: ['shortcut', 'pane', 'expand', 'collapse'],
-    defaultBindings: platformBindings(['Mod+Shift+Enter'])
-  },
-  {
-    id: 'terminal.setTitle',
-    title: 'Set Title…',
-    group: 'Terminal Panes',
-    scope: 'terminal',
-    searchKeywords: ['shortcut', 'terminal', 'pane', 'set title', 'title', 'rename'],
     defaultBindings: platformBindings([])
   }
 ]

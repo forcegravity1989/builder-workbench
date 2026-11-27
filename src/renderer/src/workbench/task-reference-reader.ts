@@ -1,12 +1,14 @@
 import {
-  getRepoTaskSourceContext,
-  getTaskPageRepoSourceContext
-} from '@/components/task-page-source-context'
+  getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../shared/execution-host/execution-host'
+import { isWorkbenchShell } from './is-workbench-shell'
+import { getRepoTaskSourceContext } from './task-source-context'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
-import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
-import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
-import { getProjectProviderIdentity } from '../../../shared/project-host-setup-projection'
-import type { TaskSourceContext } from '../../../shared/task-source-context'
+import type { GitHubWorkItem } from '../../../shared/github/work-items/work-item-types'
+import { normalizeGitRemoteUrl } from '../../../shared/git/remotes/git-remote-identity'
+import { getProjectProviderIdentity } from '../../../shared/project/host-setup/project-host-setup-projection'
+import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'
 import { codeHubTaskItemFromDetail } from './codehub-task-item'
 import { createSnapshotCache } from './snapshot-cache'
 import type { TaskPortDeps } from './task-port'
@@ -85,16 +87,18 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
     const repo = resolveReferenceRepo(deps, home, reference)
     const context =
       repo && (reference.provider === 'github' || reference.provider === 'codehub')
-        ? getTaskPageRepoSourceContext(repo, reference.provider)
+        ? getRepoTaskSourceContext(repo, reference.provider)
         : null
     const issueSource =
       repo && reference.provider === 'github'
         ? gitHubIdentityForTaskReference(repo, reference.repository)
         : undefined
-    const source =
-      context?.localTaskAccount && issueSource
+    const source: TaskSourceContext | null =
+      context && issueSource && isWorkbenchShell()
         ? {
             ...context,
+            hostId: LOCAL_EXECUTION_HOST_ID,
+            localTaskAccount: true,
             taskRemoteCandidates: undefined,
             providerIdentity: { provider: 'github' as const, ...issueSource }
           }
@@ -107,6 +111,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
       repository,
       knownGitHubIssueSource(repo ?? undefined, repository),
       source?.providerIdentity,
+      reference.provider === 'github' ? source?.hostId : undefined,
       repo?.issueSourcePreference ?? 'auto',
       reference.number
     ])
@@ -121,7 +126,11 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
     }
     const source = getRepoTaskSourceContext(repo, value.kind) ?? value.source
     return value.kind === 'github'
-      ? { ...value, item: { ...value.item, repoId: repo.id }, source }
+      ? {
+          ...value,
+          item: { ...value.item, repoId: repo.id, repoHostId: getRepoExecutionHostId(repo) },
+          source
+        }
       : { ...value, item: { ...value.item, repoId: repo.id, repoPath: repo.path }, source }
   }
   function unavailable(reason: unknown): TaskReferenceValue {
@@ -171,7 +180,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
           }
           return {
             kind: 'github',
-            item: { ...item, repoId: repo.id },
+            item: { ...item, repoId: repo.id, repoHostId: getRepoExecutionHostId(repo) },
             source: getRepoTaskSourceContext(repo, 'github') ?? source,
             readAt: deps.now()
           }
@@ -259,7 +268,11 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
                   if (item && job.repo && job.source) {
                     job.finish({
                       kind: 'github',
-                      item: { ...item, repoId: job.repo.id },
+                      item: {
+                        ...item,
+                        repoId: job.repo.id,
+                        repoHostId: getRepoExecutionHostId(job.repo)
+                      },
                       source: getRepoTaskSourceContext(job.repo, 'github') ?? job.source,
                       readAt: deps.now()
                     })

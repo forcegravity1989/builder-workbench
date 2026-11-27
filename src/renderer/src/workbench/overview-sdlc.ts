@@ -1,6 +1,6 @@
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
-import { isGitHubBackedRepo } from '../../../shared/project-host-setup-projection'
+import { isGitHubBackedRepo } from '../../../shared/project/host-setup/project-host-setup-projection'
 
 export type SdlcProvider = 'github' | 'codehub'
 

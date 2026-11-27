@@ -1,8 +1,8 @@
 import {
   getAutomationAuthorityTarget,
   listAutomationsForTarget
-} from '@/components/automations/automation-host-client'
-import type { Automation } from '../../../shared/automations-types'
+} from '@/components/automations/hosts/automation-host-client'
+import type { Automation } from '../../../shared/automations/automation-definition'
 import type { Worktree } from '../../../shared/worktree/types'
 import { nativeWorkspaceScope } from './version-cycle/native-workspace'
 import { cycleAutomationCreationKey } from './version-cycle/ensure-cycle-automation'

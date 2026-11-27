@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { openWorkbenchGuide, type WorkbenchGuideId } from '../WorkbenchScreenGuide'
 import {
   getBwExploreCatalog,

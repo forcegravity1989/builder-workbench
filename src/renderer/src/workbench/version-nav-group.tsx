@@ -1,12 +1,9 @@
 import { goalOrdinal } from './version-labels'
 import React from 'react'
 import { FolderPlus, LoaderCircle, PackageCheck, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { Button } from '@/components/ui/button'
-import {
-  SIDEBAR_GROUP_FIXED_CHEVRON_CLASS,
-  SidebarGroupChevron
-} from '@/components/sidebar/ProjectHeaderActions'
+import { SidebarSectionFoldChevron } from '@/components/sidebar/sidebar-section-fold'
 import { WORKTREE_SECTION_HEADER_PADDING_LEFT } from '@/components/sidebar/worktree-list/rows/indentation'
 import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-list/viewport/virtual-rows'
 import type { Worktree } from '../../../shared/worktree/types'
@@ -148,8 +145,12 @@ export function VersionNavGroup({
               草稿
             </span>
           ) : null}
-          <span className={SIDEBAR_GROUP_FIXED_CHEVRON_CLASS} data-workbench-version-chevron="">
-            <SidebarGroupChevron expanded={expanded} />
+          <span
+            className="absolute top-1/2 right-1 -translate-y-1/2"
+            data-workbench-version-chevron=""
+            aria-hidden
+          >
+            <SidebarSectionFoldChevron collapsed={!expanded} />
           </span>
         </button>
         {!canInitialize || flowTreesComplete ? null : (

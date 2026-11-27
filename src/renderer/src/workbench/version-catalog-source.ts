@@ -1,14 +1,14 @@
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 import {
   getRepoExecutionHostId,
   getRepoSshConnectionId,
   parseExecutionHostId,
   type ExecutionHostId
-} from '../../../shared/execution-host'
+} from '../../../shared/execution-host/execution-host'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import { versionRepoIdentity } from '../../../shared/workbench/version-repo-identity'
-import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import { findRepoForHost } from '@/store/repos/repo-host-identity'
 import {
   worktreeHostMatchOptions,
   worktreeMatchesHost

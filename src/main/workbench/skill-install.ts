@@ -1,23 +1,22 @@
 import { randomUUID } from 'node:crypto'
 import type { z } from 'zod'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
-import { parseExecutionHostId } from '../../shared/execution-host'
-import { parseWslUncPath } from '../../shared/wsl-paths'
-import type { SkillInstallDestination } from '../../shared/skill-install-contract'
+import { parseExecutionHostId } from '../../shared/execution-host/execution-host'
+import { parseWslUncPath } from '../../shared/file-access/wsl-paths'
+import type { SkillInstallDestination } from '../../shared/skills/installation/skill-install-contract'
 import {
   SkillBundleInstallResultSchema,
   type SkillBundleInstallRequest
-} from '../../shared/skill-bundle-install-contract'
+} from '../../shared/skills/installation/skill-bundle-install-contract'
 import {
   SkillUploadBeginResultSchema,
   SKILL_UPLOAD_CHUNK_MAX_BYTES
-} from '../../shared/skill-upload-session-contract'
+} from '../../shared/skills/sharing/skill-upload-session-contract'
 import type { WorkbenchSkillPrepareRequest } from '../../shared/workbench/skill-assets'
 import {
   createWorkbenchWorkspaceResolver,
   nativeWorkbenchWorkspaceHost
 } from './workspace-resolver'
-import { getActiveMultiplexer } from '../ssh/ssh-target-registry'
 import bundle from '../../shared/workbench/skill-package.json'
 import improvementBundle from '../../shared/workbench/improvement-skill-package.json'
 
@@ -26,20 +25,17 @@ export async function prepareWorkbenchSkill(
   input: z.infer<typeof WorkbenchSkillPrepareRequest>,
   signal?: AbortSignal
 ): Promise<{ skillPath: string }> {
-  const resolved =
-    input.topic === 'improve-workbench'
-      ? undefined
-      : await createWorkbenchWorkspaceResolver(nativeWorkbenchWorkspaceHost(runtime)).resolve(input)
-  const archive = input.topic === 'improve-workbench' ? improvementBundle : bundle
-  const host = resolved ? parseExecutionHostId(resolved.target.hostId) : undefined
-  const ssh = host?.kind === 'ssh' ? getActiveMultiplexer(host.targetId) : null
-  if (host?.kind === 'ssh' && !ssh) {
-    throw new Error('工作树所属 SSH 宿主未连接')
+  const improvement = input.topic === 'improve-workbench'
+  const resolved = improvement
+    ? undefined
+    : await createWorkbenchWorkspaceResolver(nativeWorkbenchWorkspaceHost(runtime)).resolve(input)
+  if (resolved && parseExecutionHostId(resolved.target.hostId)?.kind !== 'local') {
+    throw new Error('请通过 Orca 共享主机连接项目所在电脑后准备流程 Skill')
   }
-  const projectRuntime =
-    ssh || input.topic === 'improve-workbench'
-      ? undefined
-      : runtime.resolveProjectRuntimeForWorktree(input.worktreeId)
+  const archive = improvement ? improvementBundle : bundle
+  const projectRuntime = improvement
+    ? undefined
+    : runtime.resolveProjectRuntimeForWorktree(input.worktreeId)
   if (projectRuntime?.status === 'repair-required') {
     throw new Error('请先修复项目执行环境，再准备流程 Skill')
   }
@@ -48,9 +44,7 @@ export async function prepareWorkbenchSkill(
       ? { scope: 'global', executionTarget: { kind: 'wsl', distro: projectRuntime.runtime.distro } }
       : { scope: 'global', executionTarget: { kind: 'host' } }
   const upload = SkillUploadBeginResultSchema.parse(
-    ssh
-      ? await ssh.request('skills.beginUpload', { package: archive.package })
-      : await runtime.beginSkillUpload({ package: archive.package })
+    await runtime.beginSkillUpload({ package: archive.package })
   )
   try {
     const bytes = Buffer.from(archive.archiveBase64, 'base64')
@@ -65,11 +59,9 @@ export async function prepareWorkbenchSkill(
         offset,
         bytesBase64: bytes.subarray(offset, offset + chunkBytes).toString('base64')
       }
-      await (ssh ? ssh.request('skills.uploadChunk', chunk) : runtime.appendSkillUploadChunk(chunk))
+      await runtime.appendSkillUploadChunk(chunk)
     }
-    await (ssh
-      ? ssh.request('skills.commitUpload', { uploadId: upload.uploadId })
-      : runtime.commitSkillUpload(upload.uploadId))
+    await runtime.commitSkillUpload(upload.uploadId)
     await resolved?.reauthorize()
     signal?.throwIfAborted()
     const request: SkillBundleInstallRequest = {
@@ -82,9 +74,7 @@ export async function prepareWorkbenchSkill(
       conflictDecisions: [{ skillId: input.topic, resolution: 'replace-unmodified' }]
     }
     const result = SkillBundleInstallResultSchema.parse(
-      ssh
-        ? await ssh.request('skills.installBundle', { request }, { signal, timeoutMs: 120_000 })
-        : await runtime.installSharedSkillBundleRequest(request, signal)
+      await runtime.installSharedSkillBundleRequest(request, signal)
     )
     const skill = result.skills.find((item) => item.skillId === input.topic)
     if (skill?.conflict) {
@@ -107,10 +97,6 @@ export async function prepareWorkbenchSkill(
         : skill.canonicalPath
     return { skillPath: `${skillRoot.replace(/\\/g, '/')}/SKILL.md` }
   } finally {
-    await (
-      ssh
-        ? ssh.request('skills.cancelUpload', { uploadId: upload.uploadId })
-        : runtime.cancelSkillUpload(upload.uploadId)
-    ).catch(() => undefined)
+    await runtime.cancelSkillUpload(upload.uploadId).catch(() => undefined)
   }
 }

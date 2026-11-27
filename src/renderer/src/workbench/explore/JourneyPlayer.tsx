@@ -9,7 +9,7 @@ import {
 import { MousePointer2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import './direction-walkthrough.css'
 
 export type JourneyStep = {

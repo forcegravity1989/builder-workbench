@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { TaskSourceContextSchema } from '../task-source-context-schema'
-import { normalizeExecutionHostId } from '../execution-host'
+import { TaskSourceContextSchema } from '../work-items/task-source-context-schema'
+import { normalizeExecutionHostId } from '../execution-host/execution-host'
 import { validatePlanningVersion } from './version-document'
 
 type MaterialSchemaFields = Record<string, z.ZodTypeAny>

@@ -21,11 +21,11 @@
   --secondary: #f5f5f5;
   --secondary-foreground: #171717;
   --muted: #f5f5f5;
-  --muted-foreground: #737373;
+  --muted-foreground: #696969;
   --accent: #f5f5f5;
   --accent-foreground: #171717;
   --destructive: #e40014;
-  --destructive-foreground: #fcf3f3;
+  --destructive-foreground: #ffffff;
   --border: #e5e5e5;
   --input: #e5e5e5;
   --ring: #a1a1a1;
@@ -48,9 +48,9 @@
   --agent-question-text: oklch(55.3% 0.195 38.402);
   --ai-action-accent: oklch(60.6% 0.25 292.717);
   --terminal-pane-locate: oklch(54.6% 0.245 262.881);
-  --status-success: #15803d;
-  --status-success-background: rgba(21, 128, 61, 0.1);
-  --status-success-border: rgba(21, 128, 61, 0.25);
+  --status-success: #147638;
+  --status-success-background: rgba(20, 118, 56, 0.1);
+  --status-success-border: rgba(20, 118, 56, 0.25);
   --workspace-status-done: #c7a594;
   --workspace-status-review: #16a34a;
   --workspace-status-progress: #d4a300;
@@ -65,10 +65,8 @@
   --git-decoration-renamed: #007acc;
   --git-decoration-untracked: #007100;
   --git-decoration-copied: #007acc;
-  --git-decoration-ignored: #8c8c8c;
-  --diff-added-ground: rgba(88, 124, 12, 0.13);
+  --git-decoration-ignored: #737373;
   --diff-added-gutter: rgba(88, 124, 12, 0.26);
-  --diff-removed-ground: rgba(173, 7, 7, 0.11);
   --diff-removed-gutter: rgba(173, 7, 7, 0.22);
   --git-graph-ref: #007acc;
   --git-graph-remote-ref: #b66dff;
@@ -81,8 +79,6 @@
   --annotation-highlight: #f59e0b;
   --markdown-search-match: #facc15;
   --markdown-search-match-active: #fb923c;
-  --tab-group-split-divider: #868690;
-  --tab-group-split-divider-strong: #71717a;
   --terminal-pane-title-on-dark-fg: rgba(255, 255, 255, 0.52);
   --terminal-pane-title-on-dark-input-fg: rgba(255, 255, 255, 0.7);
   --terminal-pane-title-on-dark-placeholder: rgba(255, 255, 255, 0.38);
@@ -108,7 +104,7 @@
   --orca-security-secondary: #f5f5f5;
   --orca-security-secondary-foreground: #171717;
   --orca-security-muted: #f5f5f5;
-  --orca-security-muted-foreground: #737373;
+  --orca-security-muted-foreground: #696969;
   --orca-security-accent: #f5f5f5;
   --orca-security-accent-foreground: #171717;
   --orca-security-border: #e5e5e5;
@@ -145,6 +141,123 @@
   --color-danger: var(--destructive);
   --color-danger-soft: var(--destructive-background);
   --color-danger-deep: var(--destructive);
+  --orca-security-floating-surface: rgba(255, 255, 255, 0.82);
+  --orca-security-dialog-surface: rgba(255, 255, 255, 0.96);
+  --chat-code-base: color-mix(
+    in srgb,
+    var(--chat-source-foreground) var(--chat-canvas-mix),
+    var(--chat-source-background)
+  );
+  --chat-inline-code-base: color-mix(
+    in srgb,
+    var(--chat-source-foreground) var(--chat-canvas-mix),
+    var(--chat-source-background)
+  );
+  --chat-composer-base: color-mix(
+    in srgb,
+    var(--chat-source-foreground) var(--chat-canvas-mix),
+    var(--chat-source-background)
+  );
+  --brand-mark: #ffffff;
+  --brand-mark-foreground: #0a0a0a;
+  --floating-surface: rgba(255, 255, 255, 0.82);
+  --dialog-surface: rgba(255, 255, 255, 0.96);
+  --agent-working: oklch(79.5% 0.184 86.047);
+  --unread: oklch(62.3% 0.214 259.815);
+  --unread-inverse: oklch(62.3% 0.214 259.815);
+  --split-divider: #868690;
+  --split-divider-hover: #71717a;
+  --status-warning: #ca8a04;
+  --status-warning-text: color-mix(in srgb, var(--status-warning) 70%, var(--foreground));
+  --jira-priority-high: #e40014;
+  --jira-priority-medium: #ca8a04;
+  --jira-priority-low: #0969da;
+  --status-warning-background: rgba(202, 138, 4, 0.1);
+  --status-warning-border: rgba(202, 138, 4, 0.25);
+  --status-warning-foreground: color-mix(in srgb, var(--status-warning) 70%, var(--foreground));
+  --callout-note: #0969da;
+  --callout-important: #8250df;
+  --diff-added: #587c0c;
+  --diff-removed: #ad0707;
+  --diff-added-background: rgba(88, 124, 12, 0.13);
+  --diff-added-emphasis: rgba(88, 124, 12, 0.15);
+  --diff-removed-background: rgba(173, 7, 7, 0.11);
+  --diff-removed-emphasis: rgba(173, 7, 7, 0.15);
+  --notice-accent: #f5f5f5;
+  --notice-accent-foreground: #171717;
+  --notice-edge: #e5e5e5;
+  --notice-input: #e5e5e5;
+  --notice-muted: #f5f5f5;
+  --notice-muted-foreground: #696969;
+  --notice-surface: #ffffff;
+  --notice-border: rgba(10, 10, 10, 0.2);
+  --notice-secondary: color-mix(in srgb, var(--foreground) 6%, var(--notice-surface));
+  --notice-description: rgba(10, 10, 10, 0.8);
+  --chat-source-background: #ffffff;
+  --chat-source-foreground: #0a0a0a;
+  --chat-source-muted-foreground: #696969;
+  --chat-canvas: color-mix(
+    in srgb,
+    var(--chat-source-foreground) var(--chat-canvas-mix),
+    var(--chat-source-background)
+  );
+  --chat-pane: color-mix(
+    in srgb,
+    var(--chat-source-foreground) var(--chat-canvas-mix),
+    var(--chat-source-background)
+  );
+  --chat-foreground: color-mix(
+    in srgb,
+    var(--chat-source-foreground) var(--chat-foreground-mix),
+    var(--chat-canvas)
+  );
+  --chat-foreground-strong: color-mix(
+    in srgb,
+    var(--chat-source-foreground) var(--chat-strong-mix),
+    var(--chat-canvas)
+  );
+  --chat-user-border: color-mix(
+    in srgb,
+    var(--chat-source-foreground) var(--chat-user-border-mix),
+    transparent
+  );
+  --chat-code-foreground: color-mix(in srgb, var(--chat-source-foreground) 85%, var(--chat-canvas));
+  --chat-code-border: rgba(10, 10, 10, 0.07);
+  --chat-inline-code-border: color-mix(
+    in srgb,
+    var(--chat-source-foreground) var(--chat-inline-code-border-mix),
+    transparent
+  );
+  --chat-composer-surface: color-mix(
+    in srgb,
+    var(--chat-source-foreground) var(--chat-composer-mix),
+    var(--chat-composer-base)
+  );
+  --chat-composer-border: color-mix(
+    in srgb,
+    var(--chat-source-foreground) var(--chat-composer-border-mix),
+    transparent
+  );
+  --question-card-border: color-mix(
+    in srgb,
+    var(--chat-source-foreground) var(--question-card-border-mix),
+    transparent
+  );
+  --question-option-border: color-mix(
+    in srgb,
+    var(--chat-source-foreground) var(--question-option-border-mix),
+    transparent
+  );
+  --chat-focus-ring: color-mix(in srgb, var(--chat-source-foreground) 50%, var(--chat-canvas));
+  --chat-warning: color-mix(in srgb, var(--status-warning) 70%, var(--chat-source-foreground));
+  --chat-unread: color-mix(in srgb, var(--callout-note) 70%, var(--chat-source-foreground));
+  --chat-diff-added: color-mix(in srgb, var(--diff-added) 70%, var(--chat-source-foreground));
+  --chat-diff-removed: color-mix(in srgb, var(--diff-removed) 70%, var(--chat-source-foreground));
+  --chat-link: color-mix(
+    in srgb,
+    var(--text-link, var(--callout-note)) 70%,
+    var(--chat-source-foreground)
+  );
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
   --shadow-floating: 0 10px 24px rgba(0, 0, 0, 0.18);
@@ -155,36 +268,37 @@
 [data-theme='dark'],
 .dark {
   --background: #0a0a0a;
-  --foreground: #fafafa;
+  --foreground: #f0f0f0;
   --card: #171717;
-  --card-foreground: #fafafa;
+  --card-foreground: #f0f0f0;
   --popover: #171717;
-  --popover-foreground: #fafafa;
+  --popover-foreground: #f0f0f0;
   --primary: #e5e5e5;
   --primary-foreground: #171717;
   --secondary: #262626;
-  --secondary-foreground: #fafafa;
+  --secondary-foreground: #f0f0f0;
   --muted: #262626;
-  --muted-foreground: #a1a1a1;
+  --muted-foreground: #acacac;
   --accent: #404040;
-  --accent-foreground: #fafafa;
+  --accent-foreground: #f0f0f0;
   --destructive: #ff6568;
-  --destructive-foreground: #df2225;
+  --destructive-foreground: #450a0a;
   --border: rgba(255, 255, 255, 0.07);
   --input: rgba(255, 255, 255, 0.15);
   --ring: #737373;
   --editor-surface: #1e1e1e;
   --sidebar: #171717;
-  --sidebar-foreground: #fafafa;
+  --sidebar-foreground: #f0f0f0;
   --sidebar-primary: #1447e6;
+  --sidebar-primary-foreground: #f0f0f0;
   --sidebar-accent: #262626;
-  --sidebar-accent-foreground: #fafafa;
+  --sidebar-accent-foreground: #f0f0f0;
   --sidebar-border: rgba(255, 255, 255, 0.07);
   --sidebar-ring: #525252;
   --worktree-sidebar: #2a2a2a;
-  --worktree-sidebar-foreground: #fafafa;
+  --worktree-sidebar-foreground: #f0f0f0;
   --worktree-sidebar-accent: #353535;
-  --worktree-sidebar-accent-foreground: #fafafa;
+  --worktree-sidebar-accent-foreground: #f0f0f0;
   --worktree-sidebar-border: rgba(255, 255, 255, 0.07);
   --worktree-sidebar-ring: #737373;
   --agent-question: oklch(70.5% 0.213 47.604);
@@ -200,30 +314,26 @@
   --git-decoration-renamed: #73c991;
   --git-decoration-untracked: #73c991;
   --git-decoration-copied: #73c991;
-  --git-decoration-ignored: #6e6e6e;
-  --diff-added-ground: rgba(129, 184, 139, 0.16);
+  --git-decoration-ignored: #808080;
   --diff-added-gutter: rgba(129, 184, 139, 0.3);
-  --diff-removed-ground: rgba(199, 78, 57, 0.18);
   --diff-removed-gutter: rgba(199, 78, 57, 0.32);
   --git-graph-ref: #3794ff;
   --git-graph-lane-3: #ce9178;
   --annotation-highlight: #fbbf24;
-  --tab-group-split-divider: #71717a;
-  --tab-group-split-divider-strong: #a1a1aa;
   --orca-security-background: #0a0a0a;
-  --orca-security-foreground: #fafafa;
+  --orca-security-foreground: #f0f0f0;
   --orca-security-card: #171717;
-  --orca-security-card-foreground: #fafafa;
+  --orca-security-card-foreground: #f0f0f0;
   --orca-security-popover: #171717;
-  --orca-security-popover-foreground: #fafafa;
+  --orca-security-popover-foreground: #f0f0f0;
   --orca-security-primary: #e5e5e5;
   --orca-security-primary-foreground: #171717;
   --orca-security-secondary: #262626;
-  --orca-security-secondary-foreground: #fafafa;
+  --orca-security-secondary-foreground: #f0f0f0;
   --orca-security-muted: #262626;
-  --orca-security-muted-foreground: #a1a1a1;
+  --orca-security-muted-foreground: #acacac;
   --orca-security-accent: #404040;
-  --orca-security-accent-foreground: #fafafa;
+  --orca-security-accent-foreground: #f0f0f0;
   --orca-security-border: rgba(255, 255, 255, 0.07);
   --orca-security-input: rgba(255, 255, 255, 0.15);
   --orca-security-ring: #737373;
@@ -257,6 +367,49 @@
   --color-danger: var(--destructive);
   --color-danger-soft: var(--destructive-background);
   --color-danger-deep: var(--destructive);
+  --orca-security-floating-surface: rgba(0, 0, 0, 0.72);
+  --orca-security-dialog-surface: rgba(23, 23, 23, 0.96);
+  --chat-code-base: transparent;
+  --chat-inline-code-base: transparent;
+  --chat-composer-base: transparent;
+  --floating-surface: rgba(0, 0, 0, 0.72);
+  --dialog-surface: rgba(23, 23, 23, 0.96);
+  --unread: oklch(70.7% 0.165 254.624);
+  --split-divider: #71717a;
+  --split-divider-hover: #a1a1aa;
+  --status-warning: #eab308;
+  --status-warning-text: #eab308;
+  --jira-priority-high: #ff6568;
+  --jira-priority-medium: #eab308;
+  --jira-priority-low: #4493f8;
+  --status-warning-background: rgba(234, 179, 8, 0.1);
+  --status-warning-border: rgba(234, 179, 8, 0.25);
+  --callout-note: #4493f8;
+  --callout-important: #ab7df8;
+  --diff-added: #81b88b;
+  --diff-removed: #c74e39;
+  --diff-added-background: rgba(129, 184, 139, 0.16);
+  --diff-added-emphasis: rgba(129, 184, 139, 0.2);
+  --diff-removed-background: rgba(199, 78, 57, 0.18);
+  --diff-removed-emphasis: rgba(199, 78, 57, 0.2);
+  --notice-accent: color-mix(in srgb, var(--foreground) 16%, var(--notice-surface));
+  --notice-accent-foreground: #f0f0f0;
+  --notice-edge: rgba(255, 255, 255, 0.07);
+  --notice-input: rgba(255, 255, 255, 0.15);
+  --notice-muted: color-mix(in srgb, var(--foreground) 10%, var(--notice-surface));
+  --notice-muted-foreground: color-mix(
+    in srgb,
+    var(--popover-foreground) 72%,
+    var(--notice-surface)
+  );
+  --notice-surface: color-mix(in srgb, var(--foreground) 15%, var(--popover));
+  --notice-border: rgba(240, 240, 240, 0.22);
+  --notice-secondary: color-mix(in srgb, var(--foreground) 10%, var(--notice-surface));
+  --notice-description: rgba(240, 240, 240, 0.8);
+  --chat-source-background: #0a0a0a;
+  --chat-source-foreground: #f0f0f0;
+  --chat-source-muted-foreground: #acacac;
+  --chat-code-border: rgba(240, 240, 240, 0.07);
   --shadow-menu: 0 16px 34px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   --shadow-dialog: 0 24px 72px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }

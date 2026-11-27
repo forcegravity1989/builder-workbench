@@ -1,8 +1,8 @@
-import { resolveDefaultBaseRefViaExec } from '../git/repo'
-import { resolveWorktreeCreateBase } from '../worktree-create-base'
+import { resolveDefaultBaseRefViaExec } from '../../shared/git/refs/git-default-base-ref'
+import { resolveWorktreeCreateBase } from '../workspaces/creation/worktree-create-base'
 import { WorkspaceScopeError } from './workspace-scope-error'
-import { resolveWorktreeAddBaseRef } from '../../shared/worktree/base-ref'
-import { hasCommitObjectViaGitExec } from '../git/commit-object-ref'
+import { resolveWorktreeAddBaseRef } from '../../shared/worktree/base-refs/base-ref'
+import { hasCommitObjectViaGitExec } from '../git/refs/resolution/commit-object-ref'
 
 export type FixedWorkspaceGit = {
   exec(args: string[]): Promise<{ stdout: string }>

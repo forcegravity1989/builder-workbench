@@ -1,10 +1,10 @@
-import type { DecisionGateRow, DispatchContextRow, GateStatus } from '../../types'
+import type { DecisionGateRow, DispatchContextRow, GateStatus } from '../orchestration-records'
 import { OrchestrationError } from '../../orchestration-error'
 import { generateId } from '../generated-id'
 import type { OrchestrationDb } from '../orchestration-db'
 import { transitionLifecycleWithDb } from '../lifecycle-transition'
-
-// ── Decision Gates ──
+import { DISPATCH_CONTEXT_COLUMN_LIST } from '../row-column-lists'
+import { remoteHoldOnTask } from '../remote-owned/remote-placements'
 
 export function createGate(
   this: OrchestrationDb,
@@ -27,13 +27,15 @@ export function createGate(
     }
     const runId = task.run_id
     this.requireRun(runId)
-    const active = this.db
+    const rawActive = this.db
       .prepare(
-        `SELECT * FROM dispatch_contexts
+        `SELECT ${DISPATCH_CONTEXT_COLUMN_LIST} FROM dispatch_contexts
          WHERE task_id = ? AND status IN ('pending', 'dispatched')
          ORDER BY rowid DESC LIMIT 1`
       )
-      .get(gate.taskId) as DispatchContextRow | undefined
+      .get(gate.taskId)
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: The schema-pinned complete Dispatch projection returns one Dispatch row or undefined; the adapter exposes unknown.
+    const active = rawActive as DispatchContextRow | undefined
     if (
       gate.requester &&
       (!active ||
@@ -51,7 +53,7 @@ export function createGate(
         { taskId: gate.taskId, dispatchId: active?.id }
       )
     }
-    const activeWorker = this.db
+    const localWorker = this.db
       .prepare(
         `SELECT active.id
          FROM dispatch_contexts active
@@ -61,6 +63,11 @@ export function createGate(
          ORDER BY active.rowid DESC LIMIT 1`
       )
       .get(gate.taskId) as { id: string } | undefined
+    // A worker a paired server runs for the Task holds it exactly as a local one does.
+    const remote = remoteHoldOnTask(this, gate.taskId)
+    const activeWorker =
+      localWorker ??
+      (remote?.liveWorker ? { id: remote.dispatchId ?? '(a start on a paired server)' } : undefined)
     if (activeWorker) {
       throw new OrchestrationError(
         'task_not_startable',
@@ -129,7 +136,7 @@ export function resolveGate(
 export function timeoutGate(this: OrchestrationDb, gateId: string): DecisionGateRow | undefined {
   this.db
     .prepare(
-      // Why: without the status guard a late timeout overwrites a gate the user already resolved.
+      // A late timeout must not overwrite an already resolved gate.
       "UPDATE decision_gates SET status = 'timeout', resolved_at = datetime('now') WHERE id = ? AND status = 'pending'"
     )
     .run(gateId)

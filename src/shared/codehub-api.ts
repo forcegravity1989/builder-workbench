@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { CodeHubRemote } from './codehub'
 import type { CodeHubMrFileChange } from './codehub-mr-detail'
-import type { PRCheckDetail } from './github/check-types'
+import type { PRCheckDetail } from './github/checks/check-types'
 import type {
   CodeHubComment,
   CodeHubPipeline,

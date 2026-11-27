@@ -7,7 +7,7 @@
 // The bridge only moves cookies: whether this counts as a login is decided
 // exclusively by the W3 account API afterwards (service-level invariant).
 
-import { normalizeCookieDomain } from '../browser/browser-cookie-import-policy'
+import { normalizeCookieDomain } from '../browser/cookies/policy/cookie-domain'
 import type { W3SessionSourceResult } from './w3-system-chrome-session-source'
 
 export type W3BridgeCookie = {

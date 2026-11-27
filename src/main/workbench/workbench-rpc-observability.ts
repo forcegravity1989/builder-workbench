@@ -27,8 +27,7 @@ export function defineWorkbenchMethod<
 ): RpcTypedMethod<TName, TSchema, Promise<Awaited<TResult>>> {
   const method = defineMethod(spec)
   return {
-    name: method.name,
-    params: method.params,
+    ...method,
     handler: (params, ctx) =>
       withSpan<Awaited<TResult>>(
         method.name,

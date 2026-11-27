@@ -118,7 +118,6 @@ if (process.stdin.isTTY) {
   process.stdin.setRawMode(true)
 }
 process.stdin.setEncoding('utf8')
-process.stdout.on('resize', render)
 process.stdin.on('data', (chunk) => {
   pendingInput += typeof chunk === 'string' ? chunk : chunk.toString()
   consumeInput()
@@ -132,5 +131,6 @@ for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
 process.stdout.write('\x1b[?1049h')
 if (codexDraftMode) {
   process.stdout.write('\x1b[?2004h')
+  process.stdout.on('resize', render)
 }
 render()

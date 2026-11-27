@@ -1,8 +1,12 @@
-import { normalizeExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
+import {
+  normalizeExecutionHostId,
+  parseExecutionHostId
+} from '../../../shared/execution-host/execution-host'
 import type { MetricScope } from '../../../shared/workbench/metrics'
 import type { VersionMaterialResult } from '../../../shared/workbench/version-material-request'
-import { routeForOwner } from '../lib/worktree-owner-route'
-import { callRuntimeRpc, type RuntimeClientTarget } from '../runtime/runtime-rpc-client'
+import { routeForOwner } from '../lib/workspace/ownership/worktree-owner-route'
+import { callRuntimeRpc } from '../runtime/rpc/calls/runtime-rpc-call'
+import type { RuntimeClientTarget } from '../../../shared/remote-runtime/host-catalog/runtime-client-target'
 
 export class MetricRuntimeError extends Error {
   constructor(

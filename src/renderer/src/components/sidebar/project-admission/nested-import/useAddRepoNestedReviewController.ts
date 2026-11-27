@@ -1,0 +1,80 @@
+import type { Dispatch, SetStateAction } from 'react'
+import type { AddRepoExistingWorkspaceSource } from '../../../../../../shared/telemetry/schemas/telemetry-property-schemas'
+import type { ProjectGroupImportResult } from '../../../../../../shared/project/groups/project-group-types'
+import type { WorktreeFetchOptions } from '@/store/slices/worktrees/listing/worktree-fetch-options'
+import { useAddRepoNestedImportFlow } from './useAddRepoNestedImportFlow'
+import { useAddRepoNestedReviewState } from './useAddRepoNestedReviewState'
+import type { AddRepoDialogStep } from '../dialog/add-repo-dialog-types'
+import type { ExecutionHostId } from '../../../../../../shared/execution-host/execution-host'
+
+export function useAddRepoNestedReviewController({
+  activeRuntimeEnvironmentId,
+  cancelNestedRepoScan,
+  closeModal,
+  projectWallModal,
+  fetchWorktrees,
+  importNestedRepos,
+  onGitRepoReady,
+  setIsAdding,
+  setStep,
+  reviewRuntimeEnvironmentId
+}: {
+  activeRuntimeEnvironmentId: string | null | undefined
+  reviewRuntimeEnvironmentId: string | null | undefined
+  cancelNestedRepoScan: (
+    scanId: string,
+    options: { runtimeEnvironmentId: string | null }
+  ) => Promise<unknown>
+  closeModal: () => void
+  projectWallModal?: Record<string, unknown>
+  fetchWorktrees: (repoId: string, options?: WorktreeFetchOptions) => Promise<unknown>
+  importNestedRepos: (args: {
+    parentPath: string
+    groupName: string
+    projectPaths: string[]
+    connectionId?: string
+    scanId?: string
+    runtimeEnvironmentId: string | null
+    mode: 'group' | 'separate'
+  }) => Promise<ProjectGroupImportResult | null>
+  onGitRepoReady: (
+    repoId: string,
+    source: AddRepoExistingWorkspaceSource,
+    executionHostId?: ExecutionHostId
+  ) => Promise<void>
+  setIsAdding: (isAdding: boolean) => void
+  setStep: Dispatch<SetStateAction<AddRepoDialogStep>>
+}): ReturnType<typeof useAddRepoNestedReviewState> &
+  Pick<
+    ReturnType<typeof useAddRepoNestedImportFlow>,
+    | 'handleImportNestedRepos'
+    | 'handleOpenNestedRootFolder'
+    | 'resetNestedImportFlow'
+    | 'trackNestedBackAction'
+  > {
+  const review = useAddRepoNestedReviewState({
+    activeRuntimeEnvironmentId: reviewRuntimeEnvironmentId,
+    cancelNestedRepoScan,
+    setStep
+  })
+  const imports = useAddRepoNestedImportFlow({
+    activeRuntimeEnvironmentId,
+    closeModal,
+    projectWallModal,
+    fetchWorktrees,
+    importNestedRepos,
+    onGitRepoReady,
+    setIsAdding,
+    nestedAttemptId: review.nestedAttemptId,
+    nestedScan: review.nestedScan,
+    nestedSelectedPaths: review.nestedSelectedPaths,
+    nestedRuntimeKind: review.nestedRuntimeKind,
+    nestedConnectionId: review.nestedConnectionId,
+    nestedGroupName: review.nestedGroupName,
+    nestedImportScanId: review.nestedImportScanId,
+    nestedRuntimeEnvironmentId: review.nestedRuntimeEnvironmentId,
+    getNestedRepoRuntimeKind: review.getNestedRepoRuntimeKind,
+    takeNestedProjectReporter: review.takeNestedProjectReporter
+  })
+  return { ...review, ...imports }
+}

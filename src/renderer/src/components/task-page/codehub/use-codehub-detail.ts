@@ -2,7 +2,7 @@ import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import type { CodeHubComment, CodeHubTaskDetail } from '../../../../../shared/codehub-tasks'
+import type { CodeHubComment, CodeHubTaskDetail, CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import {
   codehubDetailCache,
   ensureCodehubDetailFresh,
@@ -12,14 +12,20 @@ import {
   touchCodehubDetailCache
 } from './codehub-detail-cache'
 import { useCodeHubMrExtras } from './use-codehub-mr-extras'
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
+export type CodeHubDetailModel = {
+  codehubDetailItem: CodeHubTaskItem | null
+  setCodehubDetailItem: (item: CodeHubTaskItem | null) => void
+  handleUseCodeHubItem: (item: CodeHubTaskItem) => void
+  setCodehubRefreshNonce: (update: (nonce: number) => number) => void
+  pageData?: { openCodeHubSourceContext?: Parameters<typeof createTaskPageCodeHubApi>[0] }
+}
 
 /**
  * The CodeHub detail lives in taskPageData (not local state) so external opens —
  * deep links and other screens — replay through the shared nav
  * history like every other provider's detail entry.
  */
-export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
+export function useCodeHubDetail(model: CodeHubDetailModel) {
   const { codehubDetailItem, setCodehubDetailItem, handleUseCodeHubItem, setCodehubRefreshNonce } =
     model
   const item = codehubDetailItem

@@ -1,7 +1,7 @@
 // Apply BW consent before initializing the native pipeline; inject the destination
 // here so telemetry does not depend on workbench modules.
 
-import type { Store } from '../../persistence'
+import type { Store } from '../../persistence/loading-store/store'
 import { setWorkbenchTelemetryTransport } from '../../telemetry/client'
 import { shutdownTelemetryTransport, transportFetch } from './welink-telemetry-sink'
 

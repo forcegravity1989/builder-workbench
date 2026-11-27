@@ -1,4 +1,4 @@
-import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi, getCodeHubRepoSourceContext } from '@/lib/codehub-api'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
@@ -13,8 +13,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { LoaderCircle } from 'lucide-react'
-import type { Repo } from '../../../../../shared/repo-types'
-import { getTaskPageRepoSourceContext } from '../../task-page-source-context'
+import type { Repo } from '../../../../../shared/repository/repo-types'
 
 export function CodeHubCreateIssueDialog({
   repo: codehubRepo,
@@ -49,7 +48,7 @@ export function CodeHubCreateIssueDialog({
               return
             }
             setCreating(true)
-            void createTaskPageCodeHubApi(getTaskPageRepoSourceContext(codehubRepo, 'codehub'))
+            void createTaskPageCodeHubApi(getCodeHubRepoSourceContext(codehubRepo))
               .createIssue({
                 repoPath: codehubRepo.path,
                 repoId: codehubRepo.id,

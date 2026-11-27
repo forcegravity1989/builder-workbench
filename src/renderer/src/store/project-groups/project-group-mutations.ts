@@ -1,30 +1,41 @@
+import { initializeNewRootProjectGroupOrder } from './project-group-update-persistence'
 import type { StateCreator } from 'zustand'
 import type { AppState } from '../types'
-import type { ProjectGroup } from '../../../../shared/project-group-types'
-import type { Repo } from '../../../../shared/repo-types'
+import type { ProjectGroup } from '../../../../shared/project/groups/project-group-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
+import { selectProjectGroupRemovalTargets } from './project-group-removal-targets'
 import {
-  projectGroupRemovalKeys,
-  selectProjectGroupRemovalTargets
-} from '../slices/project-group-removal-targets'
-import {
-  getProjectGroupHostId,
+  isProjectGroupJoinableFromCatalog,
   projectGroupMatchesOwnerHost,
   resolveProjectGroupOwnerHostId,
-  settingsForProjectGroupOwner
-} from '../slices/project-group-owner-routing'
-import { findRepoForHost, repoMatchesHostIdentity } from '../slices/repo-host-identity'
-import { callRuntimeRpc, getActiveRuntimeTarget } from '../../runtime/runtime-rpc-client'
-import { getRepoExecutionHostId, parseExecutionHostId } from '../../../../shared/execution-host'
-import { WORKBENCH_REPO_REMOVAL_RUNTIME_CAPABILITY } from '../../../../shared/protocol-version'
-import { getRuntimeEnvironmentRevision } from '../../runtime/runtime-environment-revision'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { translate } from '@/i18n/i18n'
-import { repoMatchesRemovalRegistration } from '../repos/repo-removal-registration'
+  runtimeTargetForProjectGroupOwner
+} from './project-group-owner-routing'
+import {
+  findRepoForHost,
+  isSameRepoRow,
+  repoMatchesHostIdentity
+} from '../repos/repo-host-identity'
+import { callRuntimeRpc } from '../../runtime/rpc/calls/runtime-rpc-call'
+import { ipcOrRuntimeTargetForHostId } from '../../runtime/rpc/targets/runtime-client-target'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host/execution-host'
 import type { ProjectRemovalFailure, RepoSlice } from '../repos/repo-state'
 import { mergeProjectCompatibilityForHostRepoChange } from '../repos/repo-catalog-identity'
 import { applyProjectGroupDeleteCascade } from './project-group-removal-state'
-import { repoWithFetchedOwner, settingsForRepoOwner } from '../repos/owner-routing'
-import { projectGroupWithFetchedOwner } from './project-group-owner-stamping'
+import { adoptFromEndpoint } from '../host-catalog/endpoint-catalog-adoption'
+import { toast } from 'sonner'
+import { translate } from '@/i18n/i18n'
+
+function notifyProjectGroupOnOtherHost(): void {
+  toast.error(
+    translate('auto.store.slices.repos.moveToGroupOtherHost', 'Could not move project to group'),
+    {
+      description: translate(
+        'auto.store.slices.repos.moveToGroupOtherHostDesc',
+        'The computer this project runs on does not have this group. A project can only join groups saved on its own computer.'
+      )
+    }
+  )
+}
 
 export function createProjectGroupMutationActions(
   set: Parameters<StateCreator<AppState>>[0],
@@ -38,23 +49,18 @@ export function createProjectGroupMutationActions(
   | 'moveProjectToGroup'
 > {
   return {
-    createProjectGroup: async (name, options) => {
+    createProjectGroup: async (name, hostId) => {
       try {
-        const owner = parseExecutionHostId(options?.hostId)
-        const target = getActiveRuntimeTarget(
-          owner
-            ? {
-                ...get().settings,
-                activeRuntimeEnvironmentId: owner.kind === 'runtime' ? owner.environmentId : null
-              }
-            : get().settings
-        )
+        // Why: a new group lands on the host of the project that seeds it, not the focused one.
+        const target = ipcOrRuntimeTargetForHostId(hostId)
+        if (!target) {
+          return null
+        }
         const group =
           target.kind === 'local'
             ? await window.api.projectGroups.create({
                 name,
-                createdFrom: 'manual',
-                ...(owner?.kind === 'ssh' ? { connectionId: owner.targetId } : {})
+                createdFrom: 'manual'
               })
             : (
                 await callRuntimeRpc<{ group: ProjectGroup }>(
@@ -64,20 +70,23 @@ export function createProjectGroupMutationActions(
                   { timeoutMs: 15_000 }
                 )
               ).group
-        const ownedGroup = projectGroupWithFetchedOwner(group, target)
-        const ownerHostId = getProjectGroupHostId(ownedGroup)
+        const orderedGroup = await initializeNewRootProjectGroupOrder(target, group, get())
+        const ownedGroup = adoptFromEndpoint(target, { kind: 'projectGroup', row: orderedGroup })
+        const ownerHostId = getRepoExecutionHostId(ownedGroup)
         set((s) => {
-          // An overlapping catalog refresh may have already inserted a newer copy.
-          if (
-            s.projectGroups.some(
-              (existing) =>
-                existing.id === ownedGroup.id && getProjectGroupHostId(existing) === ownerHostId
-            )
-          ) {
+          const existing = s.projectGroups.find((entry) =>
+            projectGroupMatchesOwnerHost(entry, ownedGroup.id, ownerHostId)
+          )
+          if (existing && orderedGroup === group) {
             return s
           }
+          // Keep newer catalog fields, but include the order confirmed after that refresh.
+          const { rootProjectOrder, tabOrder } = ownedGroup
+          const nextGroup = existing ? { ...existing, rootProjectOrder, tabOrder } : ownedGroup
           return {
-            projectGroups: [...s.projectGroups, ownedGroup],
+            projectGroups: existing
+              ? s.projectGroups.map((entry) => (entry === existing ? nextGroup : entry))
+              : [...s.projectGroups, nextGroup],
             folderWorkspacePathStatuses: {}
           }
         })
@@ -88,103 +97,48 @@ export function createProjectGroupMutationActions(
       }
     },
 
-    updateProjectGroup: async (groupId, updates, options) => {
-      try {
-        // Why: the sidebar lists groups from every host, so the mutation follows the group's owner, not the focused host.
-        const ownerHostId = resolveProjectGroupOwnerHostId(get(), groupId, options?.hostId)
-        const target = getActiveRuntimeTarget(
-          settingsForProjectGroupOwner(get(), groupId, options?.hostId)
-        )
-        const updated =
-          target.kind === 'local'
-            ? await window.api.projectGroups.update({ groupId, updates })
-            : (
-                await callRuntimeRpc<{ group: ProjectGroup | null }>(
-                  target,
-                  'projectGroup.update',
-                  { groupId, updates },
-                  { timeoutMs: 15_000 }
-                )
-              ).group
-        if (!updated) {
-          return false
-        }
-        const ownedGroup = projectGroupWithFetchedOwner(updated, target)
-        set((s) => ({
-          projectGroups: s.projectGroups.map((group) =>
-            projectGroupMatchesOwnerHost(group, groupId, ownerHostId) ? ownedGroup : group
-          ),
-          folderWorkspacePathStatuses: {}
-        }))
-        return true
-      } catch (err) {
-        console.error('Failed to update project group:', err)
-        return false
-      }
-    },
+    updateProjectGroup: (groupId, updates, options) =>
+      get().updateProjectGroups([{ groupId, updates, hostId: options?.hostId }]),
 
     deleteProjectGroup: async (groupId, options) => {
       try {
-        // Why: deletion targets the group's owner host (see updateProjectGroup); focus may be elsewhere.
         const ownerHostId = resolveProjectGroupOwnerHostId(get(), groupId, options?.hostId)
-        if (options?.hostId && !ownerHostId) {
+        const target = runtimeTargetForProjectGroupOwner(get(), groupId, options?.hostId)
+        if (!target) {
           return false
         }
-        const target = getActiveRuntimeTarget(
-          settingsForProjectGroupOwner(get(), groupId, options?.hostId)
-        )
-        const members = options?.confirmedMembers
-        const params = { groupId, ...(members ? { members } : {}) }
-        const result =
+        const deleted =
           target.kind === 'local'
-            ? { deleted: await window.api.projectGroups.delete(params), membersChanged: false }
-            : await callRuntimeRpc<{ deleted: boolean; membersChanged?: boolean }>(
-                target,
-                members ? 'workbench.repo.deleteGroup' : 'projectGroup.delete',
-                params,
-                {
-                  timeoutMs: 15_000,
-                  expectedEnvironmentPairingRevision: options?.expectedEnvironmentPairingRevision,
-                  expectedEnvironmentRuntimeId: options?.expectedEnvironmentRuntimeId
-                }
-              )
-        if (result.membersChanged) {
-          options?.onMembersChanged?.()
-        }
-        if (!result.deleted) {
-          return false
-        }
-        if (
-          target.kind === 'environment' &&
-          options?.expectedEnvironmentPairingRevision !== undefined &&
-          getRuntimeEnvironmentRevision(target.environmentId) !==
-            options.expectedEnvironmentPairingRevision
-        ) {
+            ? await window.api.projectGroups.delete({ groupId })
+            : (
+                await callRuntimeRpc<{ deleted: boolean }>(
+                  target,
+                  'projectGroup.delete',
+                  { groupId },
+                  { timeoutMs: 15_000 }
+                )
+              ).deleted
+        if (!deleted) {
           return false
         }
         set((s) => applyProjectGroupDeleteCascade(s, groupId, ownerHostId))
         return true
       } catch (err) {
-        if (err instanceof Error && err.message.includes('project_group_members_changed')) {
-          options?.onMembersChanged?.()
-        } else {
-          console.error('Failed to delete project group:', err)
-        }
+        console.error('Failed to delete project group:', err)
         return false
       }
     },
 
     deleteProjectGroupWithContainedProjects: async (groupId, options) => {
-      const { repos, projectGroups } = get()
-      const { ownerHostId, projects } = selectProjectGroupRemovalTargets(
-        projectGroups,
-        repos,
+      const ownerHostId = resolveProjectGroupOwnerHostId(get(), groupId, options.hostId)
+      const targets = selectProjectGroupRemovalTargets(
+        get().projectGroups,
+        get().repos,
         groupId,
-        options.hostId
+        ownerHostId
       )
-      const selectedProjects = options.removeContainedProjects ? projects : []
-      const requestedProjectIds = selectedProjects.map((repo) => repo.id)
-      if (!ownerHostId) {
+      const requestedProjectIds = options.removeContainedProjects ? targets.projectIds : []
+      if (!targets.groupExists) {
         return {
           status: 'missing-group',
           groupId,
@@ -194,125 +148,12 @@ export function createProjectGroupMutationActions(
         }
       }
 
-      if (
-        options.removeContainedProjects &&
-        options.confirmedProjectKeys &&
-        JSON.stringify(options.confirmedProjectKeys) !==
-          JSON.stringify(projectGroupRemovalKeys(selectedProjects))
-      ) {
-        return {
-          status: 'group-members-changed',
-          groupId,
-          requestedProjectIds,
-          removedProjectIds: [],
-          failedProjectRemovals: []
-        }
-      }
-
-      const workbench = isWorkbenchShell()
-      const groupHost = parseExecutionHostId(ownerHostId)
-      const revision = options.expectedEnvironmentPairingRevision
-      let runtimeId: string | undefined
-      if (workbench && groupHost?.kind === 'runtime') {
-        const target = { kind: 'environment' as const, environmentId: groupHost.environmentId }
-        try {
-          if (
-            revision === undefined ||
-            getRuntimeEnvironmentRevision(target.environmentId) !== revision ||
-            selectedProjects.some((repo) => repo.pairedRegistration?.pairingRevision !== revision)
-          ) {
-            throw new Error(
-              translate(
-                'auto.components.sidebar.RemoveFolderDialog.registrationUnavailable',
-                'This project registration is no longer available. Check the project list.'
-              )
-            )
-          }
-          if (options.removeContainedProjects) {
-            const status = await callRuntimeRpc<{ runtimeId: string; capabilities?: string[] }>(
-              target,
-              'status.get',
-              undefined,
-              { timeoutMs: 15_000, expectedEnvironmentPairingRevision: revision }
-            )
-            if (
-              !status.runtimeId ||
-              !status.capabilities?.includes(WORKBENCH_REPO_REMOVAL_RUNTIME_CAPABILITY)
-            ) {
-              throw new Error(
-                translate(
-                  'auto.components.sidebar.RemoveFolderDialog.updatePairedHost',
-                  'Update Workbench on the paired host before removing a project registration.'
-                )
-              )
-            }
-            runtimeId = status.runtimeId
-            const current = get()
-            const currentTargets = selectProjectGroupRemovalTargets(
-              current.projectGroups,
-              current.repos,
-              groupId,
-              ownerHostId
-            )
-            if (
-              !currentTargets.ownerHostId ||
-              JSON.stringify(projectGroupRemovalKeys(currentTargets.projects)) !==
-                JSON.stringify(projectGroupRemovalKeys(selectedProjects))
-            ) {
-              return {
-                status: 'group-members-changed',
-                groupId,
-                requestedProjectIds,
-                removedProjectIds: [],
-                failedProjectRemovals: []
-              }
-            }
-          }
-        } catch (error) {
-          return {
-            status: 'group-delete-failed',
-            groupId,
-            requestedProjectIds,
-            removedProjectIds: [],
-            failedProjectRemovals: [],
-            error: error instanceof Error ? error.message : String(error)
-          }
-        }
-      }
-      const confirmedMembers =
-        workbench && options.removeContainedProjects
-          ? selectedProjects.map((repo) => ({
-              repoId: repo.id,
-              hostId: repo.pairedRegistration?.hostId ?? getRepoExecutionHostId(repo),
-              path: repo.path,
-              addedAt: repo.addedAt
-            }))
-          : undefined
-      let ownerMembersChanged = false
       const deleted = await get().deleteProjectGroup(groupId, {
-        hostId: ownerHostId,
-        ...(confirmedMembers === undefined
-          ? {}
-          : {
-              onMembersChanged: () => {
-                ownerMembersChanged = true
-              }
-            }),
-        ...(confirmedMembers === undefined ? {} : { confirmedMembers }),
-        ...(revision === undefined ? {} : { expectedEnvironmentPairingRevision: revision }),
-        ...(runtimeId === undefined ? {} : { expectedEnvironmentRuntimeId: runtimeId })
+        hostId: ownerHostId ?? undefined
       })
       if (!deleted) {
-        if (ownerMembersChanged) {
-          const runtimeEnvironmentId =
-            groupHost?.kind === 'runtime' ? groupHost.environmentId : null
-          await Promise.allSettled([
-            get().fetchRepos({ runtimeEnvironmentId }),
-            get().fetchProjectGroups({ runtimeEnvironmentId })
-          ])
-        }
         return {
-          status: ownerMembersChanged ? 'group-members-changed' : 'group-delete-failed',
+          status: 'group-delete-failed',
           groupId,
           requestedProjectIds,
           removedProjectIds: [],
@@ -332,30 +173,38 @@ export function createProjectGroupMutationActions(
 
       const removedProjectIds: string[] = []
       const failedProjectRemovals: ProjectRemovalFailure[] = []
-      // The group delete clears membership. Keep the exact registrations selected before it.
-      for (const project of selectedProjects) {
-        const projectId = project.id
-        const hostId = getRepoExecutionHostId(project)
-        const findProject = () =>
-          get().repos.find(
-            (repo) =>
-              repoMatchesHostIdentity(repo, projectId, hostId) &&
-              (workbench
-                ? repoMatchesRemovalRegistration(repo, project)
-                : repo.path === project.path)
-          )
-        try {
-          if (findProject()) {
+      // Cascade captured members by host; same-ID rows outside this group on other hosts must survive.
+      const membersById = new Map<string, Repo[]>()
+      for (const member of targets.projects) {
+        const row = findRepoForHost(get().repos, member.id, { hostId: member.hostId })
+        if (row) {
+          membersById.set(member.id, [...(membersById.get(member.id) ?? []), row])
+        }
+      }
+      for (const projectId of new Set(targets.projectIds)) {
+        const members = membersById.get(projectId) ?? []
+        // Why: an unstamped group already routes to the focused host, so only that host's member is removed.
+        const focusedMember = ownerHostId
+          ? null
+          : findRepoForHost(members, projectId, { settings: get().settings })
+        const removable = ownerHostId ? members : focusedMember ? [focusedMember] : []
+        const removableHostIds = removable.map((row) => getRepoExecutionHostId(row))
+        for (const hostId of removableHostIds) {
+          try {
             await get().removeProject(projectId, {
               hostId,
-              ...(workbench ? { expectedRegistration: project } : {}),
-              ...(runtimeId === undefined ? {} : { expectedEnvironmentRuntimeId: runtimeId })
+              confirmedDiscards: options.confirmedDiscards
             })
+          } catch (err) {
+            console.error('Failed to remove contained project:', err)
           }
-        } catch (err) {
-          console.error('Failed to remove contained project:', err)
         }
-        const stillExists = Boolean(findProject())
+        // Why: an ambiguous unstamped member with no focused-host row was left in place, so it counts as remaining.
+        const stillExists =
+          (members.length > 0 && removableHostIds.length === 0) ||
+          removableHostIds.some((hostId) =>
+            get().repos.some((repo) => repoMatchesHostIdentity(repo, projectId, hostId))
+          )
         if (stillExists) {
           failedProjectRemovals.push({
             projectId,
@@ -375,48 +224,43 @@ export function createProjectGroupMutationActions(
       }
     },
 
-    moveProjectToGroup: async (projectId, groupId, order, options) => {
+    moveProjectToGroup: async (project, groupId, order) => {
       try {
-        if (
-          !findRepoForHost(get().repos, projectId, {
-            settings: get().settings,
-            hostId: options?.hostId
-          })
-        ) {
+        const repo = get().repos.find((candidate) => isSameRepoRow(candidate, project))
+        const repoHostId = repo ? getRepoExecutionHostId(repo) : null
+        const target = repoHostId ? ipcOrRuntimeTargetForHostId(repoHostId) : null
+        if (!repo || !repoHostId || !target) {
           return false
         }
-        const owner = parseExecutionHostId(options?.hostId)
-        const target = getActiveRuntimeTarget(
-          owner
-            ? {
-                ...get().settings,
-                activeRuntimeEnvironmentId: owner.kind === 'runtime' ? owner.environmentId : null
-              }
-            : settingsForRepoOwner(get(), projectId)
-        )
+        if (groupId && !isProjectGroupJoinableFromCatalog(get().projectGroups, groupId, target)) {
+          notifyProjectGroupOnOtherHost()
+          return false
+        }
         const moved =
           target.kind === 'local'
             ? await window.api.projectGroups.moveProject({
-                projectId,
+                projectId: repo.id,
                 groupId,
-                order
+                order,
+                hostId: repoHostId
               })
             : (
                 await callRuntimeRpc<{ repo: Repo | null }>(
                   target,
                   'projectGroup.moveProject',
-                  { repo: projectId, groupId, order },
+                  // Why connectionId: the server's own twins differ only by their SSH target there.
+                  { repo: repo.id, groupId, order, connectionId: repo.connectionId ?? null },
                   { timeoutMs: 15_000 }
                 )
               ).repo
         if (!moved) {
           return false
         }
-        const ownedMoved = repoWithFetchedOwner(moved, target)
+        const ownedMoved = adoptFromEndpoint(target, { kind: 'repo', row: moved })
         const movedHostId = getRepoExecutionHostId(ownedMoved)
         set((s) => {
-          const nextRepos = s.repos.map((repo) =>
-            repoMatchesHostIdentity(repo, projectId, movedHostId) ? ownedMoved : repo
+          const nextRepos = s.repos.map((candidate) =>
+            isSameRepoRow(candidate, repo) ? ownedMoved : candidate
           )
           return {
             repos: nextRepos,
@@ -428,6 +272,11 @@ export function createProjectGroupMutationActions(
             folderWorkspacePathStatuses: {}
           }
         })
+        // Why: hosts store an unknown group id as "no group" and still return the row (#13699).
+        if (groupId && (moved.projectGroupId ?? null) !== groupId) {
+          notifyProjectGroupOnOtherHost()
+          return false
+        }
         return true
       } catch (err) {
         console.error('Failed to move repo to group:', err)

@@ -12,7 +12,7 @@ import {
   type VersionDocumentSave,
   type VersionWorkflow
 } from '../../shared/workbench/version-document'
-import { durableWriteTempPath, writeFileDurableIfCurrent } from '../durable-file-write'
+import { durableWriteTempPath, writeFileDurableIfCurrent } from '../filesystem/durable-file-write'
 import { isMissingFile, resolveVersionDocumentPath } from './version-document-path'
 
 type StoreOptions<T extends VersionDocumentIdentity> = {

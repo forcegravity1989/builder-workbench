@@ -1,56 +1,106 @@
 import React, { useEffect, useMemo } from 'react'
-import { useAppStore } from '@/store'
+import {
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  pointerWithin,
+  useSensor,
+  useSensors,
+  type Modifier
+} from '@dnd-kit/core'
+import { useAppStore } from '@/store/index'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useSidebarResize } from '@/hooks/useSidebarResize'
-import SidebarHeader from './SidebarHeader'
-import SidebarNav from './SidebarNav'
-import SetupScriptPromptCard from './SetupScriptPromptCard'
-import WorktreeList from './WorktreeList'
-import SidebarToolbar from './SidebarToolbar'
-import WorkspaceKanbanDrawer from './WorkspaceKanbanDrawer'
-import type { VirtualizedScrollAnchor } from '@/hooks/useVirtualizedScrollAnchor'
-import { cn } from '@/lib/utils'
+import SidebarHeader from './chrome/SidebarHeader'
+import SidebarNav from './chrome/SidebarNav'
+import { setSidebarLiveWidth } from './chrome/sidebar-live-width'
+import SetupScriptPromptCard from './setup-script-prompts/SetupScriptPromptCard'
+import WorktreeList from './worktree-list/listing/WorktreeList'
+import WslMovedProjectsSection from '../wsl-move/WslMovedProjectsSection'
+import HiddenProjectsSection from './hidden-projects/HiddenProjectsSection'
+import SidebarToolbar from './chrome/SidebarToolbar'
+import WorkspaceKanbanDrawer from './workspace-board/surface/WorkspaceKanbanDrawer'
+import type { VirtualizedScrollAnchor } from '@/lib/list-interaction/virtualized-scrolling/useVirtualizedScrollAnchor'
+import { cn } from '@/lib/class-names'
 import { FolderPlus, Loader2 } from 'lucide-react'
-import { ActivityThreadCollapseContext } from '@/components/activity/activity-thread-collapse-context'
-import { useSidebarProjectDrop } from './useSidebarProjectDrop'
-import { useWorkspaceBoardPanel } from './useWorkspaceBoardPanel'
-import { useWorkspaceRevealBodyRedirect } from './use-workspace-reveal-body-redirect'
-import { resolveLeftSidebarStyleVariables } from '@/lib/left-sidebar-appearance'
-import { useSystemPrefersDark } from '@/components/terminal-pane/use-system-prefers-dark'
-import { lazyWithRetry } from '@/lib/lazy-with-retry'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { ActivityThreadCollapseContext } from '@/components/activity/thread-list/activity-thread-collapse-context'
+import { useSidebarProjectDrop } from './project-admission/drop/useSidebarProjectDrop'
+import { useWorkspaceBoardPanel } from './workspace-board/surface/useWorkspaceBoardPanel'
+import { useWorkspaceRevealBodyRedirect } from './worktree-list/navigation/use-workspace-reveal-body-redirect'
+import { resolveLeftSidebarStyleVariables } from '@/app-shell/appearance/left-sidebar-appearance'
+import { lazyWithRetry } from '@/app-shell/startup/lazy-with-retry'
+import { LocalGitToolchainScanBanner } from '../repo/toolchain/LocalGitToolchainScanBanner'
+import { SeveredTerminalDaemonBanner } from '../maintenance/terminal-daemon/SeveredTerminalDaemonBanner'
+import { StalledTerminalDaemonBanner } from '../maintenance/terminal-daemon/StalledTerminalDaemonBanner'
+import { SidebarBotsSection } from '@/components/bots/SidebarBotsSection'
+import { SidebarBotsSplit, SidebarProjectsListSlot } from './SidebarBotsSplit'
+import { SidebarContentViewport } from './SidebarContentViewport'
+import { SidebarSectionDragOverlay } from './SidebarSectionDragOverlay'
+import { PROJECTS_SECTION_GROUP_KEY } from '../../../../shared/sidebar-list/sections/group-keys'
+import { useBotsEnabled } from '@/lib/bot-catalog'
+import { StartupWorktreeRefreshStatus } from './worktree-list/listing/StartupWorktreeRefreshStatus'
+import { WorktreeCardsIntroNotice } from './workspace-card/template/WorktreeCardsIntroNotice'
+import { WORKSPACE_LIST_REGION_ID } from '@/components/app-rail/app-rail-layout'
+import { setWorkspaceListRegionPresent } from '@/components/app-rail/workspace-list-region-presence'
+import { WorktreeCardsUpdateNotice } from './workspace-card/template/WorktreeCardsUpdateNotice'
 
-// Why lazy: the Agents list pulls the whole activity pipeline (virtualizer, markdown
-// previews, thread derivation); users on the workspace view should not load or render any of it.
-const SidebarAgentsList = lazyWithRetry(() => import('./SidebarAgentsList'))
+// Load the shared Activity badge/list pipeline after the sidebar shell.
+const SidebarAgentsList = lazyWithRetry(() => import('../activity/sidebar/SidebarAgentsList'))
 
-const WorktreeMetaDialog = lazyWithRetry(() => import('./WorktreeMetaDialog'))
-const RemoveFolderDialog = lazyWithRetry(() => import('./RemoveFolderDialog'))
-const WorktreeVisibilityDialog = lazyWithRetry(() => import('./WorktreeVisibilityDialog'))
-const OrcaYamlTrustDialog = lazyWithRetry(() => import('./OrcaYamlTrustDialog'))
-const ForgetSshWorkspaceDialog = lazyWithRetry(() => import('./ForgetSshWorkspaceDialog'))
-const AgentDashboardSidebarHost = lazyWithRetry(() => import('./AgentDashboardSidebarHost'))
+const WorktreeMetaDialog = lazyWithRetry(
+  () => import('./workspace-card/metadata/WorktreeMetaDialog')
+)
+const RemoveFolderDialog = lazyWithRetry(
+  () => import('./workspace-actions/deletion/RemoveFolderDialog')
+)
+const SleepTwinWorkspaceDialog = lazyWithRetry(
+  () => import('./workspace-actions/sleep/SleepTwinWorkspaceDialog')
+)
+const WorktreeVisibilityDialog = lazyWithRetry(
+  () => import('./workspace-visibility/dialog/WorktreeVisibilityDialog')
+)
+const OrcaYamlTrustDialog = lazyWithRetry(
+  () => import('./workspace-creation/hook-trust/OrcaYamlTrustDialog')
+)
+const ForgetSshWorkspaceDialog = lazyWithRetry(
+  () => import('./workspace-actions/deletion/ForgetSshWorkspaceDialog')
+)
+const AgentDashboardSidebarHost = lazyWithRetry(
+  () => import('../dashboard/sidebar/AgentDashboardSidebarHost')
+)
 
 const MIN_WIDTH = 220
 const MAX_WIDTH = 500
-// Why: straddle the sidebar/terminal seam so the divider sits on the border-l
-// instead of leaving a blank strip between the hover target and the edge.
+const sidebarSectionDragModifiers: Modifier[] = [
+  ({ draggingNodeRect, scrollableAncestorRects: [viewport], transform }) => ({
+    ...transform,
+    x: 0,
+    // Keep the preview within the sidebar viewport when the pointer leaves it.
+    y:
+      draggingNodeRect && viewport
+        ? Math.max(
+            viewport.top - draggingNodeRect.top,
+            Math.min(transform.y, viewport.bottom - draggingNodeRect.bottom)
+          )
+        : transform.y
+  })
+]
+// Why: start on the divider pixel so pointing at the visible seam resizes instead of scrolling the list.
 export const WORKTREE_SIDEBAR_RESIZE_HANDLE_CLASS_NAME =
-  'group absolute -right-1.5 top-0 z-10 flex h-full w-3 cursor-col-resize items-stretch justify-center'
+  'peer absolute -right-[9px] top-0 z-20 h-full w-[9px] cursor-col-resize'
+// Why: an open drawer covers the outer side of the seam, so keep the inner overlap wide enough to grab.
+const WORKTREE_SIDEBAR_RESIZE_HANDLE_UNDER_DRAWER_CLASS_NAME = '-right-1.5 w-3'
 export const WORKTREE_SIDEBAR_RESIZE_HANDLE_LINE_CLASS_NAME =
-  'h-full w-px bg-transparent transition-colors group-hover:bg-ring/50 group-active:bg-ring'
+  'pointer-events-none absolute -right-px top-0 z-20 h-full w-px bg-transparent transition-colors peer-hover:bg-ring/50 peer-active:bg-ring'
 
 type SidebarProps = {
-  panelVisible?: boolean
-  leadingWidth?: number
-  workbenchTitle?: React.ReactNode
+  workbenchTitle?: React.ReactElement
   worktreeScrollOffsetRef: React.MutableRefObject<number>
   worktreeScrollAnchorRef: React.MutableRefObject<VirtualizedScrollAnchor>
 }
 
 function Sidebar({
-  panelVisible = true,
-  leadingWidth = 0,
   workbenchTitle,
   worktreeScrollOffsetRef,
   worktreeScrollAnchorRef
@@ -59,6 +109,7 @@ function Sidebar({
   const sidebarWidth = useAppStore((s) => s.sidebarWidth)
   const setSidebarWidth = useAppStore((s) => s.setSidebarWidth)
   const repos = useAppStore((s) => s.repos)
+  const botsEnabled = useBotsEnabled()
   const startupWorktreeRefreshCompleted = useAppStore((s) => s.startupWorktreeRefreshCompleted)
   const settings = useAppStore((s) => s.settings)
   const sidebarBody = useAppStore((s) => s.sidebarBody ?? 'workspaces')
@@ -71,9 +122,12 @@ function Sidebar({
   const setAgentGroupBy = useAppStore((s) => s.setAgentsGroupBy)
   const [agentQuery, setAgentQuery] = React.useState('')
   const [agentOptionsTarget, setAgentOptionsTarget] = React.useState<HTMLDivElement | null>(null)
+  const [projectsCollapseTarget, setProjectsCollapseTarget] = React.useState<HTMLDivElement | null>(
+    null
+  )
+  const [agentBadgeTarget, setAgentBadgeTarget] = React.useState<HTMLSpanElement | null>(null)
   const agentsScrollTopRef = React.useRef(0)
-  // Held here so collapsed groups (and the layout the saved scrollTop assumes)
-  // survive the Agents list unmounting on sidebar body switches.
+  // Retain collapse state and scroll geometry across Agents-list unmounts.
   const [agentsCollapsedGroupKeys, setAgentsCollapsedGroupKeys] = React.useState<
     ReadonlySet<string>
   >(() => new Set())
@@ -96,12 +150,8 @@ function Sidebar({
   const fetchAllWorktrees = useAppStore((s) => s.fetchAllWorktrees)
   const activeModal = useAppStore((s) => s.activeModal)
   const statusBarVisible = useAppStore((s) => s.statusBarVisible)
-  const systemPrefersDark = useSystemPrefersDark()
-  const leftSidebarStyle = useMemo(
-    () => resolveLeftSidebarStyleVariables(settings, systemPrefersDark),
-    [settings, systemPrefersDark]
-  ) as React.CSSProperties | undefined
-  const { nativeDropTarget, dropHandlers, affordance } = useSidebarProjectDrop()
+  const leftSidebarStyle = useMemo(() => resolveLeftSidebarStyleVariables(settings), [settings])
+  const { dropOwnerRef, dropHandlers, affordance } = useSidebarProjectDrop()
   const {
     workspaceBoardOpen,
     workspaceBoardRenderedOpen,
@@ -115,18 +165,6 @@ function Sidebar({
     solidifyWorkspaceBoardFromDrag,
     cancelWorkspaceBoardDragPreview
   } = useWorkspaceBoardPanel()
-
-  const setLiveSidebarWidth = React.useCallback(
-    (width: number) => {
-      // Native portalled drawers need the full visible left edge, including the Rail.
-      const visibleWidth = leadingWidth + (sidebarOpen && panelVisible ? width : 0)
-      document.documentElement.style.setProperty(
-        '--workspace-sidebar-live-width',
-        `${visibleWidth}px`
-      )
-    },
-    [leadingWidth, panelVisible, sidebarOpen]
-  )
 
   const repoCount = repos.length
   const previousRepoCountRef = React.useRef(repoCount)
@@ -152,73 +190,143 @@ function Sidebar({
   }, [agentDashboardDrawerOpen, setAgentDashboardDrawerOpen, showAgentDashboard])
 
   const { containerRef, onResizeStart, isResizing } = useSidebarResize<HTMLDivElement>({
-    isOpen: sidebarOpen && panelVisible,
+    isOpen: sidebarOpen,
     width: sidebarWidth,
     minWidth: MIN_WIDTH,
     maxWidth: MAX_WIDTH,
     deltaSign: 1,
     setWidth: setSidebarWidth,
-    onDraftWidthChange: setLiveSidebarWidth
+    onDraftWidthChange: setSidebarLiveWidth
   })
 
-  useWorkspaceRevealBodyRedirect(panelVisible && sidebarOpen && sidebarBody === 'agents')
+  const drawerCoversSeam =
+    workspaceBoardRenderedOpen || (showAgentDashboard && agentDashboardDrawerOpen)
 
-  const sidebarHeader = (
-    <SidebarHeader
-      titleContent={workbenchTitle}
-      onWorkspaceBoardMenuOpenChange={setWorkspaceBoardMenuOpen}
-      activityOptionsTarget={setAgentOptionsTarget}
-    />
+  useWorkspaceRevealBodyRedirect(sidebarOpen && sidebarBody === 'agents')
+  const projectsFirst = useAppStore((s) => !workbenchTitle && s.sidebarProjectsFirst)
+  const setProjectsFirst = useAppStore((s) => s.setSidebarProjectsFirst)
+  const sidebarSectionDragSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } })
   )
-  const worktreeList = (
-    <WorktreeList
-      scrollOffsetRef={worktreeScrollOffsetRef}
-      scrollAnchorRef={worktreeScrollAnchorRef}
-      workspaceBoardOpen={workspaceBoardOpen}
-      onWorkspaceBoardDragPreviewStart={previewWorkspaceBoardFromDrag}
-      onWorkspaceBoardDragPreviewCommit={solidifyWorkspaceBoardFromDrag}
-      onWorkspaceBoardDragPreviewCancel={cancelWorkspaceBoardDragPreview}
-    />
+  const botsShown = sidebarBody !== 'agents' && botsEnabled
+  // Projects folds only when Bots is shown, so turning bots off always brings the list back.
+  const projectsCanFold = botsShown && !workbenchTitle
+  const projectsCollapsed = useAppStore(
+    (s) => projectsCanFold && s.collapsedGroups.has(PROJECTS_SECTION_GROUP_KEY)
+  )
+  const sidebarRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      containerRef.current = node
+      dropOwnerRef(sidebarOpen ? node : null)
+      setWorkspaceListRegionPresent(node !== null)
+    },
+    [containerRef, dropOwnerRef, sidebarOpen]
+  )
+
+  const botsSection = botsShown ? (
+    <SidebarBotsSplit
+      key="bots"
+      projectsCollapsed={projectsCollapsed}
+      projectsFirst={projectsFirst}
+    >
+      <SidebarBotsSection onOpenBot={closeWorkspaceBoard} reorderable={!workbenchTitle} />
+    </SidebarBotsSplit>
+  ) : null
+  const projectsSection = (
+    <React.Fragment key="projects">
+      <SidebarHeader
+        titleContent={workbenchTitle}
+        activityBadgeTarget={setAgentBadgeTarget}
+        onWorkspaceBoardMenuOpenChange={setWorkspaceBoardMenuOpen}
+        activityOptionsTarget={setAgentOptionsTarget}
+        collapsible={projectsCanFold}
+        projectsCollapseTarget={setProjectsCollapseTarget}
+      />
+      <SeveredTerminalDaemonBanner />
+      <StalledTerminalDaemonBanner />
+      <React.Suspense
+        fallback={sidebarBody === 'agents' ? <div className="min-h-0 flex-1" /> : null}
+      >
+        <ActivityThreadCollapseContext.Provider value={agentsCollapseState}>
+          <SidebarAgentsList
+            active={sidebarBody === 'agents'}
+            readFilter={agentReadFilter}
+            setReadFilter={setAgentReadFilter}
+            groupBy={agentGroupBy}
+            setGroupBy={setAgentGroupBy}
+            query={agentQuery}
+            setQuery={setAgentQuery}
+            optionsTarget={agentOptionsTarget}
+            badgeTarget={agentBadgeTarget}
+            scrollTopRef={agentsScrollTopRef}
+          />
+        </ActivityThreadCollapseContext.Provider>
+      </React.Suspense>
+      {sidebarBody !== 'agents' && (
+        <>
+          {projectsCollapsed ? null : (
+            <>
+              <LocalGitToolchainScanBanner />
+              <StartupWorktreeRefreshStatus />
+              <WorktreeCardsUpdateNotice />
+              <WorktreeCardsIntroNotice />
+            </>
+          )}
+          <SidebarProjectsListSlot botsShown={botsShown} collapsed={projectsCollapsed}>
+            <WorktreeList
+              scrollOffsetRef={worktreeScrollOffsetRef}
+              scrollAnchorRef={worktreeScrollAnchorRef}
+              workspaceBoardOpen={workspaceBoardOpen}
+              onWorktreeCardClick={closeWorkspaceBoard}
+              onWorkspaceBoardDragPreviewStart={previewWorkspaceBoardFromDrag}
+              onWorkspaceBoardDragPreviewCommit={solidifyWorkspaceBoardFromDrag}
+              onWorkspaceBoardDragPreviewCancel={cancelWorkspaceBoardDragPreview}
+              projectsCollapseTarget={projectsCollapseTarget}
+            />
+          </SidebarProjectsListSlot>
+          {projectsCollapsed ? null : <WslMovedProjectsSection />}
+          {projectsCollapsed ? null : <HiddenProjectsSection />}
+        </>
+      )}
+    </React.Fragment>
   )
 
   return (
-    <TooltipProvider delayDuration={400}>
-      {panelVisible ? (
+    <TooltipProvider>
+      {/* Why: the handle lives outside the clipped sidebar so its outer half isn't cut off. */}
+      <div className="relative flex min-h-0 flex-shrink-0 scrollbar-sleek-parent">
         <div
-          ref={containerRef}
-          data-native-file-drop-target={sidebarOpen ? nativeDropTarget : undefined}
-          className="relative min-h-0 flex-shrink-0 bg-worktree-sidebar flex flex-col overflow-hidden scrollbar-sleek-parent"
+          ref={sidebarRef}
+          data-sidebar-content-shell=""
+          id={WORKSPACE_LIST_REGION_ID}
+          className="relative min-h-0 flex-shrink-0 bg-worktree-sidebar flex flex-col overflow-hidden"
           style={leftSidebarStyle}
           {...dropHandlers}
         >
           {sidebarOpen && (
             <>
-              {/* Fixed controls */}
-              {workbenchTitle ? null : <SidebarNav />}
-              {sidebarHeader}
-              {sidebarBody === 'agents' ? (
-                <React.Suspense fallback={<div className="min-h-0 flex-1" />}>
-                  <ActivityThreadCollapseContext.Provider value={agentsCollapseState}>
-                    <SidebarAgentsList
-                      readFilter={agentReadFilter}
-                      setReadFilter={setAgentReadFilter}
-                      groupBy={agentGroupBy}
-                      setGroupBy={setAgentGroupBy}
-                      query={agentQuery}
-                      setQuery={setAgentQuery}
-                      optionsTarget={agentOptionsTarget}
-                      scrollTopRef={agentsScrollTopRef}
-                    />
-                  </ActivityThreadCollapseContext.Provider>
-                </React.Suspense>
-              ) : (
-                worktreeList
-              )}
+              <DndContext
+                sensors={sidebarSectionDragSensors}
+                modifiers={sidebarSectionDragModifiers}
+                collisionDetection={pointerWithin}
+                onDragEnd={({ active, over }) => {
+                  if (projectsCanFold && over && active.id !== over.id) {
+                    setProjectsFirst(!projectsFirst)
+                  }
+                }}
+              >
+                <SidebarContentViewport>
+                  <SidebarNav />
+                  {projectsFirst ? [projectsSection, botsSection] : [botsSection, projectsSection]}
+                </SidebarContentViewport>
+                <SidebarSectionDragOverlay sidebarStyle={leftSidebarStyle} />
+              </DndContext>
 
-              <div className="relative shrink-0">
+              {/* mt-auto keeps the toolbar at the bottom when both sections are folded and nothing grows. */}
+              <div className="relative mt-auto shrink-0">
                 <SetupScriptPromptCard />
 
-                {/* Fixed bottom toolbar */}
                 <SidebarToolbar
                   workspaceBoardOpen={workspaceBoardOpen}
                   workspaceBoardDragPreviewOpen={workspaceBoardDragPreviewOpen}
@@ -246,31 +354,36 @@ function Sidebar({
               <div className="text-xs text-muted-foreground">{affordance.description}</div>
             </div>
           ) : null}
+        </div>
 
-          {/* Resize handle */}
-          {sidebarOpen && (
+        {sidebarOpen && (
+          <>
             <div
               data-sidebar-resize-handle=""
-              className={cn(WORKTREE_SIDEBAR_RESIZE_HANDLE_CLASS_NAME, isResizing && 'bg-ring/10')}
+              className={cn(
+                WORKTREE_SIDEBAR_RESIZE_HANDLE_CLASS_NAME,
+                drawerCoversSeam && WORKTREE_SIDEBAR_RESIZE_HANDLE_UNDER_DRAWER_CLASS_NAME,
+                isResizing && 'bg-ring/10'
+              )}
               onMouseDown={onResizeStart}
-            >
-              <div
-                className={cn(
-                  WORKTREE_SIDEBAR_RESIZE_HANDLE_LINE_CLASS_NAME,
-                  isResizing && 'bg-ring'
-                )}
-              />
-            </div>
-          )}
-        </div>
-      ) : null}
+            />
+            <div
+              className={cn(
+                WORKTREE_SIDEBAR_RESIZE_HANDLE_LINE_CLASS_NAME,
+                isResizing && 'bg-ring'
+              )}
+            />
+          </>
+        )}
+      </div>
 
-      {/* Global pages still use these native dialogs and drawers when the panel is absent. */}
+      {/* Render dialogs outside the sidebar to avoid clipping; mount each flow only while its modal is active. */}
       <React.Suspense fallback={null}>
         {activeModal === 'edit-meta' ? <WorktreeMetaDialog /> : null}
         {!isWorkbenchShell() && activeModal === 'confirm-remove-folder' ? (
           <RemoveFolderDialog />
         ) : null}
+        {activeModal === 'confirm-sleep-twin' ? <SleepTwinWorkspaceDialog /> : null}
         {activeModal === 'worktree-visibility' ? <WorktreeVisibilityDialog /> : null}
         {activeModal === 'confirm-orca-yaml-hooks' ? <OrcaYamlTrustDialog /> : null}
         {activeModal === 'forget-ssh-workspace' ? <ForgetSshWorkspaceDialog /> : null}

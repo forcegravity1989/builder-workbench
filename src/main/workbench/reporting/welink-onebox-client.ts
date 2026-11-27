@@ -1,9 +1,9 @@
 import {
   execCommandInWslOrThrow,
-  execLocalPreflightCommandOrThrow,
-  shellQuote
-} from '../../ipc/preflight-command-exec'
-import { toLinuxPath } from '../../../shared/wsl-paths'
+  execLocalPreflightCommandOrThrow
+} from '../../ipc/preflight/preflight-command-exec'
+import { quotePosixShell as shellQuote } from '../../../shared/shell/launch/shell-argument-quoting'
+import { toLinuxPath } from '../../../shared/file-access/wsl-paths'
 import { WORKBENCH_REPORT_FOLDER_NAME } from './welink-report-config'
 
 export type WelinkRoute = {
@@ -117,7 +117,7 @@ export async function runWelinkCli(
       const command = ['welink-cli', ...args].map((part) => shellQuote(part)).join(' ')
       return await execCommandInWslOrThrow({ distro: route.wslDistro }, command, timeoutMs)
     }
-    return await execLocalPreflightCommandOrThrow('welink-cli', args, timeoutMs)
+    return await execLocalPreflightCommandOrThrow('welink-cli', args, { timeoutMs })
   } catch (error) {
     throw toWelinkReportError(error)
   }

@@ -1,17 +1,43 @@
-import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
-import { getTaskPageRepoSourceContext } from './task-page-source-context'
-import type { TaskPageGitLabLoadingModel } from './use-task-page-gitlab-loading'
+import { createTaskPageCodeHubApi, getCodeHubRepoSourceContext } from '@/lib/codehub-api'
+import type { Repo } from '../../../shared/repository/repo-types'
+import type { CodeHubListTasksArgs } from '../../../shared/codehub-api'
 import { useEffect, useState } from 'react'
+import { useTaskPageCodeHubGoalScope } from './use-task-page-codehub-goal-scope'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
-import { workbenchVersionTaskLabel } from '../../../shared/workbench/task-scope'
+import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'
+import {
+  type WorkbenchTaskScope,
+  workbenchVersionTaskLabel
+} from '../../../shared/workbench/task-scope'
 
 const CODEHUB_LIST_LIMIT = 250
 // Why: 空数组必须是稳定引用，否则非 MR 视图下 effect 依赖每次渲染都变。
 const NO_SERVER_LABELS: string[] = []
 
-export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
+export type CodeHubTaskRow = CodeHubTaskItem & { sourceContext?: TaskSourceContext | null }
+
+export type CodeHubLoadingInput = {
+  scopeRepoId?: string
+  selectedRepos: readonly Repo[]
+  taskSource: string
+  codehubView: 'issues' | 'mrs'
+  codehubState: CodeHubListTasksArgs['state']
+  codehubPreset: string
+  codehubQuery: string
+  codehubAuthor: string
+  codehubAssignee: string
+  codehubLabels: string[]
+  codehubRefreshNonce: number
+  setCodehubItems: (items: CodeHubTaskRow[]) => void
+  setCodehubLoading: (loading: boolean) => void
+  setCodehubError: (error: string | null) => void
+  pageData: { workbenchTaskScope?: WorkbenchTaskScope | null }
+}
+
+export function useTaskPageCodeHubLoading<Model extends CodeHubLoadingInput>(model: Model) {
   const [codehubHasMore, setCodehubHasMore] = useState(false)
+  const goalScope = useTaskPageCodeHubGoalScope(model)
   const {
     selectedRepos,
     taskSource,
@@ -36,8 +62,6 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
       return
     }
     setCodehubHasMore(false)
-    // Why: a BW workbench scope materializes its own reference-driven CodeHub
-    // rows; the unscoped full-list fetch must not overwrite them.
     if (workbenchTaskScope?.goalId) {
       return
     }
@@ -64,7 +88,8 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
               ? 'need_my_review'
               : undefined
         // 宿主用于识别登记行，任务数据仍按任务页的本机账号策略读取。
-        const api = createTaskPageCodeHubApi(getTaskPageRepoSourceContext(repo, 'codehub'))
+        const sourceContext = getCodeHubRepoSourceContext(repo)
+        const api = createTaskPageCodeHubApi(sourceContext)
         const listed = await api.listTasks({
           repoPath: repo.path,
           repoId: repo.id,
@@ -88,7 +113,8 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
             repoId: repo.id,
             repoPath: repo.path,
             host: listed.remote.host,
-            project: listed.remote.project
+            project: listed.remote.project,
+            sourceContext
           }))
         }
       })
@@ -97,7 +123,7 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
         if (stale) {
           return
         }
-        const items: CodeHubTaskItem[] = []
+        const items: CodeHubTaskRow[] = []
         const errors: string[] = []
         let hasMore = false
         for (const result of results) {
@@ -138,9 +164,12 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     taskSource,
     workbenchTaskScope
   ])
-  const nextModel = model as typeof model & { codehubHasMore: boolean }
-  nextModel.codehubHasMore = codehubHasMore
-  return nextModel
+  return {
+    ...model,
+    codehubHasMore,
+    codehubScopeMissing: goalScope.missing,
+    codehubScopeReadyCount: goalScope.readyCount
+  }
 }
 
 export type TaskPageCodeHubLoadingModel = ReturnType<typeof useTaskPageCodeHubLoading>
