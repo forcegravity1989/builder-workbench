@@ -333,7 +333,7 @@ export async function runWorkbenchRelease({
     tag,
     assetPaths: [
       ...assets.map((asset) => asset.path),
-      ...legacyAssets.map((asset) => join(distDir, asset.alias))
+      ...legacyAssets.map((asset) => join('<临时目录>', asset.alias))
     ],
     target: args.target === 'HEAD' ? head : args.target,
     title,
@@ -349,7 +349,7 @@ export async function runWorkbenchRelease({
         : '预演通过：无阻断项。'
     )
     log('')
-    log('正式发布将执行（需 --publish 与 --notes-file）：')
+    log('发布参数预览（使用 --publish 与 --notes-file 发布时，脚本会在临时目录生成旧名兼容文件）：')
     log(`  gh ${ghArgs.join(' ')}`)
     return { mode: 'prepare', tag, version, blockers, wouldRun: `gh ${ghArgs.join(' ')}` }
   }
