@@ -15,12 +15,14 @@ name: BW Package Windows
 #
 #   gh workflow run bw-package.yml --ref <branch>
 #
-# Version scheme mirrors local trial builds (createLocalBuildVersion):
-# <packageVersion>-local.<unix-seconds>.<commit12>, tagged v<version>, so every
-# dispatch produces a fresh tag and the releases list stays newest-first.
+# The default is <BW release baseline>-local.<unix-seconds>.<commit12>.
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Optional explicit Workbench trial version'
+        type: string
 
 permissions:
   contents: write
@@ -76,27 +78,24 @@ jobs:
       - name: Resolve build identity
         id: identity
         shell: bash
+        env:
+          WORKBENCH_RELEASE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          base="$(node -p "require('./package.json').version")"
-          commit="$(echo "$GITHUB_SHA" | cut -c1-12)"
-          version="${base}-local.$(date +%s).${commit}"
+          version="$(node config/scripts/build-win-workbench.mjs --print-version)"
+          tag="v$version"
+          if [[ "$WORKBENCH_RELEASE_VERSION" =~ [^[:space:]] ]]; then
+            tag="bw-trial-v$version.$GITHUB_RUN_ID.$GITHUB_RUN_ATTEMPT"
+          fi
           echo "version=$version" >>"$GITHUB_OUTPUT"
-          echo "tag=v$version" >>"$GITHUB_OUTPUT"
-          echo "Building $version from ${GITHUB_REF_NAME} ($commit)"
+          echo "tag=$tag" >>"$GITHUB_OUTPUT"
+          echo "Building $version from ${GITHUB_REF_NAME} ($GITHUB_SHA)"
 
       - name: Build Workbench Windows installer
         shell: bash
         run: pnpm run build:win:workbench
         env:
-          # Why the adhoc channel flag: without it electron-builder stamps
-          # publisherName 'SignPath Foundation' onto this unsigned build, and a
-          # declared publisher that fails signature verification makes the
-          # in-app updater reject the package. The flag also switches version
-          # injection to ORCA_ADHOC_BUILD_VERSION — ORCA_LOCAL_BUILD_VERSION is
-          # ignored while any Windows dev channel is active.
-          ORCA_WIN_ADHOC: '1'
-          ORCA_ADHOC_BUILD_VERSION: ${{ steps.identity.outputs.version }}
+          WORKBENCH_RELEASE_VERSION: ${{ steps.identity.outputs.version }}
 
       - name: Publish installer as a prerelease
         shell: bash
@@ -107,7 +106,11 @@ jobs:
         run: |
           set -euo pipefail
           ls -la dist/
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA" >/dev/null
           gh release create "$TAG" dist/workbench-windows-setup.exe \
+            --target "$GITHUB_SHA" \
+            --verify-tag \
             --title "Workbench $VERSION" \
             --notes "Workbench Windows x64 installer built from ${GITHUB_REF_NAME} @ $GITHUB_SHA." \
             --prerelease
