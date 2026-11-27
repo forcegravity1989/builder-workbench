@@ -51,6 +51,7 @@ export type UISliceContextual = {
     | 'workspace-cleanup'
     | 'project-added'
     | 'worktree-visibility'
+    | 'monica-navigation'
     | 'setup-guide'
     | 'feature-wall'
     | 'feedback'
