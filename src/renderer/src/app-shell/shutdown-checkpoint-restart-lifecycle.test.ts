@@ -4,6 +4,7 @@ import {
   ORCA_APP_RESTART_ABORTED_EVENT,
   ORCA_APP_RESTART_STARTED_EVENT,
   ORCA_UPDATER_QUIT_AND_INSTALL_ABORTED_EVENT,
+  ORCA_UPDATER_QUIT_AND_INSTALL_DISCARD_UNSAVED_EVENT,
   ORCA_UPDATER_QUIT_AND_INSTALL_STARTED_EVENT
 } from '../../../shared/updater-renderer-events'
 import {
@@ -16,6 +17,7 @@ import {
   createShutdownCheckpointGuard
 } from '../lib/shutdown-checkpoint-guard'
 import {
+  isDiscardingUnsavedSessionForUpdate,
   isIntentionalAppRestartInProgress,
   registerUpdaterBeforeUnloadBypass
 } from '../lib/updater-beforeunload'
@@ -56,7 +58,10 @@ function createLifecycleHarness(
     ...overrides
   })
   const guard = createShutdownCheckpointGuard(persist.run, persist.abandonAttempt)
-  const checkpoint = createShutdownCheckpointBeforeUnloadHandler(guard)
+  const checkpoint = createShutdownCheckpointBeforeUnloadHandler(
+    guard,
+    isDiscardingUnsavedSessionForUpdate
+  )
   const cleanupRestartTracking = registerUpdaterBeforeUnloadBypass()
   window.addEventListener('beforeunload', checkpoint)
   window.addEventListener(
@@ -161,6 +166,29 @@ describe('shutdown checkpoint restart lifecycle', () => {
       new Error(`Renderer shutdown checkpoint was not completed: ${snapshotFailure}`)
     )
     // Dirty drafts must block before any durable-only degrade stages over them.
+    expect(harness.stageBeforeUnloadSync).not.toHaveBeenCalled()
+  })
+
+  it('does not let a later unload cancel a force install after dirty drafts blocked the checkpoint', async () => {
+    const snapshotFailure = "Cannot read properties of null (reading 'toLowerCase')"
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const harness = createLifecycleHarness(
+      ORCA_UPDATER_QUIT_AND_INSTALL_STARTED_EVENT,
+      ORCA_UPDATER_QUIT_AND_INSTALL_ABORTED_EVENT,
+      {
+        buildSessionSnapshots: () => {
+          throw new Error(snapshotFailure)
+        },
+        hasDirtyOpenFiles: () => true
+      }
+    )
+    cleanupFns.push(harness.cleanup)
+
+    await expect(harness.prepare()).rejects.toThrow(
+      new Error(`Renderer shutdown checkpoint was not completed: ${snapshotFailure}`)
+    )
+    window.dispatchEvent(new Event(ORCA_UPDATER_QUIT_AND_INSTALL_DISCARD_UNSAVED_EVENT))
+    expect(window.dispatchEvent(new Event('beforeunload', { cancelable: true }))).toBe(true)
     expect(harness.stageBeforeUnloadSync).not.toHaveBeenCalled()
   })
 })

@@ -14,7 +14,8 @@ function build(status: UpdateStatus, isLocalBuild = false) {
     onEnableHttp1Compatibility: vi.fn(),
     onRetryDownload: vi.fn(),
     onRecheck: vi.fn(),
-    onInstallRetry: vi.fn()
+    onInstallRetry: vi.fn(),
+    onForceInstall: vi.fn()
   })
 }
 
@@ -56,7 +57,8 @@ describe('update card error model precedence', () => {
       onEnableHttp1Compatibility,
       onRetryDownload: vi.fn(),
       onRecheck: vi.fn(),
-      onInstallRetry: vi.fn()
+      onInstallRetry: vi.fn(),
+      onForceInstall: vi.fn()
     })
     expect(model?.variant).toBe('http1Compatibility')
     expect(model?.primaryAction).toMatchObject({
@@ -65,5 +67,45 @@ describe('update card error model precedence', () => {
       isPending: true,
       onClick: onEnableHttp1Compatibility
     })
+  })
+
+  it('offers force restart only when the session checkpoint blocked install', () => {
+    const onForceInstall = vi.fn()
+    const blocked = buildUpdateCardErrorModel({
+      status: { state: 'downloaded', version: '1.4.200' },
+      isLocalBuild: false,
+      cachedVersion: '1.4.200',
+      installError:
+        'Renderer shutdown checkpoint was not completed: Failed to stage renderer state before unload',
+      compatibilityRelaunching: false,
+      compatibilitySetupError: null,
+      onChooseLocalBuild: vi.fn(),
+      onEnableHttp1Compatibility: vi.fn(),
+      onRetryDownload: vi.fn(),
+      onRecheck: vi.fn(),
+      onInstallRetry: vi.fn(),
+      onForceInstall
+    })
+    expect(blocked?.secondaryAction?.label).toBe('Force Restart to Update')
+    expect(blocked?.explainer).toContain('discards unsaved session state')
+    blocked?.secondaryAction?.onClick()
+    expect(onForceInstall).toHaveBeenCalledTimes(1)
+
+    const installerFailed = buildUpdateCardErrorModel({
+      status: { state: 'downloaded', version: '1.4.200' },
+      isLocalBuild: false,
+      cachedVersion: '1.4.200',
+      installError: 'Could not restart to install the update.',
+      compatibilityRelaunching: false,
+      compatibilitySetupError: null,
+      onChooseLocalBuild: vi.fn(),
+      onEnableHttp1Compatibility: vi.fn(),
+      onRetryDownload: vi.fn(),
+      onRecheck: vi.fn(),
+      onInstallRetry: vi.fn(),
+      onForceInstall: vi.fn()
+    })
+    expect(installerFailed?.secondaryAction).toBeUndefined()
+    expect(installerFailed?.explainer).toBeUndefined()
   })
 })

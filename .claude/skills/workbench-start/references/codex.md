@@ -6,12 +6,14 @@
 
 先核对任务 worktree、分支、HEAD 与未提交改动，按需同步目标分支。首次、换机器或环境记录失效时先按[通用验证执行参考](verification.md#环境准备)运行 `prepare`，它从公共 Git 目录定位主 checkout，检查本机工具、原生 profile 与项目登记并保存忽略的记录；同机事实保留，异机信息不套用。记录是观察结果，不覆盖启动配置；`prepare` 和 `dev` 都沿用原生 `ORCA_DEV_USER_DATA_PATH` 或默认 profile。查明现有真壳、开发服务及重检查进程归属，保留他人的实例；低内存宿主真壳与本地 CI 串行，其他宿主按已确认资源安排。
 
-按开发规范先复用稳定 dev 环境；已有匹配实例直接操作，不重复启动。需要启动时使用下列 dev 入口：它沿用原 runner 与持久 `workbench-dev` profile（Windows 默认 `%APPDATA%/workbench-dev`），保留已纳入的 BW 项目、版本和会话。自定义 profile 沿用已确认的 `ORCA_DEV_USER_DATA_PATH`，不每条 Issue 换空目录；后台启动 helper 使用 `Start-Process -WindowStyle Hidden`。开启 CDP 前先查端口归属，启动后核对实际 Vite/CDP 地址、窗口与源码；通过 computer-use 时先读对应工具技能。
+按开发规范先复用稳定 dev 环境；已有匹配实例直接操作，不重复启动。需要人直接操作时使用可见入口 pnpm run dev:workbench；需要 CDP 自动化时使用下面的验证 wrapper，它会沿用原 runner 与持久 workbench-dev profile（Windows 默认 %APPDATA%/workbench-dev），并设置后台窗口。两条路径都要在启动后核对实际 Vite/CDP 地址、窗口、profile、task worktree 和源码 HEAD；通过 computer-use 时先读对应工具技能。
 
 ```powershell
 $taskRoot = (git rev-parse --show-toplevel).Trim()
 node .claude/skills/workbench-start/scripts/run-bw-verification.mjs dev --root $taskRoot
 ```
+
+wrapper 会保持前台进程直到 dev 退出，因此需要把它放在单独终端或由宿主后台启动；不要把命令返回当成 Electron 已就绪。runner 会自动探测并打印 Remote debugging on ...；如显式指定端口，先查归属，端口被占用时为并行实例选择其他端口。可见 dev 和后台 CDP dev 沿用已确认的 profile；若并行时遇到 Electron 单实例或 profile 锁，按宿主实际支持的独立 profile/端口运行。内部机器若资源足够可并行两个或更多实例，具体数量只由宿主观察记录决定。
 
 需要一次性隔离或自动回归时，用 `tests/e2e/helpers/workbench-app.ts` 管理真实 Electron、HOME/profile、测试仓及清理。沿用已有用例；临时场景放 `.bw/runtime/verification/<issue>/`，引用该 fixture 与现有 global-setup/global-teardown，不复制启动实现：
 
