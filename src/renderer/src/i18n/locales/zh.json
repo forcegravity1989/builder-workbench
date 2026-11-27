@@ -89,6 +89,7 @@
       "windows": {
         "administratorDialogScope": "这会更改整个应用的权限，SSH 和 WSL 保留各自的权限",
         "administratorDocumentation": "阅读指南",
+        "orcaAdministratorDocumentation": "阅读 Orca 终端指南",
         "administratorLabel": "管理员模式",
         "administratorScope": "Orca 应用的权限，现有终端可能有所不同",
         "administratorSearchDescription": "查看 Orca 的 Windows 权限，或通过管理员批准进行重启",
@@ -13093,6 +13094,7 @@
           "signIn": "登录 Orca",
           "title": "Orca 账户",
           "description": "即时分享工作，并随时通过 Orca Mobile 访问桌面",
+          "workbenchDescription": "此账号供 Bot 运行主机上的 Orca 云连接器使用。",
           "searchDescription": "登录或退出产物和 Orca Relay 使用的账户",
           "benefitsTitle": "账户已包含",
           "artifactsTitle": "产物分享",
@@ -19341,6 +19343,7 @@
         "profiles": {
           "signout": {
             "confirm": {
+              "workbenchDescription": "退出后，这台主机上的 Orca 云连接器将停止，待发回执会被清除。你仍可使用本地项目和工作树。",
               "title": "退出 Orca？",
               "description": "重新登录前，产物和 Orca Relay 将不可用，本地项目和工作树不会受到影响",
               "cancel": "取消",
@@ -25127,6 +25130,8 @@
       "table": "表格"
     },
     "unsupported": {
+      "workbenchLayoutNotSupported": "BW 暂不支持 {{layout}} 项目视图。",
+      "workbenchSwitchLayout": "切换到表格、看板或路线图视图，即可在 BW 中使用该项目。",
       "switchLayout": "切换到表格、看板或路线图视图以在 Orca 中处理此项目",
       "description": "Orca 可渲染表格、看板和路线图项目视图，此视图使用的布局尚无法渲染",
       "layoutNotSupported": "Orca 尚不支持{{layout}}项目视图"

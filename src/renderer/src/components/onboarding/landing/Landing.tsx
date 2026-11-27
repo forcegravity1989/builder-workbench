@@ -14,7 +14,8 @@ import { useMountedRef } from '@/hooks/useMountedRef'
 import { useTranslate } from '@/i18n/use-translate'
 import { hasGitHubBackedProject, type PreflightIssue } from './landing-preflight-issues'
 import { useLandingPreflightRuntime } from './landing-preflight-runtime'
-import { useLandingOrcaStarState, type LandingStarState } from './landing-github-star-state'
+import { useLandingOrcaStarState } from './landing-github-star-state'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
 import {
   LANDING_ACTION_BUTTON_CLASS,
@@ -28,16 +29,12 @@ const ORCA_GITHUB_URL = 'https://github.com/stablyai/orca'
 
 type StarButtonProps = {
   hasRepos: boolean
-  state: LandingStarState
-  setState: React.Dispatch<React.SetStateAction<LandingStarState>>
+  showFooter: boolean
 }
 
-function GitHubStarButton({
-  hasRepos,
-  state,
-  setState
-}: StarButtonProps): React.JSX.Element | null {
+function GitHubStarButton({ hasRepos, showFooter }: StarButtonProps): React.JSX.Element | null {
   const t = useTranslate()
+  const [state, setState] = useLandingOrcaStarState()
   const [menuOpen, setMenuOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const mountedRef = useMountedRef()
@@ -79,7 +76,7 @@ function GitHubStarButton({
     await window.api.starNag.complete()
   }
 
-  if (state === 'hidden' || (state === 'starred' && hasRepos)) {
+  if (!showFooter || state === 'hidden' || (state === 'starred' && hasRepos)) {
     return null
   }
 
@@ -230,7 +227,6 @@ export default function Landing(): React.JSX.Element {
 
   // Probe the active execution host, including remote runtimes.
   const { preflightIssues } = useLandingPreflightRuntime()
-  const [starState, setStarState] = useLandingOrcaStarState()
 
   const createWorktreeShortcut = useShortcutKeyDetails('workspace.create')
   const previousWorktreeShortcut = useShortcutKeyDetails('worktree.navigateUp')
@@ -286,9 +282,9 @@ export default function Landing(): React.JSX.Element {
         </div>
       </div>
 
-      {showGitHubSupportFooter && (
+      {isWorkbenchShell() ? null : (
         <div className="absolute bottom-6 left-0 right-0 flex justify-center">
-          <GitHubStarButton hasRepos={repos.length > 0} state={starState} setState={setStarState} />
+          <GitHubStarButton hasRepos={hasProjects} showFooter={showGitHubSupportFooter} />
         </div>
       )}
     </div>

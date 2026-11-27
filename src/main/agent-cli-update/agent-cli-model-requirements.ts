@@ -1,6 +1,7 @@
-// The CLI version each model on Orca's list needs, read from Orca's repo at most hourly.
+// The minimum CLI version for each model. BW uses the list shipped with its build.
 
 import { z } from 'zod'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 import { getMainHttpClient } from '../network/http-client'
 import { compareAppVersions } from '../../shared/app-lifecycle/identity/app-version'
 import type {
@@ -46,6 +47,9 @@ async function fetchList(): Promise<AgentCliModelRequirementList> {
 
 /** The published list, else the one this build shipped with. */
 async function currentList(): Promise<AgentCliModelRequirementList> {
+  if (isWorkbenchProduct()) {
+    return BUNDLED_LIST
+  }
   if (!fetched || Date.now() - fetched.at >= REFRESH_MS) {
     lookup ??= fetchList()
       .then((list) => {

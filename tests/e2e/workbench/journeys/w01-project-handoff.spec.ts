@@ -27,6 +27,17 @@ test.describe('BW first-run project handoff', () => {
       name: /^(Add your first project|添加第一个项目)/
     })
     await expect(title).toHaveText(/How do you want to work with agents|如何.*智能体/)
+    await electronApp.evaluate(({ ipcMain }) => {
+      // Adding a second handler would throw. Check registration without invoking GitHub.
+      for (const channel of [
+        'gh:checkOrcaStarred',
+        'gh:starOrca',
+        'star-nag:onboardingCompleted'
+      ]) {
+        ipcMain.handle(channel, () => undefined)
+        ipcMain.removeHandler(channel)
+      }
+    })
     await onboarding.getByRole('radio', { name: /Terminal|终端/ }).click()
     await next.click()
     await expect(title).toHaveText(/Pick your default agent|选择默认智能体/)

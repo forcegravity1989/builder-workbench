@@ -8,6 +8,7 @@ import type { RuntimeDesktopWindowStatus } from '../../shared/remote-runtime/ses
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import type { AgentBrowserBridge } from '../browser/agent-browser/agent-browser-bridge'
 import type { BrowserClientPageAutomationRpc } from '../browser/client-pages/execution/browser-client-page-automation-runtime'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 import { StarNagService } from '../star-nag/service'
 import { EmulatorBridge } from '../emulator/emulator-bridge'
 import { RpcDispatcher } from '../runtime/rpc/dispatcher'
@@ -271,9 +272,11 @@ export async function composeDesktopCore(
   })
   installFirstWorkRenameHookSubscription(firstWorkRenameDeps(store, runtime))
   await initializeMainProcessPlugins(core, store)
-  core.starNag = new StarNagService(store, core.stats!)
-  core.starNag.start()
-  core.starNag.registerIpcHandlers()
+  if (!isWorkbenchProduct()) {
+    core.starNag = new StarNagService(store, core.stats!)
+    core.starNag.start()
+    core.starNag.registerIpcHandlers()
+  }
   startBrowserAutomation(core, runtime, native)
   let releaseProviderMaintenance: () => void = () => {}
   const providerMaintenanceReady = new Promise<void>((resolve) => {

@@ -61,7 +61,7 @@ export function SidebarFeedbackDialog({
 }: SidebarFeedbackDialogProps): React.JSX.Element {
   const t = useTranslate()
   const workbench = isWorkbenchShell()
-  // Store drafts survive sidebar collapse, which unmounts this dialog.
+  // Keep unfinished feedback in the store so it survives closing the dialog.
   const feedback = useAppStore((s) => s.feedbackDraft.feedback)
   const submitAnonymously = useAppStore((s) => s.feedbackDraft.submitAnonymously)
   const setFeedbackDraft = useAppStore((s) => s.setFeedbackDraft)
@@ -163,6 +163,12 @@ export function SidebarFeedbackDialog({
       })
 
       if (!result.ok) {
+        if (workbench) {
+          if (mountedRef.current) {
+            toast.error(result.error)
+          }
+          return
+        }
         throw new Error(`Feedback request failed: ${result.error}`)
       }
 
