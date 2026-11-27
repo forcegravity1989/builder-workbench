@@ -23,6 +23,7 @@ it('recovers a lost worker receipt and holds a second labeled issue until the fi
   let hasPR = false
   const starts: string[] = []
   const refs: string[] = []
+  const comment = '修复 PR：https://github.com/team/project/pull/10'
   const resultFor = (method: string, args: Record<string, unknown>) => {
     switch (method) {
       case 'repo.list':
@@ -49,7 +50,8 @@ it('recovers a lost worker receipt and holds a second labeled issue until the fi
         return { state: 'ready', dispatchId: 'worker-2' }
       case 'bots.items.show':
         return {
-          events: [],
+          events: args.after ? [{ kind: 'commented', data: { text: comment } }] : [],
+          nextCursor: refs.includes(comment) && !args.after ? 'e50' : undefined,
           item: {
             status: hasPR ? 'done' : 'working',
             links: hasLink
@@ -77,7 +79,7 @@ it('recovers a lost worker receipt and holds a second labeled issue until the fi
         return { worker: {}, projection: { outcome } }
       case 'bots.items.comment':
         refs.push(String(args.text))
-        return {}
+        throw new Error('comment written before reply was lost')
       case 'bots.items.link':
         refs.push(...(args.refs as string[]))
         hasLink = true
@@ -110,7 +112,8 @@ it('recovers a lost worker receipt and holds a second labeled issue until the fi
     hasPR = true
     await tick()
     expect(starts).toEqual([issues[0].url, issues[1].url])
-    expect(refs).toContain('修复 PR：https://github.com/team/project/pull/10')
+    await tick()
+    expect(refs.filter((ref) => ref === comment)).toHaveLength(1)
   } finally {
     vi.unstubAllEnvs()
     await rm(profile, { recursive: true, force: true })

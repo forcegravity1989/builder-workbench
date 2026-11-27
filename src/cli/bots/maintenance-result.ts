@@ -15,9 +15,8 @@ export async function deliverMaintenanceResult(
     return undefined
   }
   const params = { ...caller, item: String(pending.item) }
-  const {
-    result: { item, events }
-  } = await client.call<BotItemShowView>('bots.items.show', params)
+  let page = (await client.call<BotItemShowView>('bots.items.show', params)).result
+  const { item } = page
   const worker = item.links.find(
     (link) =>
       link.kind === 'dispatch' &&
@@ -64,8 +63,14 @@ export async function deliverMaintenanceResult(
   }
   if (item.status === 'done' || item.status === 'canceled') {
     const text = `修复 PR：${url}`
-    if (!events.some((event) => event.kind === 'commented' && event.data.text === text)) {
-      await client.call('bots.items.comment', { ...params, text })
+    while (!page.events.some((event) => event.kind === 'commented' && event.data.text === text)) {
+      if (!page.nextCursor) {
+        await client.call('bots.items.comment', { ...params, text })
+        break
+      }
+      page = (
+        await client.call<BotItemShowView>('bots.items.show', { ...params, after: page.nextCursor })
+      ).result
     }
   } else {
     await client.call('bots.items.link', { ...params, refs: [url] })
