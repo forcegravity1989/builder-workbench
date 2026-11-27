@@ -12,7 +12,7 @@
 - **探索 BW**回答“怎样用 BW 工作、某个功能有什么用”：**工作旅程**用相连的步骤说明一件事的起点、动作和结果。新制作或迁移的工作旅程使用与真实 Electron E2E 关联的完整窗口录像，现有旅程按各行登记的方式播放。**功能**用独立短演示介绍一个能力或屏幕的用途与结果。工作步骤在矩阵中关联相应功能行。
 - **操作中引导**回答“我在这个屏幕，下一步怎样做”：屏内帮助启动指向真实控件的逐步引导。空态和简短文字也可说明前提与恢复动作，各自的覆盖记录在对应功能行。
 
-桌面帮助的「问 Monica」打开可跨项目继续的本机产品对话；操作和失败恢复见[贡献规格](../05-features/bw-contribution/spec.md#从产品答疑进入反馈)。通用帮助集中在左下角问号，入门和探索持续可回看。文档、变更日志、快捷键等仍沿[底部帮助](../../src/renderer/src/components/sidebar/chrome/SidebarSettingsHelpMenu.tsx)与 [BW 链接](../../src/renderer/src/workbench/help-links.ts)维护；BW 桌面的帮助 → 发送反馈、终端错误与不支持的 GitHub 项目视图共用反馈弹窗，提交走 WeLink；配对浏览器提示到桌面发送。错误入口的真壳复验待补，见 [#627](https://github.com/forcegravity1989/builder-workbench/issues/627)。新功能提示是投放方式，海报/漫画是传播产物，都挂回内容行，不增加同级“旅程中心”。**旅程先成立，再按需配传播；没有海报不妨碍旅程使用。**
+桌面帮助的「问 Monica」打开可跨项目继续的本机产品对话。答疑保留文字路径，并按用户意图提供打开页面、跟做或观看演示的入口；操作和失败恢复见[贡献规格](../05-features/bw-contribution/spec.md#从产品答疑进入反馈)。通用帮助集中在左下角问号，入门和探索持续可回看。文档、变更日志、快捷键等仍沿[底部帮助](../../src/renderer/src/components/sidebar/chrome/SidebarSettingsHelpMenu.tsx)与 [BW 链接](../../src/renderer/src/workbench/help-links.ts)维护；BW 桌面的帮助 → 发送反馈、终端错误与不支持的 GitHub 项目视图共用反馈弹窗，提交走 WeLink；配对浏览器提示到桌面发送。错误入口的真壳复验待补，见 [#627](https://github.com/forcegravity1989/builder-workbench/issues/627)。新功能提示是投放方式，海报/漫画是传播产物，都挂回内容行，不增加同级“旅程中心”。**旅程先成立，再按需配传播；没有海报不妨碍旅程使用。**
 
 探索的目录与内容承载设计见[探索 BW 布局规格](../05-features/explore-workbench/spec.md)及其原型。本篇继续维护内容范围与覆盖，不复制界面规格。
 

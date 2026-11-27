@@ -1,7 +1,9 @@
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
-import { versionMaterialSelection, versionTreeKey } from './version-material-selection'
-import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
-import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
+import { versionTreeKey } from './version-material-selection'
+import {
+  openOverviewFromCatalog,
+  openOverviewFromWorktree
+} from './version-overview/open-version-overview'
 import type { Worktree } from '../../../shared/worktree/types'
 import { notifyWorkbenchError } from './error-feedback'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -30,11 +32,8 @@ import { VersionSidebarPreview } from './VersionSidebarPreview'
 import { NewVersionDialog } from './NewVersionDialog'
 import { openGoalWorkspace } from './scoped-task-workspace'
 import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
-import { openVersionOverview, useProjectPage } from './project-page-state'
-import {
-  getRepoExecutionHostId,
-  toRuntimeExecutionHostId
-} from '../../../shared/execution-host/execution-host'
+import { useProjectPage } from './project-page-state'
+import { toRuntimeExecutionHostId } from '../../../shared/execution-host/execution-host'
 import type { Repo } from '../../../shared/repository/repo-types'
 import { versionRepoIdentity } from '../../../shared/workbench/version-repo-identity'
 import { replayWorkbenchGuide, useWorkbenchScreenGuide } from './WorkbenchScreenGuide'
@@ -226,17 +225,19 @@ export function WorkbenchVersionNav({
       return
     }
     consumeVersionSidebarFocus(focusRequest.sequence)
-    const latest = entries[0]
-    if (!latest) {
+    const selected = focusRequest.version
+      ? entries.find((entry) => entry.version === focusRequest.version)
+      : entries[0]
+    if (!selected) {
       return
     }
-    setExpandedOverrideAndStore(new Set([...expandedVersions, latest.version]))
+    setExpandedOverrideAndStore(new Set([...expandedVersions, selected.version]))
     requestAnimationFrame(() => {
       const state = useAppStore.getState()
       const current = currentProjectRepo(state)
       if (current && resolveProjectSource(state, current)?.id === repoId) {
         versionElements.current
-          .get(latest.version)
+          .get(selected.version)
           ?.querySelector('button')
           ?.scrollIntoView({ block: 'nearest' })
       }
@@ -326,17 +327,7 @@ export function WorkbenchVersionNav({
     const source = row?.source
     const versionCatalog = source?.state ?? null
     const sourceReady = !!versionCatalog?.scope && !versionCatalog.error
-    const openOverviewFromTree = (tree: Worktree) => {
-      try {
-        const selection = versionMaterialSelection(tree)
-        if (!selection) {
-          throw new Error('该流程工作区已变化')
-        }
-        openVersionOverview({ ...selection, version: entry.version })
-      } catch (error) {
-        notifyWorkbenchError('无法打开版本总览', error, '请刷新登记后重新选择工作区。')
-      }
-    }
+    const openOverviewFromTree = (tree: Worktree) => openOverviewFromWorktree(tree, entry.version)
     const openOverview = () => {
       if (
         activeView === 'terminal' &&
@@ -360,25 +351,7 @@ export function WorkbenchVersionNav({
         }
         return
       }
-      for (const workflow of ['plan', 'acceptance'] as const) {
-        const candidates = findVersionFlowWorktrees(source.state.worktrees, {
-          version: entry.version,
-          workflow
-        })
-        if (candidates.length > 1 && !entry.material[workflow]) {
-          openWorkbenchWorkspaceChoice({
-            title: `${entry.version} · 选择总览的${workflow === 'plan' ? '计划' : '验收'}工作区`,
-            candidates,
-            onChoose: openOverviewFromTree
-          })
-          return
-        }
-      }
-      openVersionOverview({
-        repoId: source.repo.id,
-        hostId: getRepoExecutionHostId(source.repo),
-        version: entry.version
-      })
+      openOverviewFromCatalog(source.repo, source.state.worktrees, entry)
     }
     const activeWorkflow: VersionWorkflow | null =
       activeBinding && activeBinding.version === entry.version

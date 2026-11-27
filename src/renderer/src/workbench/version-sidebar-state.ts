@@ -21,7 +21,7 @@ let projection: VersionSidebarProjection = {
 }
 let projectionKey = ''
 let focusSequence = 0
-let focusRequest: { repoId: string; sequence: number } | null = null
+let focusRequest: { repoId: string; version?: string; sequence: number } | null = null
 let treeRevealSequence = 0
 let treeRevealRequest: VersionTreeWorktreeRevealRequest | null = null
 
@@ -46,8 +46,8 @@ export function publishVersionSidebarProjection(next: VersionSidebarProjection):
   emit()
 }
 
-export function requestVersionSidebarFocus(repoId: string): void {
-  focusRequest = { repoId, sequence: ++focusSequence }
+export function requestVersionSidebarFocus(repoId: string, version?: string): void {
+  focusRequest = { repoId, version, sequence: ++focusSequence }
   emit()
 }
 

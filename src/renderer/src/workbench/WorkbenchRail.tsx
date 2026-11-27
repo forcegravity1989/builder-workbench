@@ -112,7 +112,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
       label: '知识库',
       icon: BookOpen,
       active: activeView === 'space',
-      onSelect: openKnowledgePage
+      onSelect: () => openKnowledgePage()
     }
   ]
 
