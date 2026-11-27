@@ -6,8 +6,8 @@ import {
   writeKnowledgeDocToRepo,
   type WriteKnowledgeDocResult
 } from './knowledge-repo-loader'
-import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
-import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host/execution-host'
+import { findRepoForHost } from '@/store/repos/repo-host-identity'
 import { useProjectPage } from './project-page-state'
 import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
 

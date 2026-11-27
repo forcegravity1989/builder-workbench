@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type * as PreflightCommandExec from '../../ipc/preflight-command-exec'
+import type * as PreflightCommandExec from '../../ipc/preflight/preflight-command-exec'
 import {
   classifyWelinkErrorText,
   ensureReportFolder,
@@ -13,7 +13,7 @@ import {
 
 const { execLocalMock } = vi.hoisted(() => ({ execLocalMock: vi.fn() }))
 
-vi.mock('../../ipc/preflight-command-exec', async (importOriginal) => {
+vi.mock('../../ipc/preflight/preflight-command-exec', async (importOriginal) => {
   const actual = await importOriginal<typeof PreflightCommandExec>()
   return { ...actual, execLocalPreflightCommandOrThrow: execLocalMock }
 })
@@ -98,7 +98,7 @@ describe('welink onebox output protocol', () => {
         '--offset',
         '0'
       ],
-      30_000
+      { timeoutMs: 30_000 }
     )
     expect(execLocalMock).toHaveBeenNthCalledWith(
       2,
@@ -115,7 +115,7 @@ describe('welink onebox output protocol', () => {
         '--offset',
         '20'
       ],
-      30_000
+      { timeoutMs: 30_000 }
     )
     await expect(ensureReportFolder({}, '12345')).resolves.toBe('3')
     expect(execLocalMock).toHaveBeenCalledTimes(2)
@@ -130,7 +130,7 @@ describe('welink onebox output protocol', () => {
     expect(execLocalMock).toHaveBeenLastCalledWith(
       'welink-cli',
       ['onebox', 'folder-new', '--space-id', '12345', '--parent', '0', '--name', 'Workbench 遥测'],
-      30_000
+      { timeoutMs: 30_000 }
     )
 
     execLocalMock.mockResolvedValueOnce({ stdout: uploadStdout, stderr: '' })
@@ -140,7 +140,7 @@ describe('welink onebox output protocol', () => {
     expect(execLocalMock).toHaveBeenLastCalledWith(
       'welink-cli',
       ['onebox', 'file-upload', '--space-id', '12345', '--parent', '55', '/tmp/report file.md'],
-      90_000
+      { timeoutMs: 90_000 }
     )
 
     execLocalMock.mockResolvedValueOnce({ stdout: '{"unexpected":true}', stderr: '' })
@@ -219,7 +219,7 @@ describe('welink onebox output protocol', () => {
     expect(execLocalMock).toHaveBeenLastCalledWith(
       'welink-cli',
       ['onebox', 'file-remove', '--space-id', '12345', '--file-id', '777'],
-      30_000
+      { timeoutMs: 30_000 }
     )
     execLocalMock.mockRejectedValueOnce(new Error('unexpected server failure'))
     await expect(removeReportFile({}, '12345', '777')).rejects.toMatchObject({

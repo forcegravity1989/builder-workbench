@@ -1,11 +1,10 @@
 import { translate } from '@/i18n/i18n'
-import Sidebar from '../components/Sidebar'
+import Sidebar from '../components/sidebar'
 import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/RecoverableRenderErrorBoundary'
-import type { VirtualizedScrollAnchor } from '../hooks/useVirtualizedScrollAnchor'
+import type { VirtualizedScrollAnchor } from '../lib/list-interaction/virtualized-scrolling/useVirtualizedScrollAnchor'
 import { isWorkbenchShell } from '../workbench/is-workbench-shell'
-import { WORKBENCH_RAIL_WIDTH } from '../workbench/WorkbenchRail'
 import { WorkbenchSidebarNav } from '../workbench/WorkbenchSidebarNav'
-import type { AppChromeLayout } from './use-app-chrome-layout'
+import type { AppChromeLayout } from './chrome/use-app-chrome-layout'
 
 type WorktreeSidebarScrollRefs = {
   scrollOffsetRef: React.MutableRefObject<number>
@@ -14,12 +13,10 @@ type WorktreeSidebarScrollRefs = {
 
 export function WorktreeSidebar({
   layout,
-  scrollRefs,
-  panelVisible = true
+  scrollRefs
 }: {
   layout: AppChromeLayout
   scrollRefs: WorktreeSidebarScrollRefs
-  panelVisible?: boolean
 }): React.JSX.Element {
   const workbenchShell = isWorkbenchShell()
   return (
@@ -41,8 +38,6 @@ export function WorktreeSidebar({
       }
     >
       <Sidebar
-        panelVisible={panelVisible && (!workbenchShell || layout.sidebarOpen)}
-        leadingWidth={workbenchShell ? WORKBENCH_RAIL_WIDTH : 0}
         workbenchTitle={workbenchShell ? <WorkbenchSidebarNav /> : undefined}
         worktreeScrollOffsetRef={scrollRefs.scrollOffsetRef}
         worktreeScrollAnchorRef={scrollRefs.scrollAnchorRef}

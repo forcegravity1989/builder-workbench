@@ -1,12 +1,13 @@
+import { useRepoMap } from '@/store/repos/use-repository-catalog'
 import { useAppStore } from '@/store'
-import { getRepoOwnerWorktreeVisibilityDefaults } from '@/store/worktree-visibility-defaults-by-host'
-import { getProjectGroupHostId } from '@/store/slices/project-group-owner-routing'
+import { getRepoOwnerWorktreeVisibilityDefaults } from '@/store/slices/worktrees/listing/worktree-visibility-defaults-by-host'
+import { openHeaderCreateComposer } from '@/components/sidebar/worktree-list/rows/header-create-workspace-target'
 import { RepoHeaderProjectActionsMenu } from '@/components/sidebar/worktree-list/rows/repo-header-project-actions'
 import { ProjectGroupHeaderMenu } from '@/components/sidebar/worktree-list/rows/project-group-header-actions'
 import { useProjectGroupDialogs } from '@/components/sidebar/worktree-list/rows/use-project-group-dialogs'
 import { SidebarWorktreeListDialogs } from '@/components/sidebar/worktree-list/rows/ProjectGroupDialogs'
-import type { Repo } from '../../../shared/repo-types'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import type { Repo } from '../../../shared/repository/repo-types'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import type { WallProject } from './workbench-wall-projects'
 
 export function useWallNativeProjectActions(guard: (action: () => void) => void) {
@@ -14,7 +15,8 @@ export function useWallNativeProjectActions(guard: (action: () => void) => void)
   const projectGroups = useAppStore((s) => s.projectGroups)
   const settings = useAppStore((s) => s.settings)
   const defaults = useAppStore((s) => s.worktreeVisibilityDefaultsByHost)
-  const dialogs = useProjectGroupDialogs({ repos, projectGroups })
+  const repoMap = useRepoMap()
+  const dialogs = useProjectGroupDialogs({ repos, repoMap, projectGroups })
   const settingsFor = (repo: Repo, sectionId?: string) =>
     guard(() => {
       const store = useAppStore.getState()
@@ -35,7 +37,7 @@ export function useWallNativeProjectActions(guard: (action: () => void) => void)
       repo={repo}
       label={repo.displayName}
       projectGroups={projectGroups.filter(
-        (group) => getProjectGroupHostId(group) === getRepoExecutionHostId(repo)
+        (group) => getRepoExecutionHostId(group) === getRepoExecutionHostId(repo)
       )}
       actions={{
         getWorktreeVisibilityDefaults: (row) =>
@@ -55,13 +57,7 @@ export function useWallNativeProjectActions(guard: (action: () => void) => void)
               hostId: getRepoExecutionHostId(row)
             })
           ),
-        onCreateForRepo: (repoId) =>
-          guard(() =>
-            useAppStore.getState().openModal('new-workspace-composer', {
-              initialRepoId: repoId,
-              telemetrySource: 'sidebar'
-            })
-          )
+        onCreateForRepo: (row, options) => guard(() => openHeaderCreateComposer(row, options))
       }}
     />
   )
@@ -72,8 +68,10 @@ export function useWallNativeProjectActions(guard: (action: () => void) => void)
       project.group ? (
         <ProjectGroupHeaderMenu
           groupId={project.group.id}
-          hostId={getProjectGroupHostId(project.group)}
+          hostId={getRepoExecutionHostId(project.group)}
           label={project.group.name}
+          projectGroup={project.group}
+          onRefreshProjectGroup={(group) => guard(() => dialogs.handleRefreshProjectGroup(group))}
           onRename={(...args) => guard(() => dialogs.handleRenameProjectGroup(...args))}
           onDelete={(...args) => guard(() => dialogs.handleDeleteProjectGroup(...args))}
         />

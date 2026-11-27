@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import type { Page, TestInfo } from '@playwright/test'
 import { expect } from '@stablyai/playwright-test'
+import type { RuntimeWorktreeListResult } from '../../../src/shared/worktree/catalog/runtime-worktree-contracts'
 import type { FixedWorkspaceRemote } from './workbench-fixed-workspace-fixture'
 
 export async function prepareVersion(
@@ -61,13 +62,28 @@ export function readTracking(repo: string, branches: readonly { branch: string }
 }
 
 export async function readNativeTrees(page: Page, repoId: string) {
+  return (await readRegisteredTrees(page, repoId)).map((tree) => ({
+    id: tree.id,
+    branch: tree.branch.replace(/^refs\/heads\//, ''),
+    path: tree.path,
+    baseRef: tree.baseRef ?? null
+  }))
+}
+
+async function readRegisteredTrees(page: Page, repoId: string) {
   return page.evaluate(async (id) => {
-    return (await window.api.worktrees.list({ repoId: id })).map((tree) => ({
-      id: tree.id,
-      branch: tree.branch.replace(/^refs\/heads\//, ''),
-      path: tree.path,
-      baseRef: tree.baseRef ?? null
-    }))
+    const response = await window.api.runtime.call({
+      method: 'worktree.list',
+      params: { repo: id, limit: 1000 }
+    })
+    if (!response.ok) {
+      throw new Error(JSON.stringify(response.error))
+    }
+    const listing = response.result as RuntimeWorktreeListResult
+    if (listing.truncated) {
+      throw new Error('Registered workspace inventory is incomplete')
+    }
+    return listing.worktrees
   }, repoId)
 }
 
@@ -77,7 +93,7 @@ export async function recordWorkspaceInventory(
   info: TestInfo,
   stage: string
 ) {
-  const native = await page.evaluate(async (root) => {
+  const repoId = await page.evaluate((root) => {
     const normalize = (value: string) => value.replace(/\\/g, '/').toLowerCase()
     const repo = window
       .__store!.getState()
@@ -85,18 +101,19 @@ export async function recordWorkspaceInventory(
     if (!repo) {
       throw new Error('Inventory repository is not registered')
     }
-    return {
-      registered: await window.api.worktrees.list({ repoId: repo.id }),
-      detected: await window.api.worktrees.listDetected({ repoId: repo.id })
-    }
+    return repo.id
   }, repoPath)
+  const [registered, detected] = await Promise.all([
+    readRegisteredTrees(page, repoId),
+    page.evaluate((id) => window.api.worktrees.listDetected({ repoId: id }), repoId)
+  ])
   writeFileSync(
     info.outputPath(`workspace-inventory-${stage}.json`),
     JSON.stringify(
       {
         refs: git(repoPath, ['for-each-ref', '--format=%(refname) %(objectname) %(upstream)']),
         treeGraph: git(repoPath, ['worktree', 'list', '--porcelain']),
-        native
+        native: { registered, detected }
       },
       null,
       2

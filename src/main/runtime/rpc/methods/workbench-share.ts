@@ -8,11 +8,8 @@ import {
 } from '../../../../shared/workbench/share'
 
 /** The per-device upload token is minted and kept by the host device only. */
-function requireHostDevice(context: Pick<RpcContext, 'clientKind' | 'clientId'>): void {
-  // Why: the desktop renderer reaches these methods over the runtime:call IPC channel with a
-  // fixed clientId, while paired web/mobile clients arrive over the RPC server with their
-  // pairing token as clientId — the host UI must pass, remote clients must not.
-  if (context.clientKind !== undefined && context.clientId !== 'desktop-renderer') {
+function requireHostDevice({ caller }: Pick<RpcContext, 'caller'>): void {
+  if (caller?.kind !== 'desktop' && caller?.kind !== 'local-cli') {
     throw new Error('Sharing can only be changed on the desktop app on the host device.')
   }
 }
@@ -20,6 +17,7 @@ function requireHostDevice(context: Pick<RpcContext, 'clientKind' | 'clientId'>)
 export const WORKBENCH_SHARE_METHODS = [
   defineWorkbenchMethod({
     name: 'workbench.share.publish',
+    permission: 'workspace',
     params: SharePublishSchema,
     handler: (params, context) => {
       requireHostDevice(context)
@@ -28,6 +26,7 @@ export const WORKBENCH_SHARE_METHODS = [
   }),
   defineWorkbenchMethod({
     name: 'workbench.share.getLink',
+    permission: 'workspace',
     params: ShareSourceSchema,
     handler: (params, context) => {
       requireHostDevice(context)
@@ -36,6 +35,7 @@ export const WORKBENCH_SHARE_METHODS = [
   }),
   defineWorkbenchMethod({
     name: 'workbench.share.remove',
+    permission: 'workspace',
     params: ShareSourceSchema,
     handler: (params, context) => {
       requireHostDevice(context)
@@ -44,6 +44,7 @@ export const WORKBENCH_SHARE_METHODS = [
   }),
   defineWorkbenchMethod({
     name: 'workbench.share.list',
+    permission: 'workspace',
     params: ShareListSchema,
     handler: (_params, context) => {
       requireHostDevice(context)

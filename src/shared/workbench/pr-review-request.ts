@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import type { Repo } from '../repo-types'
-import { splitGitRemoteKey } from '../git-remote-identity'
+import type { Repo } from '../repository/repo-types'
+import { splitGitRemoteKey } from '../git/remotes/git-remote-identity'
 
 export const ReviewRepoSchema = z.object({
   host: z.string().trim().min(1).max(200),

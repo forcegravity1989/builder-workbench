@@ -1,9 +1,9 @@
 import { posix, win32 } from 'node:path'
 import { withSpan, type ActiveSpan } from '../observability/tracer'
-import { extractExecError } from '../git/exec-error'
-import { commandExecFileAsync } from '../git/command-runner/command-exec-file'
-import type { CommandExecOptions } from '../git/command-runner/spawn-command-capture'
-import { ghExecFileAsync, type GhExecOptions } from '../git/command-runner/gh-exec-file'
+import { extractExecError } from '../git/command-runner/process-capture/exec-error'
+import { commandExecFileAsync } from '../git/command-runner/process-capture/command-exec-file'
+import type { CommandExecOptions } from '../git/command-runner/process-capture/spawn-command-capture'
+import { ghExecFileAsync, type GhExecOptions } from '../git/command-runner/hosted-cli/gh-exec-file'
 import { isAbortError, safeLabel, traceStderrTail } from './workbench-trace-details'
 
 type ExecResult = { stdout: string; stderr: string }

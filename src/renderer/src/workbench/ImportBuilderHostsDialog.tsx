@@ -1,9 +1,9 @@
 import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
-import { remoteServerPairingFailureMessage } from '@/lib/remote-server-pairing-error-copy'
+import { remoteServerPairingFailureMessage } from '@/lib/remote-pairing/remote-server-pairing-error-copy'
 import React, { useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import { translateRemotePairingFailureDescription } from '@/lib/remote-pairing-copy'
+import { translateRemotePairingFailureDescription } from '@/lib/remote-pairing/remote-pairing-copy'
 import {
   BUILDER_HOSTS_TEMPLATE_FILENAME,
   builderHostsTemplate,

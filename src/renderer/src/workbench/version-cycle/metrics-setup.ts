@@ -2,13 +2,23 @@ import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { notifyWorkbenchError } from '../error-feedback'
 import { useAppStore } from '@/store'
-import { useAgentDetectionTargetForWorktree } from '@/hooks/useAgentDetectionTarget'
-import { useDetectedAgents, type AgentDetectionTarget } from '@/hooks/useDetectedAgents'
-import { useHostAgentLaunchPreferences } from '@/runtime/agent-launch-settings/use-host-agent-launch-preferences'
-import { filterEnabledTuiAgents, isTuiAgentEnabled } from '../../../../shared/tui-agent-selection'
+import { useAgentDetectionTargetForWorktree } from '@/lib/agent-session/launch/inventory/useAgentDetectionTarget'
+import {
+  useDetectedAgents,
+  type AgentDetectionTarget
+} from '@/lib/agent-session/launch/inventory/useDetectedAgents'
+import { useHostAgentMenuSettings } from '@/runtime/agent-launch-settings/use-host-agent-launch-preferences'
+import { getRuntimeEnvironmentRevision } from '@/runtime/rpc/environment-revisions/runtime-environment-revision'
+import { useRuntimeHostStatusViewSelector } from '@/store/slices/runtime-status/views/use-runtime-status-view'
+import { toRuntimeExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import { lastVerifiedRuntimeStatus } from '../../../../shared/remote-runtime/host-status/runtime-host-status'
+import {
+  filterEnabledTuiAgents,
+  isTuiAgentEnabled
+} from '../../../../shared/agent-launch/catalog/tui-agent-selection'
 import { openWorkflowDraft } from '../open-workflow-draft'
-import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
-import type { TuiAgent } from '../../../../shared/tui-agent'
+import { activateWebRuntimeSessionWorktree } from '@/runtime/web-session-tabs-sync/actions/web-runtime-worktree-activation'
+import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import { ensureNamedWorktree, type NativeWorkspaceScope } from './native-workspace'
 import { resolveWorkbenchPromptAssets } from './cycle-prompt'
 
@@ -42,7 +52,7 @@ export async function prepareMetricsSession(args: {
       environmentId: baseScope.runtimeOwnerEnvironmentId
     })
   }
-  await openWorkflowDraft(agent, maintenance.id, assets.prompt)
+  await openWorkflowDraft(agent, maintenance.id, baseScope.hostId, assets.prompt)
   // Why: overview is the activity page. Selecting the maintenance tree and
   // opening a tab does not leave it, so the new session stays hidden.
   const view = useAppStore.getState()
@@ -65,22 +75,36 @@ export function useDefaultAgentForTarget(
   detectionTarget: AgentDetectionTarget | undefined
 ): TuiAgent | null {
   const { detectedIds } = useDetectedAgents(detectionTarget)
-  const preferences = useHostAgentLaunchPreferences(detectionTarget)
-  if (!preferences.isAvailable) {
+  const settings = useAppStore((state) => state.settings)
+  const environmentId = detectionTarget?.kind === 'runtime' ? detectionTarget.environmentId : null
+  const status = useRuntimeHostStatusViewSelector(environmentId, (entry) => entry)
+  const pairingRevision = environmentId ? getRuntimeEnvironmentRevision(environmentId) : undefined
+  const runtimeId = lastVerifiedRuntimeStatus(status)?.runtimeId
+  const owner =
+    environmentId && pairingRevision !== undefined && runtimeId
+      ? {
+          executionHostId: toRuntimeExecutionHostId(environmentId),
+          pairingRevision,
+          runtimeId,
+          contact: `${status?.connectionGeneration}:${status?.hostContactEpoch}`
+        }
+      : null
+  const preferences = useHostAgentMenuSettings(owner, settings, true, false)
+  if (
+    !detectionTarget ||
+    !preferences.settings ||
+    (environmentId && (!owner || preferences.pending || preferences.inherited))
+  ) {
     return null
   }
-  const defaultAgentSetting = preferences.defaultTuiAgent
+  const { defaultTuiAgent: defaultAgentSetting, disabledTuiAgents } = preferences.settings
   const defaultAgent =
     defaultAgentSetting &&
     defaultAgentSetting !== 'blank' &&
-    isTuiAgentEnabled(defaultAgentSetting, preferences.disabledTuiAgents)
+    isTuiAgentEnabled(defaultAgentSetting, disabledTuiAgents)
       ? defaultAgentSetting
       : null
-  return (
-    defaultAgent ??
-    filterEnabledTuiAgents(detectedIds ?? [], preferences.disabledTuiAgents)[0] ??
-    null
-  )
+  return defaultAgent ?? filterEnabledTuiAgents(detectedIds ?? [], disabledTuiAgents)[0] ?? null
 }
 
 export type MetricsSetupEntry = {

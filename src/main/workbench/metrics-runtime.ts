@@ -1,13 +1,11 @@
-import { parseExecutionHostId } from '../../shared/execution-host'
-import { toLinuxPath } from '../../shared/wsl-paths'
-import type { VersionMaterialResult } from '../../shared/workbench/version-material-request'
+import { parseExecutionHostId } from '../../shared/execution-host/execution-host'
+import { toLinuxPath } from '../../shared/file-access/wsl-paths'
 import type {
   MetricCatalog,
   MetricRef,
   MetricScope,
   MetricsPort
 } from '../../shared/workbench/metrics'
-import { getActiveMultiplexer } from '../ssh/ssh-target-registry'
 import {
   createMetricsService,
   type MetricCollectorContext,
@@ -54,9 +52,6 @@ export type MetricsOperationRequest =
   | { operation: 'fingerprint'; request: MetricsFingerprintRequest }
   | { operation: 'collect'; request: MetricsCollectRequest }
 
-/** Extra RPC budget so the executor's own 900s timeout reports first. */
-const COLLECT_RPC_TIMEOUT_MS = METRICS_COLLECT_TIMEOUT_MS + 10_000
-
 async function runLocalOperation(
   repoPath: string,
   execOptions: MetricsExecOptions,
@@ -77,40 +72,16 @@ async function runLocalOperation(
   }
 }
 
-/**
- * One execution core for local/WSL and SSH: local runs in-process, SSH hands the
- * same operations to the narrow `workbench.metrics.execute` relay executor —
- * provider.exec stays untouched and no generic remote exec is invented.
- */
 export async function executeMetricsOperation(
   target: WorkbenchWorkspaceTarget,
   execOptions: MetricsExecOptions,
   operation: MetricsOperationRequest
 ): Promise<unknown> {
-  const host = parseExecutionHostId(target.hostId)
-  if (host?.kind === 'local') {
-    return runLocalOperation(target.repoPath, execOptions, operation)
+  if (parseExecutionHostId(target.hostId)?.kind !== 'local') {
+    throw new WorkspaceScopeError('invalid-scope', '请通过 Orca 共享主机连接项目所在电脑后采集指标')
   }
-  if (host?.kind !== 'ssh') {
-    throw new WorkspaceScopeError('invalid-scope', '请通过工作树所属的 Orca runtime 采集指标')
-  }
-  const channel = getActiveMultiplexer(host.targetId)
-  if (!channel) {
-    throw new WorkspaceScopeError('host-unavailable', '工作树所属的 SSH 主机未连接')
-  }
-  const result = (await channel.request(
-    'workbench.metrics.execute',
-    { target: { repoPath: target.repoPath }, ...operation },
-    {
-      timeoutMs: operation.operation === 'collect' ? COLLECT_RPC_TIMEOUT_MS : 75_000
-    }
-  )) as VersionMaterialResult<unknown>
-  if (!result.ok) {
-    throw new MetricCollectorError(result.error.code, result.error.message)
-  }
-  return result.value
+  return runLocalOperation(target.repoPath, execOptions, operation)
 }
-
 export function interpretOutcome(
   outcome: MetricProcessOutcome,
   timeoutMs: number

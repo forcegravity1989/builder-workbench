@@ -1,85 +1,88 @@
-import { closeSync, openSync, readSync, statSync } from 'node:fs'
-
+import { closeSync, openSync, readSync } from 'node:fs'
+import { parseAgentHookJson } from './request-body'
+import { CopilotReplyLineReader } from './providers/copilot/copilot-transcript-reply'
 import { extractAssistantTextFromLine } from './transcript-entry-text'
+import { scanFileRegionsBackward, scanFileRegionsBackwardAsync } from './reverse-file-region-scan'
 
 export const TRANSCRIPT_CHUNK_BYTES = 64 * 1024
 export const TRANSCRIPT_MAX_SCAN_BYTES = 4 * 1024 * 1024
-export const EMPTY_TRANSCRIPT_REGION = Buffer.alloc(0)
-export function readLastAssistantFromTranscriptOnce(transcriptPath: string): string | undefined {
-  return readLastTextFromTranscriptOnce(transcriptPath, extractAssistantTextFromLine)
+/** Read origin evidence from the first record only; later user records cannot establish root ownership. */
+export function readFirstTranscriptRecord(transcriptPath: string): unknown {
+  try {
+    const fd = openSync(transcriptPath, 'r')
+    try {
+      const chunks: Buffer[] = []
+      let bytesRead = 0
+      while (bytesRead < TRANSCRIPT_MAX_SCAN_BYTES) {
+        const buffer = Buffer.alloc(
+          Math.min(TRANSCRIPT_CHUNK_BYTES, TRANSCRIPT_MAX_SCAN_BYTES - bytesRead)
+        )
+        const count = readSync(fd, buffer, 0, buffer.length, bytesRead)
+        if (count === 0) {
+          return parseAgentHookJson(Buffer.concat(chunks).toString('utf8'))
+        }
+        bytesRead += count
+        const chunk = buffer.subarray(0, count)
+        const newline = chunk.indexOf(10)
+        chunks.push(newline === -1 ? chunk : chunk.subarray(0, newline))
+        if (newline !== -1) {
+          return parseAgentHookJson(Buffer.concat(chunks).toString('utf8'))
+        }
+      }
+    } finally {
+      closeSync(fd)
+    }
+  } catch {
+    // Missing, partial or unreadable origin is re-observed on the next ordinary hook.
+  }
+  return undefined
+}
+
+/** Copilot's events.jsonl has its own turn records; every other transcript reads with the shared rules. */
+export type AssistantTranscriptFormat = 'shared' | 'copilot'
+
+export function readLastAssistantFromTranscriptOnce(
+  transcriptPath: string,
+  format: AssistantTranscriptFormat = 'shared'
+): string | undefined {
+  return readLastTextFromTranscriptOnce(transcriptPath, assistantLineExtractor(format)) || undefined
+}
+
+function assistantLineExtractor(
+  format: AssistantTranscriptFormat
+): (line: string) => string | undefined {
+  return format === 'copilot' ? new CopilotReplyLineReader().extract : extractAssistantTextFromLine
 }
 
 export function readLastTextFromTranscriptOnce(
   transcriptPath: string,
   extractLineText: (line: string) => string | undefined
 ): string | undefined {
-  try {
-    const stats = statSync(transcriptPath)
-    const size = stats.size
-    if (size <= 0) {
-      return undefined
-    }
-    const fd = openSync(transcriptPath, 'r')
-    try {
-      // Why a chunk list: carry holds a partial line, and re-joining it per block
-      // made one oversized line (a big tool result or pasted prompt) cost O(line^2).
-      let carryChunks: Buffer[] = []
-      let bytesRead = 0
-      let scanEnd = size
-      while (scanEnd > 0 && bytesRead < TRANSCRIPT_MAX_SCAN_BYTES) {
-        const chunkSize = Math.min(scanEnd, TRANSCRIPT_CHUNK_BYTES)
-        const position = scanEnd - chunkSize
-        const buffer = Buffer.alloc(chunkSize)
-        let filled = 0
-        while (filled < chunkSize) {
-          const n = readSync(fd, buffer, filled, chunkSize - filled, position + filled)
-          if (n === 0) {
-            break
-          }
-          filled += n
-        }
-        // Why bail on a short read: the file shrank under us, so the bytes above
-        // this block no longer line up with what the earlier ones assumed.
-        if (filled < chunkSize) {
-          break
-        }
-        bytesRead += filled
-        scanEnd = position
-        // Why search only the new block: carry is always the run before a newline,
-        // so it holds none of its own.
-        const firstNewline = buffer.indexOf(0x0a)
-        const atStart = position === 0
-        let completeRegion: Buffer
-        if (atStart) {
-          completeRegion =
-            carryChunks.length === 0 ? buffer : Buffer.concat([buffer, ...carryChunks])
-          carryChunks = []
-        } else if (firstNewline === -1) {
-          completeRegion = EMPTY_TRANSCRIPT_REGION
-          carryChunks.unshift(buffer)
-        } else {
-          const afterNewline = buffer.subarray(firstNewline + 1)
-          completeRegion =
-            carryChunks.length === 0 ? afterNewline : Buffer.concat([afterNewline, ...carryChunks])
-          carryChunks = [buffer.subarray(0, firstNewline)]
-        }
-        if (completeRegion.length > 0) {
-          const extracted = findLastExtractedTranscriptLineText(
-            completeRegion.toString('utf8'),
-            extractLineText
-          )
-          if (extracted !== undefined) {
-            return extracted
-          }
-        }
-      }
-      return undefined
-    } finally {
-      closeSync(fd)
-    }
-  } catch {
-    return undefined
-  }
+  return scanFileRegionsBackward(
+    transcriptPath,
+    { chunkBytes: TRANSCRIPT_CHUNK_BYTES, maxScanBytes: TRANSCRIPT_MAX_SCAN_BYTES },
+    (region) => findLastExtractedTranscriptLineText(region.toString('utf8'), extractLineText)
+  )
+}
+
+/** For event-loop callers: the same scan as readLastAssistantFromTranscriptOnce, without blocking. */
+export async function readLastAssistantFromTranscriptAsync(
+  transcriptPath: string,
+  keepReading?: () => boolean,
+  /** A retry passes the size its last scan saw: only lines reaching past it are searched again. */
+  floor?: number,
+  onError?: () => void,
+  format: AssistantTranscriptFormat = 'shared'
+): Promise<string | undefined> {
+  const extractLineText = assistantLineExtractor(format)
+  const text = await scanFileRegionsBackwardAsync(
+    transcriptPath,
+    { chunkBytes: TRANSCRIPT_CHUNK_BYTES, maxScanBytes: TRANSCRIPT_MAX_SCAN_BYTES, floor },
+    (region) => findLastExtractedTranscriptLineText(region.toString('utf8'), extractLineText),
+    keepReading,
+    onError
+  )
+  return text || undefined
 }
 
 export function findLastExtractedTranscriptLineText(

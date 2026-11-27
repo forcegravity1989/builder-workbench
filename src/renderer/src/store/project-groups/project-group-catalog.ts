@@ -1,11 +1,15 @@
-import type { ProjectGroup } from '../../../../shared/project-group-types'
-import { callRuntimeRpc, type RuntimeClientTarget } from '../../runtime/runtime-rpc-client'
-import { catalogOwnsHost, getProjectGroupHostId } from '../slices/project-group-owner-routing'
-import { getRuntimeTargetHostId } from '../runtime-target-host'
-import { projectGroupWithFetchedOwner } from './project-group-owner-stamping'
-import { mergeByIdentity, unchangedMergeSource } from '../catalog-identity'
-import type { ExecutionHostId } from '../../../../shared/execution-host'
-import { getRuntimeEnvironmentRevision } from '../../runtime/runtime-environment-revision'
+import type { ProjectGroup } from '../../../../shared/project/groups/project-group-types'
+import { callRuntimeRpc } from '../../runtime/rpc/calls/runtime-rpc-call'
+import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
+import { catalogOwnsHost } from './project-group-owner-routing'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import { getRuntimeTargetHostId } from '../../runtime/rpc/targets/runtime-client-target'
+import { adoptFromEndpoint } from '../host-catalog/endpoint-catalog-adoption'
+import {
+  mergeByIdentity,
+  unchangedMergeSource
+} from '../../lib/catalog-reconciliation/catalog-identity'
+import type { ExecutionHostId } from '../../../../shared/execution-host/execution-host'
 
 export type FetchedProjectGroupCatalog = {
   projectGroups: ProjectGroup[]
@@ -13,7 +17,7 @@ export type FetchedProjectGroupCatalog = {
 }
 
 function getProjectGroupHostIdentity(group: ProjectGroup): string {
-  return JSON.stringify([getProjectGroupHostId(group), group.id])
+  return JSON.stringify([getRepoExecutionHostId(group), group.id])
 }
 
 function mergeFetchedProjectGroupsForHost(
@@ -23,7 +27,7 @@ function mergeFetchedProjectGroupsForHost(
 ): readonly ProjectGroup[] {
   const fetchedIdentities = new Set(fetched.map(getProjectGroupHostIdentity))
   const preserved = previous.filter((group) => {
-    const existingHostId = getProjectGroupHostId(group)
+    const existingHostId = getRepoExecutionHostId(group)
     return (
       !catalogOwnsHost(hostId, existingHostId) ||
       fetchedIdentities.has(getProjectGroupHostIdentity(group))
@@ -39,21 +43,18 @@ function mergeFetchedProjectGroupsForHost(
 export async function fetchProjectGroupCatalogForTarget(
   target: RuntimeClientTarget
 ): Promise<FetchedProjectGroupCatalog> {
-  const pairingRevision =
-    target.kind === 'environment' ? getRuntimeEnvironmentRevision(target.environmentId) : undefined
   const fetchedGroups =
     target.kind === 'local'
       ? await window.api.projectGroups.list()
       : (
           await callRuntimeRpc<{ groups: ProjectGroup[] }>(target, 'projectGroup.list', undefined, {
             timeoutMs: 15_000,
-            reuseRecentCompatibilityFailure: true,
-            expectedEnvironmentPairingRevision: pairingRevision
+            reuseRecentCompatibilityFailure: true
           })
         ).groups
   return {
     projectGroups: fetchedGroups.map((group) =>
-      projectGroupWithFetchedOwner(group, target, pairingRevision)
+      adoptFromEndpoint(target, { kind: 'projectGroup', row: group })
     ),
     hostId: getRuntimeTargetHostId(target)
   }

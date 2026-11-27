@@ -3,16 +3,21 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import type * as FsModule from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { getDefaultPersistedState, getDefaultWorkspaceDir } from '../shared/constants'
-import type { Store } from './persistence'
+import { getDefaultPersistedState, getDefaultWorkspaceDir } from '../shared/orca-profiles/constants'
+import { Store } from './persistence/loading-store/store'
+import { installFakeAppEnvironment } from '../../config/scripts/test-runtime/environment/vitest-host-ports-setup'
+import { initDataPath } from './persistence/loading-store/user-data-path'
+import { bootstrapProfileStateAuthority } from './persistence/profile-state/startup/profile-state-authority-bootstrap'
+import { ProfileStateSqliteAuthority } from './persistence/profile-state/profile-state-sqlite-authority'
+import { ProfileStateAuthorityBootstrapError } from './persistence/profile-state/recovery/profile-state-recovery-required'
+import { profileStateDatabaseFile } from '../shared/orca-profiles/profile-state-storage-paths'
 import {
-  createStore,
   dataFile,
   readDataFile,
   testState,
   withPlatform,
   writeDataFile
-} from './persistence-test-harness'
+} from './persistence/persistence-test-harness'
 
 const { driveExists } = vi.hoisted(() => ({ driveExists: vi.fn(() => true) }))
 
@@ -29,7 +34,7 @@ vi.mock('electron', () => ({
   safeStorage: { isEncryptionAvailable: () => false }
 }))
 vi.mock('./telemetry/client', () => ({ track: vi.fn() }))
-vi.mock('./ssh/ssh-config-parser', () => ({
+vi.mock('./ssh/config/ssh-config-parser', () => ({
   loadUserSshConfig: vi.fn(() => ({ hosts: [] })),
   sshConfigHostsToTargets: vi.fn(() => [])
 }))
@@ -37,7 +42,20 @@ vi.mock('./ssh/ssh-config-parser', () => ({
 describe('Workbench first-install workspace directory', () => {
   const stores: Store[] = []
   const openStore = () => {
-    const store = createStore()
+    const boot = bootstrapProfileStateAuthority({
+      dataFile: dataFile(),
+      databaseFile: profileStateDatabaseFile(testState.dir),
+      profileId: 'persistence-test',
+      allowEmptyProfileState: true
+    })
+    if (!boot.authority) {
+      throw new Error('SQLite profile authority is unavailable')
+    }
+    const store = new Store({
+      dataFile: dataFile(),
+      profileStateAuthority: boot.authority,
+      initialAuthorityState: boot.initialState
+    })
     stores.push(store)
     return store
   }
@@ -47,13 +65,16 @@ describe('Workbench first-install workspace directory', () => {
     vi.stubEnv('WORKBENCH_SHELL', '1')
     vi.stubEnv('ORCA_PRODUCT_NAME', 'Workbench')
     driveExists.mockReset().mockReturnValue(true)
+    installFakeAppEnvironment({ getPath: () => testState.dir })
+    initDataPath()
+    vi.spyOn(ProfileStateSqliteAuthority.prototype, 'scheduleBackup').mockImplementation(() => {})
   })
 
   afterEach(async () => {
     for (const store of stores.splice(0)) {
-      store.freezeWrites()
-      await store.waitForPendingWrite()
+      await store.freezeWritesAsync()
     }
+    vi.restoreAllMocks()
     vi.unstubAllEnvs()
     rmSync(testState.dir, { recursive: true, force: true })
   })
@@ -66,9 +87,12 @@ describe('Workbench first-install workspace directory', () => {
       expect(readDataFile()).toMatchObject({
         settings: { workspaceDir: 'D:\\builders-workbench\\workspaces' }
       })
-      expect(openStore().getSettings().workspaceDir).toBe('D:\\builders-workbench\\workspaces')
-      store.updateSettings({ workspaceDir: 'C:\\chosen-by-user' })
-      store.flushOrThrow()
+      await store.freezeWritesAsync()
+      const reloaded = openStore()
+      expect(reloaded.getSettings().workspaceDir).toBe('D:\\builders-workbench\\workspaces')
+      reloaded.updateSettings({ workspaceDir: 'C:\\chosen-by-user' })
+      reloaded.flushOrThrow()
+      await reloaded.freezeWritesAsync()
       expect(openStore().getSettings().workspaceDir).toBe('C:\\chosen-by-user')
     })
   })
@@ -79,6 +103,7 @@ describe('Workbench first-install workspace directory', () => {
       const store = openStore()
       expect(store.getSettings().workspaceDir).toBe(getDefaultWorkspaceDir(homedir()))
       store.flushOrThrow()
+      await store.freezeWritesAsync()
       driveExists.mockReturnValue(true)
       expect(openStore().getSettings().workspaceDir).toBe(getDefaultWorkspaceDir(homedir()))
     })
@@ -95,9 +120,10 @@ describe('Workbench first-install workspace directory', () => {
     }
   )
 
-  it('restores the existing directory from a backup when the primary file is absent', async () => {
+  it('restores the existing directory from a backup when the primary file is corrupt', async () => {
     const state = getDefaultPersistedState(homedir())
     state.settings.workspaceDir = 'E:\\restored-workspaces'
+    writeFileSync(dataFile(), '{corrupt')
     writeFileSync(`${dataFile()}.bak.0`, JSON.stringify(state))
     await withPlatform('win32', async () => {
       expect(openStore().getSettings().workspaceDir).toBe('E:\\restored-workspaces')
@@ -110,7 +136,7 @@ describe('Workbench first-install workspace directory', () => {
     async (kind) => {
       writeFileSync(kind === 'primary' ? dataFile() : `${dataFile()}.bak.0`, '{corrupt')
       await withPlatform('win32', async () => {
-        expect(openStore().getSettings().workspaceDir).toBe(getDefaultWorkspaceDir(homedir()))
+        expect(() => openStore()).toThrow(ProfileStateAuthorityBootstrapError)
         expect(driveExists).not.toHaveBeenCalled()
       })
     }

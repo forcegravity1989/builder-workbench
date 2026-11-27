@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
-import type { Repo } from '../../../shared/repo-types'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { CharterReadResult } from '../../../shared/workbench/charter'
 import { readRepoCharter } from './charter-port'
 import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'

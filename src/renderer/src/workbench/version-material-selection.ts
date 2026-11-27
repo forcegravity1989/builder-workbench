@@ -2,7 +2,7 @@ import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { nativeWorkspaceScope } from './version-cycle/native-workspace'
 import { cycleWorkflowForWorktree } from './workbench-nav'
-import { toRuntimeExecutionHostId } from '../../../shared/execution-host'
+import { toRuntimeExecutionHostId } from '../../../shared/execution-host/execution-host'
 
 export type VersionMaterialSelection = {
   treeKey: string

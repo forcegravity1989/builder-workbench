@@ -1,11 +1,11 @@
-import type { Repo } from '../../shared/repo-types'
+import type { Repo } from '../../shared/repository/repo-types'
 import { unlink } from 'node:fs/promises'
 import {
   getRepoExecutionHostId,
   getWorktreeExecutionHostId,
   parseExecutionHostId
-} from '../../shared/execution-host'
-import { runWithGitWorktreeOperationLock } from '../../shared/git-worktree-operation-lock'
+} from '../../shared/execution-host/execution-host'
+import { runWithGitWorktreeOperationLock } from '../../shared/git/worktrees/git-worktree-operation-lock'
 import { CHARTER_BRANCH } from '../../shared/workbench/project-charter'
 import {
   MILESTONES_PATH,
@@ -19,12 +19,13 @@ import {
   type MilestoneSubmit,
   type MilestoneSubmitResult
 } from '../../shared/workbench/project-milestones'
-import type { RuntimeWorktreeListResult } from '../../shared/runtime-worktree-contracts'
-import { gitExecFileAsync } from '../git/runner'
-import { gitOptionsForWorktree } from '../git/git-runtime-options'
-import { readGitBlobAtOidPath } from '../git/source-control/git-blob-read'
-import { detectConflictOperation, runWithGitReadCacheInvalidation } from '../git/status'
-import { probeGitRemoteIdentity } from '../repo-git-remote-identity'
+import type { RuntimeWorktreeListResult } from '../../shared/worktree/catalog/runtime-worktree-contracts'
+import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
+import { gitOptionsForWorktree } from '../git/command-runner/git-runtime-options'
+import { readGitBlobAtOidPath } from '../git/source-control/diffs/git-blob-read'
+import { detectConflictOperation } from '../git/source-control/mutations/git-conflict-operation'
+import { runWithGitReadCacheInvalidation } from '../git/source-control/git-read-cache-invalidation'
+import { probeGitRemoteIdentity } from '../workspaces/catalog/repo-git-remote-identity'
 import { invalidateHostedReviewBranchCache } from '../source-control/hosted-review-branch-cache'
 import {
   createWorkbenchWorkspaceResolver,

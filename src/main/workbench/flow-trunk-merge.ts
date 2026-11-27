@@ -1,19 +1,20 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
-import { resolveWorktreeHostPath } from '../../shared/git-metadata-path'
+import { resolveWorktreeHostPath } from '../../shared/git/metadata/git-metadata-path'
 import { SourceCommit } from '../../shared/workbench/version-material'
 import {
   createWorktreePreparationLockReason,
   WORKTREE_CREATE_PREPARATION_DIRECTORY
-} from '../../shared/worktree/create-preparation'
-import { extractExecError } from '../git/exec-error'
-import { gitOptionsForWorktree, type GitRuntimeOptions } from '../git/git-runtime-options'
-import { gitExecFileAsync } from '../git/runner'
+} from '../../shared/worktree/creation/create-preparation'
+import { extractExecError } from '../git/command-runner/process-capture/exec-error'
 import {
-  discardPreparedWorktree,
-  prepareWorktreeCreateCheckout
-} from '../git/worktree-create-preparation'
+  gitOptionsForWorktree,
+  type GitRuntimeOptions
+} from '../git/command-runner/git-runtime-options'
+import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
+import { discardPreparedWorktree } from '../git/worktrees/creation/worktree-preparation-discard'
+import { prepareWorktreeCreateCheckout } from '../git/worktrees/creation/worktree-create-preparation'
 import { TRUNK_SYNC_TIMEOUT_MS, type FetchedTrunkSource } from './trunk-sync'
 
 export type FlowMergeContext = {
@@ -60,17 +61,12 @@ export async function mergeFlowSources(
   const hostPath = resolveWorktreeHostPath(treePath, options) ?? treePath
   const preparationRoot = path.join(path.dirname(hostPath), WORKTREE_CREATE_PREPARATION_DIRECTORY)
   const preparationId = `${process.pid}-${randomUUID()}`
+  const lockReason = createWorktreePreparationLockReason(preparationId)
   const checkout = path.join(preparationRoot, preparationId)
   // Older Git may not copy worktree-specific config into a new checkout.
   const mergeConfig = await readMergeConfig(treePath, options)
   await mkdir(preparationRoot, { recursive: true })
-  await prepareWorktreeCreateCheckout(
-    treePath,
-    checkout,
-    head,
-    createWorktreePreparationLockReason(preparationId),
-    options
-  )
+  await prepareWorktreeCreateCheckout(treePath, checkout, head, lockReason, options)
 
   const run = (args: string[]) =>
     gitExecFileAsync(args, {
@@ -121,7 +117,15 @@ export async function mergeFlowSources(
     failure = reason
   }
   try {
-    await discardPreparedWorktree(repoPath, checkout, { ...options, timeout: 20_000 })
+    const cleanup = await discardPreparedWorktree(
+      repoPath,
+      checkout,
+      { ...options, timeout: 20_000 },
+      lockReason
+    )
+    if (cleanup !== 'removed') {
+      throw new Error(cleanup)
+    }
   } catch (reason) {
     const detail = failure instanceof Error ? `${failure.message}。` : ''
     throw new Error(`${detail}临时工作树清理失败`, { cause: reason })

@@ -10,6 +10,7 @@ export type VersionTreeWorktreeRevealRequest = {
   repoId: string
   version: string
   worktreeIdentity: string
+  highlight: boolean
   sequence: number
 }
 

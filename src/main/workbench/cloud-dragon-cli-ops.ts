@@ -1,5 +1,5 @@
 import { bwCbExecFileAsync, hasTruncatedExecOutput } from './workbench-exec-observability'
-import { extractExecError, isMissingCommandBinaryError } from '../git/exec-error'
+import { extractExecError, isMissingCommandBinaryError } from '../git/command-runner/process-capture/exec-error'
 import { CLOUDDRAGON_PROJECT_ID } from './cloud-dragon-package-ops'
 import { PackagePipelineError, failureText } from './package-pipeline-error'
 

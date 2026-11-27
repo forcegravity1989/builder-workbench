@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Loader2, MessageSquare, Terminal, Workflow } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { IntegrationCardShell } from './integration-card-shell'
-import { useIntegrationCommandRowClass } from './integration-card-presentation'
-import { usePreflightCardStatuses } from './source-control-preflight-card-status'
+import { IntegrationCardShell } from '../integrations/presentation/integration-card-shell'
+import { useIntegrationCommandRowClass } from '../integrations/presentation/integration-card-presentation'
+import { usePreflightCardStatuses } from '../integrations/source-control/source-control-preflight-card-status'
 import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { OnboardingInlineCommandTerminal } from '../onboarding/OnboardingInlineCommandTerminal'
 import { useIsLocalCliScope } from './use-local-cli-scope'
 import { useCliInstall } from './cli-install-action'
@@ -15,7 +16,7 @@ import {
 import {
   integrationStatusLabel,
   ProviderAccountScopeDetails
-} from './cli-source-control-integration-cards'
+} from '../integrations/source-control/cli-source-control-integration-cards'
 
 // Why (BW #323 / #366): CodeHub, WeLink and CloudBuild are BW-only CLIs, so
 // their cards live in a BW file instead of growing the upstream card module
@@ -50,6 +51,7 @@ const reCheckCopy = () =>
   translate('auto.components.settings.cli.source.control.integration.cards.d5b3be8ecd', 'Re-check')
 
 function BwCliIntegrationCard(config: BwCliCardConfig): React.JSX.Element {
+  const t = useTranslate()
   const { statuses, unavailable, refresh } = usePreflightCardStatuses(config.provider)
   const status = unavailable ? 'unavailable' : statuses[config.statusField]
   const connected = status === 'connected'
@@ -81,7 +83,7 @@ function BwCliIntegrationCard(config: BwCliCardConfig): React.JSX.Element {
       }
       checking={status === 'checking'}
       statusTone={connected ? 'connected' : 'attention'}
-      statusLabel={integrationStatusLabel(status)}
+      statusLabel={integrationStatusLabel(status, t)}
     >
       <ProviderAccountScopeDetails>
         {status !== 'checking' && !connected ? (

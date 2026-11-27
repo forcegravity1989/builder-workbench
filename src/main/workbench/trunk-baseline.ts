@@ -1,5 +1,5 @@
-import { gitExecFileAsync } from '../git/runner'
-import { gitOptionsForWorktree, type GitRuntimeOptions } from '../git/git-runtime-options'
+import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
+import { gitOptionsForWorktree, type GitRuntimeOptions } from '../git/command-runner/git-runtime-options'
 import { SourceCommit } from '../../shared/workbench/version-material'
 import { HistorySourceError } from './version-history-snapshot'
 

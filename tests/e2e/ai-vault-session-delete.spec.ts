@@ -2,8 +2,8 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import type { ElectronApplication, Page } from '@stablyai/playwright-test'
 import { expect, test } from './helpers/orca-app'
-import type { AiVaultSession } from '../../src/shared/ai-vault-types'
-import type { AiVaultDeleteSessionResult } from '../../src/shared/ai-vault-session-deletion'
+import type { AiVaultSession } from '../../src/shared/ai-vault/contracts/ai-vault-types'
+import type { AiVaultDeleteSessionResult } from '../../src/shared/ai-vault/contracts/ai-vault-session-deletion'
 
 // Exercises the real on-disk delete against an isolated, disposable HOME (the
 // E2E harness redirects os.homedir() there). The unit tests mock lstat/realpath/

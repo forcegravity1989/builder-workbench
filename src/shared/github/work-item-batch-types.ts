@@ -1,4 +1,4 @@
-import type { GitHubWorkItem } from './work-item-types'
+import type { GitHubWorkItem } from './work-items/work-item-types'
 
 /** 批量读回的行：与单条 gh 读回同形状（repoId 由 renderer 按解析到的登记行回填）。 */
 export type WorkItemsBatchEntry = Omit<GitHubWorkItem, 'repoId'>

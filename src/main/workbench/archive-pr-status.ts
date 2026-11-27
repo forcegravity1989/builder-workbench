@@ -1,8 +1,9 @@
-import { parseWslPath } from '../wsl'
-import { getOwnerRepo, ghRepoExecOptions, githubRepoContext } from '../github/gh-utils'
+import { parseWslPath } from '../wsl/filesystem/unc-path-access'
+import { getOwnerRepo } from '../github/repositories/github-owner-repo-selection'
+import { ghRepoExecOptions, githubRepoContext } from '../github/repositories/github-repository-identity'
 import { bwGhExecFileAsync } from './workbench-exec-observability'
-import { githubHostExecOptions } from '../github/github-api-repository'
-import { noteRepositoryRateLimitSpend, repositoryRateLimitGuard } from '../github/rate-limit'
+import { githubHostExecOptions } from '../github/repositories/github-repository-host'
+import { noteRepositoryRateLimitSpend, repositoryRateLimitGuard } from '../github/api/rate-limit'
 import {
   isCodeHubGitRemote,
   parseCodeHubRemote,

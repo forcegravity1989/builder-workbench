@@ -21,12 +21,15 @@ vi.mock('../window/dashboard-popout-window', () => ({
 vi.mock('../orca-profiles/profile-index-store', () => ({
   ensureActiveOrcaProfile: vi.fn()
 }))
-vi.mock('../browser/browser-session-registry', () => ({
+vi.mock('../browser/sessions/profiles/browser-session-registry', () => ({
   browserSessionRegistry: {}
+}))
+vi.mock('../browser/cookies/session-restore/browser-session-cookie-clear', () => ({
+  clearBrowserCookieJar: vi.fn()
 }))
 
 import { registerW3AccountHandlers } from './w3-account-ipc'
-import { setTrustedBrowserRendererWebContentsId } from './browser-renderer-trust'
+import { setTrustedBrowserRendererWebContentsId } from './browser/browser-renderer-trust'
 
 describe('w3 account IPC sender trust', () => {
   beforeEach(() => {

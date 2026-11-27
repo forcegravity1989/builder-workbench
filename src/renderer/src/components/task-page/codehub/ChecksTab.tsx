@@ -1,16 +1,19 @@
 import React, { useMemo, useState } from 'react'
 import { CircleDashed, RefreshCw } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ChecksTabLayouts } from '@/components/pull-request-page/checks/layouts'
 import { CheckRow } from '@/components/pull-request-page/checks/row'
-import { CHECK_COLOR, CHECK_ICON } from '@/components/right-sidebar/checks-panel/check-presentation'
-import { getCheckCounts, getChecksSummaryLabel } from '@/components/pr-check-counts'
+import {
+  CHECK_COLOR,
+  CHECK_ICON
+} from '@/components/right-sidebar/checks-panel/presentation/check-presentation'
+import { getCheckCounts, getChecksSummaryLabel } from '@/components/github/pr-check-counts'
 import { getCheckDetailsKey } from '@/components/github/pr-check-presentation'
-import { sortChecksBySeverity } from '../../../../../shared/pr-check-severity-order'
+import { sortChecksBySeverity } from '../../../../../shared/source-control/checks/pr-check-severity-order'
 import { translate } from '@/i18n/i18n'
-import type { PRCheckDetail } from '../../../../../shared/github/check-types'
+import type { PRCheckDetail } from '../../../../../shared/github/checks/check-types'
 import type { CodeHubDetailState } from './use-codehub-detail'
 
 // CodeHub 版 Checks:同一套行/布局/图标件,数据来自 `mr gate`,详情面板只给
@@ -65,6 +68,7 @@ export function CodeHubChecksTab({ state }: { state: CodeHubDetailState }): Reac
   return (
     <ChecksTabLayouts
       loading={mrExtrasLoading}
+      summaryPending={mrExtrasLoading && checks === null}
       listLength={list.length}
       variant="page"
       compactHeader={<div />}

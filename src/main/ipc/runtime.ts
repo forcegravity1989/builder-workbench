@@ -1,26 +1,23 @@
+import type { RendererStatusPublication } from '../../shared/agent-status/renderer-status-publication'
 import { BrowserWindow, ipcMain } from 'electron'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import type {
-  RuntimeBrowserDriverState,
   RuntimeRendererSyncWindowGraph,
   RuntimeStatus,
   RuntimeSyncWindowGraphResult,
   RuntimeTerminalDriverState
-} from '../../shared/runtime-types'
-import type { RuntimeRpcResponse } from '../../shared/runtime-rpc-envelope'
-import type { ClientHostedBrowserRowsEvent } from '../../shared/client-hosted-browser-rows'
-import { TERMINAL_FIT_RESTORE_DEADLINE_MS } from '../../shared/terminal-fit-restore-deadline'
-import {
-  AGENT_SESSION_BACKGROUND_TASK_ROW_STOP_CAPABILITY,
-  AGENT_SESSION_BACKGROUND_TASK_STOP_CAPABILITY,
-  AGENT_SESSION_PENDING_SEND_RESULT_RUNTIME_CAPABILITY,
-  AGENT_SESSION_TURN_ITEM_CAPABILITY,
-  CLAUDE_STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY,
-  STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY
-} from '../../shared/protocol-version'
+} from '../../shared/remote-runtime/session-graph/runtime-session-contracts'
+import type { RuntimeRpcResponse } from '../../shared/remote-runtime/rpc/runtime-rpc-envelope'
+import type { ClientHostedBrowserRowsEvent } from '../../shared/browser/client-hosting/client-hosted-browser-rows'
+import { TERMINAL_FIT_RESTORE_DEADLINE_MS } from '../../shared/terminal/viewport/terminal-fit-restore-deadline'
+import { DESKTOP_RENDERER_RUNTIME_CLIENT_CAPABILITIES } from './runtime-client/desktop-renderer-runtime-capabilities'
 import { RpcDispatcher } from '../runtime/rpc/dispatcher'
-import { ALL_RPC_METHODS } from '../runtime/rpc/methods'
-import { DesktopRuntimeSenderLifecycle } from './desktop-runtime-sender-lifecycle'
+import { DESKTOP_RPC_CALLER } from '../runtime/rpc/callers/rpc-caller-identity'
+import { ORCHESTRATION_CONTRACT_VERSION } from '../../shared/orchestration/orchestration-runtime-capabilities'
+import { ALL_RPC_METHODS } from '../runtime/rpc/methods/rpc-method-registry'
+import { DesktopRuntimeSenderLifecycle } from './runtime-client/desktop-runtime-sender-lifecycle'
+import { toWorkspaceLifecycleResult } from '../ephemeral-vm/workspace-lifecycle-result'
+import { publishMobileProjectSections } from '../runtime/sidebar-inputs/catalog/mobile-project-sections-snapshot'
 
 function boundTerminalFitRestore(pending: Promise<boolean>): Promise<boolean> {
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -39,27 +36,64 @@ export function registerRuntimeHandlers(runtime: OrcaRuntimeService): void {
   ipcMain.removeHandler('runtime:call')
   ipcMain.removeHandler('runtime:subscribe')
   ipcMain.removeAllListeners('runtime:unsubscribe')
+  ipcMain.removeHandler('ephemeralVm:resumeWorkspace')
+  ipcMain.removeHandler('ephemeralVm:suspendWorkspace')
+
+  // The window's wake shares the runtime's single VM wake path with its sleep's suspend.
+  ipcMain.handle('ephemeralVm:resumeWorkspace', (_event, args: { workspaceId: string }) =>
+    toWorkspaceLifecycleResult(() => runtime.wakeWorkspaceVm(args.workspaceId))
+  )
+  // Suspend VM with nothing open; a workspace with open panels sleeps, which suspends it after.
+  ipcMain.handle('ephemeralVm:suspendWorkspace', (_event, args: { workspaceId: string }) =>
+    toWorkspaceLifecycleResult(async () => {
+      await runtime.suspendWorkspaceVm(args.workspaceId)
+      return null
+    })
+  )
 
   ipcMain.handle(
     'runtime:syncWindowGraph',
-    (event, graph: RuntimeRendererSyncWindowGraph): RuntimeSyncWindowGraphResult => {
+    async (event, graph: RuntimeRendererSyncWindowGraph): Promise<RuntimeSyncWindowGraphResult> => {
       const window = BrowserWindow.fromWebContents(event.sender)
       if (!window) {
         throw new Error('Runtime graph sync must originate from a BrowserWindow')
       }
       if (event.senderFrame !== event.sender.mainFrame) {
-        // Why: a disposed main frame can leave an invoke queued after its
-        // replacement starts. It must not settle the replacement generation.
+        // Queued calls from a disposed frame must not settle the replacement document's generation.
         throw new Error('Runtime graph sync must originate from the current main frame')
       }
       if (typeof graph.rendererGeneration !== 'string' || graph.rendererGeneration.length === 0) {
         throw new Error('Runtime graph sync requires a renderer generation')
       }
-      return runtime.syncWindowGraph(window.id, graph)
+      const frame = event.senderFrame
+      const result = await runtime.syncWindowGraph(window.id, graph)
+      if (window.isDestroyed() || frame !== event.sender.mainFrame) {
+        throw new Error('Runtime graph sender changed during publication')
+      }
+      // Only the authoritative window's accepted graph may publish its project catalog.
+      if (
+        graph.projectSectionCatalog &&
+        publishMobileProjectSections(graph.projectSectionCatalog)
+      ) {
+        // Why: phones re-read on main's reposChanged before this publish landed (#37067); every client version handles reposChanged.
+        runtime.notifyReposChangedForRemoteClients()
+      }
+      return result
     }
   )
 
-  ipcMain.handle('runtime:getStatus', (): RuntimeStatus => {
+  ipcMain.removeHandler('runtime:syncAgentStatus')
+  ipcMain.handle('runtime:syncAgentStatus', (event, batch: RendererStatusPublication) => {
+    const window = BrowserWindow.fromWebContents(event.sender)
+    if (!window || event.senderFrame !== event.sender.mainFrame) {
+      return { accepted: false, reason: 'superseded' }
+    }
+    return runtime.syncRendererAgentStatus(window.id, batch)
+  })
+
+  ipcMain.handle('runtime:getStatus', async (): Promise<RuntimeStatus> => {
+    // Match status.get's capped name wait; later reads pick up a lookup that is still running.
+    await runtime.machineNameReady()
     return runtime.getStatus()
   })
 
@@ -67,32 +101,38 @@ export function registerRuntimeHandlers(runtime: OrcaRuntimeService): void {
     'runtime:call',
     async (
       event,
-      args: { method: string; params?: unknown }
+      args: {
+        method: string
+        params?: unknown
+        orchestration?: { contractVersion: number; requestId: string }
+      }
     ): Promise<RuntimeRpcResponse<unknown>> => {
       if (event.senderFrame !== event.sender.mainFrame) {
         throw new Error('Runtime RPC call must originate from the current main frame')
       }
-      return (await new RpcDispatcher({ runtime, methods: ALL_RPC_METHODS }).dispatch(
+      return new RpcDispatcher({ runtime, methods: ALL_RPC_METHODS }).dispatch(
         {
           id: 'desktop-ipc',
           authToken: 'desktop-ipc',
+          // The renderer ships with this main process, so it always speaks the current contract.
+          orchestrationContractVersion: ORCHESTRATION_CONTRACT_VERSION,
           method: args.method,
-          params: args.params
+          params: args.params,
+          ...(args.orchestration
+            ? {
+                orchestrationContractVersion: args.orchestration.contractVersion,
+                orchestrationRequestId: args.orchestration.requestId
+              }
+            : {})
         },
         {
           clientId: 'desktop-renderer',
+          caller: DESKTOP_RPC_CALLER,
           clientKind: 'runtime',
           connectionId: desktopSenders.connectionIdFor(event.sender),
-          clientCapabilities: [
-            AGENT_SESSION_BACKGROUND_TASK_STOP_CAPABILITY,
-            AGENT_SESSION_PENDING_SEND_RESULT_RUNTIME_CAPABILITY,
-            AGENT_SESSION_TURN_ITEM_CAPABILITY,
-            AGENT_SESSION_BACKGROUND_TASK_ROW_STOP_CAPABILITY,
-            STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY,
-            CLAUDE_STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY
-          ]
+          clientCapabilities: DESKTOP_RENDERER_RUNTIME_CLIENT_CAPABILITIES
         }
-      )) as RuntimeRpcResponse<unknown>
+      )
     }
   )
 
@@ -112,40 +152,28 @@ export function registerRuntimeHandlers(runtime: OrcaRuntimeService): void {
       const controller = new AbortController()
       senderSubscriptions.set(args.subscriptionId, controller)
       const channel = `runtime:subscription:${args.subscriptionId}`
-      const stop = (): void => {
-        if (senderSubscriptions.get(args.subscriptionId) === controller) {
-          senderSubscriptions.delete(args.subscriptionId)
-        }
-      }
-      void new RpcDispatcher({ runtime, methods: ALL_RPC_METHODS })
-        .dispatchStreaming(
-          {
-            id: args.subscriptionId,
-            authToken: 'desktop-ipc',
-            method: args.method,
-            params: args.params
-          },
-          (response) => {
-            if (!controller.signal.aborted && !event.sender.isDestroyed()) {
-              event.sender.send(channel, JSON.parse(response) as RuntimeRpcResponse<unknown>)
-            }
-          },
-          {
-            signal: controller.signal,
-            clientId: 'desktop-renderer',
-            clientKind: 'runtime',
-            connectionId,
-            clientCapabilities: [
-              AGENT_SESSION_BACKGROUND_TASK_STOP_CAPABILITY,
-              AGENT_SESSION_PENDING_SEND_RESULT_RUNTIME_CAPABILITY,
-              AGENT_SESSION_TURN_ITEM_CAPABILITY,
-              AGENT_SESSION_BACKGROUND_TASK_ROW_STOP_CAPABILITY,
-              STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY,
-              CLAUDE_STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY
-            ]
+      // Streaming outlives dispatch setup; unsubscribe or sender retirement owns cancellation.
+      void new RpcDispatcher({ runtime, methods: ALL_RPC_METHODS }).dispatchStreamingObjects(
+        {
+          id: args.subscriptionId,
+          authToken: 'desktop-ipc',
+          method: args.method,
+          params: args.params
+        },
+        (response) => {
+          if (!controller.signal.aborted && !event.sender.isDestroyed()) {
+            event.sender.send(channel, response)
           }
-        )
-        .finally(stop)
+        },
+        {
+          signal: controller.signal,
+          clientId: 'desktop-renderer',
+          caller: DESKTOP_RPC_CALLER,
+          clientKind: 'runtime',
+          connectionId,
+          clientCapabilities: DESKTOP_RENDERER_RUNTIME_CLIENT_CAPABILITIES
+        }
+      )
       return { subscribed: true }
     }
   )
@@ -185,7 +213,7 @@ export function registerRuntimeHandlers(runtime: OrcaRuntimeService): void {
   ipcMain.removeHandler('runtime:getBrowserDrivers')
   ipcMain.handle(
     'runtime:getBrowserDrivers',
-    (): { browserPageId: string; driver: RuntimeBrowserDriverState }[] => {
+    (): { browserPageId: string; driver: RuntimeTerminalDriverState }[] => {
       const drivers = runtime.getAllBrowserDrivers()
       return Array.from(drivers.entries()).map(([browserPageId, driver]) => ({
         browserPageId,
@@ -199,32 +227,17 @@ export function registerRuntimeHandlers(runtime: OrcaRuntimeService): void {
     runtime.getBrowserRemoteViewerPages()
   )
 
-  // Why: the renderer holds these rows in memory only, so a reload has nothing to restore from.
+  // In-memory renderer rows need a main-owned source for reload restoration.
   ipcMain.removeHandler('runtime:getClientHostedBrowserRows')
   ipcMain.handle('runtime:getClientHostedBrowserRows', (): ClientHostedBrowserRowsEvent[] =>
     runtime.listClientHostedBrowserRows()
   )
 
-  // Why: the desktop "Restore" button sets the display mode to 'desktop' and
-  // applies it, which restores the PTY to its original dimensions and emits
-  // a 'resized' event to any active mobile subscriber. This uses the same
-  // code path as the mobile toggle button (terminal.setDisplayMode RPC).
+  // Restore desktop dimensions through the mobile display-mode path so subscribers receive resize events.
   ipcMain.removeHandler('runtime:restoreTerminalFit')
   ipcMain.handle('runtime:restoreTerminalFit', async (_event, args: { ptyId: string }) => {
-    // Why: this IPC powers the desktop "Take back" button. Beyond restoring
-    // PTY dims (the original semantic), it now also reclaims the input
-    // floor for the desktop via the driver state machine. The lock banner
-    // unmounts and desktop input/resize are unblocked until the next
-    // mobile interaction takes the floor again. See
-    // docs/mobile-presence-lock.md.
-    //
-    // Why async: reclaimTerminalForDesktop awaits applyMobileDisplayMode's
-    // PTY-resize chain. Returning the unresolved Promise to ipcMain made
-    // Electron try to structured-clone a Promise — "An object could not
-    // be cloned" error — and the renderer's restoreTerminalFit() rejected
-    // with no useful info.
-    // Why: keep one underlying reclaim per PTY even after callers time out;
-    // layout serialization means a retry cannot bypass the wedged operation.
+    // Take back input and sizing for desktop (docs/mobile-presence-lock.md).
+    // Keep one reclaim per PTY through caller timeouts; retries cannot bypass layout serialization.
     let pending = pendingTerminalFitRestores.get(args.ptyId)
     if (!pending) {
       try {

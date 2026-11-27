@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { CharterStatus } from '../../../shared/workbench/charter'
 import { readCharterPrStatus } from './charter-port'
 

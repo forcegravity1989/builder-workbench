@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { resolveGitMetadataPath } from '../../../shared/git-metadata-path'
+import { resolveGitMetadataPath } from '../../../shared/git/metadata/git-metadata-path'
 
 /** Resolve the shared Git directory for a main or linked worktree. */
 export async function resolveGitCommonDir(gitDir: string): Promise<string> {

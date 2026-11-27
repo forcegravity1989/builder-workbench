@@ -3,15 +3,15 @@ import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { FolderKanban, LoaderCircle, MessageSquare, Send } from 'lucide-react'
-import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
+import CommentMarkdown from '@/components/comment-markdown/CommentMarkdown'
 import { GitHubMarkdownComposer } from '@/components/github/GitHubMarkdownComposer'
 import {
   getPRCommentAudienceEmptyLabel,
   getPrCommentAudienceFilters
-} from '@/lib/pr-comment-audience-labels'
-import type { PRCommentAudienceFilter } from '../../../../../shared/pr-comment-audience'
-import { cn } from '@/lib/utils'
-import { formatRelativeTime } from '../../task-page-source-context'
+} from '@/lib/source-control/review/comments/pr-comment-audience-labels'
+import type { PRCommentAudienceFilter } from '../../../../../shared/source-control/review-comments/pr-comment-audience'
+import { cn } from '@/lib/class-names'
+import { formatRelativeTime } from '../task-page-source-context'
 import {
   CodeHubCommentThread,
   codeHubCommentAudienceCounts,

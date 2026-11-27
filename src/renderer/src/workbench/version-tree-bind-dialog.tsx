@@ -21,8 +21,8 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { getRepoTaskSourceContext } from '@/components/task-page-source-context'
-import type { Repo } from '../../../shared/repo-types'
+import { getRepoTaskSourceContext } from './task-source-context'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { Worktree, WorkspaceLinkedItem } from '../../../shared/worktree/types'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
 import type { CycleTaskReference } from './version-cycle/ports'
@@ -32,7 +32,7 @@ import {
   type WorkbenchVersionBinding
 } from '../../../shared/workbench/version-binding'
 import { versionFlowBranch } from '../../../shared/workbench/version-workspace-prepare'
-import { branchName } from '@/lib/git-utils'
+import { branchName } from '@/lib/source-control/branches/branch-name'
 import { nativeVersionBindingPort } from './version-binding-port'
 import { nativeTaskPortDeps } from './native-task-port'
 import { readReference, resolveReferenceRepo } from './task-port'

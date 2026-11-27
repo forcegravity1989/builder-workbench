@@ -1,5 +1,8 @@
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
-import { cn } from '@/lib/utils'
+import type { CodeHubFiltersModel } from './Filters'
+import type { CodeHubTaskRow } from '../../use-task-page-codehub-loading'
+import type { Worktree } from '../../../../../shared/worktree/types'
+import { getCodeHubRepoSourceContext } from '@/lib/codehub-api'
+import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
@@ -10,11 +13,11 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { CodeHubIssueListStatus } from './IssueStatusMenu'
-import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page-github-work-item-status-badge'
+import { TaskPageGitHubWorkItemStateBadge } from '../github/listing/task-page-github-work-item-status-badge'
 import {
   getTaskPageGitHubPRIconTone,
   type GitHubWorkItemStatusItem
-} from '@/components/task-page-github-work-item-status'
+} from '../github/listing/task-page-github-work-item-status'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
@@ -33,9 +36,8 @@ import {
   GITHUB_TASK_STICKY_ID_CELL_CLASS,
   GITHUB_TASK_STICKY_ID_HEADER_CLASS,
   GITHUB_TASK_STICKY_TITLE_CELL_CLASS,
-  GITHUB_TASK_STICKY_TITLE_HEADER_CLASS,
-  getTaskPageRepoSourceContext
-} from '../../task-page-source-context'
+  GITHUB_TASK_STICKY_TITLE_HEADER_CLASS
+} from '../task-page-source-context'
 import { CodeHubListResultNotice, TaskPageScopeFooter } from '@/workbench/TaskScopePanel'
 import { resolveTaskRowWorkspace } from '@/workbench/scoped-task-workspace'
 import { CodeHubAssigneesCell } from './AssigneesCell'
@@ -48,10 +50,22 @@ function githubStateOf(item: CodeHubTaskItem): GitHubWorkItemStatusItem {
   }
 }
 
+export type CodeHubListModel = Pick<
+  CodeHubFiltersModel,
+  'selectedRepos' | 'codehubLoading' | 'codehubView' | 'codehubQuery' | 'codehubAuthor' | 'codehubAssignee' | 'codehubLabels' | 'setCodehubRefreshNonce'
+> & Parameters<typeof TaskPageScopeFooter>[0]['model'] & {
+  codehubItems: CodeHubTaskRow[]
+  codehubError: string | null
+  codehubHasMore: boolean
+  allWorktrees: readonly Worktree[]
+  setCodehubDetailItem: (item: CodeHubTaskRow) => void
+  handleUseCodeHubItem: (item: CodeHubTaskRow) => void
+}
+
 export function TaskPageCodeHubItemList({
   model
 }: {
-  model: TaskPageComposerActionsModel
+  model: CodeHubListModel
 }): React.JSX.Element {
   const {
     codehubItems,
@@ -65,7 +79,6 @@ export function TaskPageCodeHubItemList({
     setCodehubDetailItem,
     handleUseCodeHubItem,
     setCodehubRefreshNonce,
-    repoMap,
     allWorktrees
   } = model
   const mrView = codehubView === 'mrs'
@@ -87,10 +100,7 @@ export function TaskPageCodeHubItemList({
     if (item.type !== (mrView ? 'mr' : 'issue')) {
       return false
     }
-    if (
-      model.workbenchScopeActive &&
-      (mrView || !model.workbenchScopeCodeHubItemKeys.has(`${item.repoId}:${item.iid}`))
-    ) {
+    if (model.workbenchScopeActive && mrView) {
       return false
     }
     if (
@@ -184,18 +194,20 @@ export function TaskPageCodeHubItemList({
           </div>
         ) : null}
         {visibleItems.map((item) => {
-          const key = `${item.repoId ?? ''}:${item.type}:${item.iid}`
-          const repo = selectedRepos.find((candidate) => candidate.id === item.repoId)
+          const key = [item.sourceContext?.hostId, item.host, item.project, item.repoId, item.type, item.iid].join(':')
+          const repo = selectedRepos.find(
+            (candidate) =>
+              candidate.id === item.repoId &&
+              candidate.path === item.repoPath &&
+              (!item.sourceContext || getCodeHubRepoSourceContext(candidate)?.hostId === item.sourceContext.hostId)
+          )
           // G2 (BW)：范围视图的 Issue 按明确绑定解析 Open/Start；无范围保持原 Start。
           const rowWorkspace = resolveTaskRowWorkspace({
             scope: model.workbenchScope,
             worktrees: allWorktrees,
             provider: 'codehub',
             item: { repoId: item.repoId, type: item.type, number: item.iid },
-            sourceContext: getTaskPageRepoSourceContext(
-              repoMap.get(item.repoId ?? '') ?? null,
-              'codehub'
-            )
+            sourceContext: item.sourceContext ?? getCodeHubRepoSourceContext(repo)
           })
           return (
             <div
@@ -375,11 +387,7 @@ export function TaskPageCodeHubItemList({
             </div>
           )
         })}
-        <TaskPageScopeFooter
-          model={model}
-          extraLoading={codehubLoading}
-          filteredCount={visibleItems.length}
-        />
+        <TaskPageScopeFooter model={model} filteredCount={visibleItems.length} />
         <CodeHubListResultNotice
           hasMore={!codehubLoading && !model.workbenchScopeActive && model.codehubHasMore}
         />

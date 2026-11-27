@@ -1,6 +1,25 @@
+import type {
+  ArtifactCloudOperation,
+  ArtifactPublishedLink
+} from '../../../../shared/artifacts/artifacts'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
+
+const LOCAL_RUNTIME = { kind: 'local' } as const
+
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { getShareLink } from './share-server-client'
 
-/** Published-link lookup reads this machine's local share index, not an account-wide list. */
-export function getPublishedArtifactLink(sourceKey: string): Promise<string | null> {
-  return getShareLink(sourceKey)
+export async function getPublishedArtifactLink(sourceKey: string): Promise<string | null> {
+  if (isWorkbenchShell()) {
+    return getShareLink(sourceKey)
+  }
+  const result = await callRuntimeRpc<ArtifactCloudOperation<ArtifactPublishedLink | null>>(
+    LOCAL_RUNTIME,
+    'artifacts.getPublishedLink',
+    { sourceKey }
+  )
+  if (result.status === 'ok') {
+    return result.value?.shareUrl ?? null
+  }
+  throw new Error(result.status)
 }

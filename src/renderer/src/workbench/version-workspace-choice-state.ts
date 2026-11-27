@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { activateAndRevealWorktree } from '@/lib/worktree-activation'
+import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
 import type { Worktree } from '../../../shared/worktree/types'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 import { activateVersionWorktree } from './version-worktree-host'

@@ -1,5 +1,6 @@
 import type { IssueStateEntry, IssueStatesBatchResult } from '../../shared/github/issue-state-types'
-import { ghExecFileAsync, acquire, release } from './gh-utils'
+import { ghExecFileAsync } from '../git/command-runner/hosted-cli/gh-exec-file'
+import { acquire, release } from './execution/github-operation-slots'
 
 export type { IssueStateEntry, IssueStatesBatchResult }
 

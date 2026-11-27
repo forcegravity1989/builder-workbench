@@ -1,10 +1,13 @@
-import { parsePairingCode } from '../../../../shared/pairing'
+import { parsePairingCode } from '../../../../shared/remote-runtime/pairing/pairing'
 import {
   RuntimePairingLinkReferenceSchema,
   type RuntimePairingLinkReference
-} from '../../../../shared/runtime-access-grants'
-import type { RuntimePairingReach } from '../../../../shared/runtime-pairing-reach'
-import type { RuntimeAccessMode, RuntimeTeamBinding } from '../../../../shared/runtime-session-contracts'
+} from '../../../../shared/remote-runtime/host-catalog/runtime-access-grants'
+import type { RuntimePairingReach } from '../../../../shared/remote-runtime/pairing/runtime-pairing-reach'
+import type {
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
 
 export const RUNTIME_PAIRING_LOOPBACK_ADDRESS = '127.0.0.1'
 

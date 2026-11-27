@@ -1,4 +1,4 @@
-import { redactString } from '../observability/redactor'
+import { redactString } from '../../shared/observability/redactor'
 import type { ActiveSpan } from '../observability/tracer'
 
 const SAFE_LABEL = /^[a-z0-9][a-z0-9._-]{0,63}$/i

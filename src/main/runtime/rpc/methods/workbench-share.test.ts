@@ -76,7 +76,9 @@ describe('workbench.share RPC methods', () => {
         throw new Error(`${testCase.methodName} must be a request method`)
       }
 
-      await expect(target.handler(testCase.params, { runtime })).resolves.toBe(expected)
+      await expect(
+        target.handler(testCase.params, { runtime, caller: { kind: 'local-cli' } })
+      ).resolves.toBe(expected)
       expect(serviceMethod).toHaveBeenCalledWith(...testCase.expectedArgs)
     }
   )
@@ -90,9 +92,13 @@ describe('workbench.share RPC methods', () => {
       }
 
       for (const clientKind of ['mobile', 'runtime'] as const) {
-        await expect(target.handler(testCase.params, { runtime, clientKind })).rejects.toThrow(
-          /host device/
-        )
+        await expect(
+          target.handler(testCase.params, {
+            runtime,
+            clientKind,
+            caller: { kind: 'paired-device', deviceId: 'paired-device' }
+          })
+        ).rejects.toThrow(/host device/)
       }
       expect(mocks.publish).not.toHaveBeenCalled()
       expect(mocks.getLink).not.toHaveBeenCalled()
@@ -115,8 +121,7 @@ describe('workbench.share RPC methods', () => {
       await expect(
         target.handler(testCase.params, {
           runtime,
-          clientId: 'desktop-renderer',
-          clientKind: 'runtime'
+          caller: { kind: 'desktop' }
         })
       ).resolves.toBe(expected)
       expect(serviceMethod).toHaveBeenCalledWith(...testCase.expectedArgs)

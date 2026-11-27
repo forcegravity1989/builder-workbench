@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createBrowserPageWebviewNavigationHandlers } from './browser-page-webview-navigation-handlers'
+import { createBrowserPageWebviewNavigationHandlers } from './lifecycle/browser-page-webview-navigation-handlers'
 
 const TAB_ID = 'tab-1'
 
