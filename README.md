@@ -59,4 +59,4 @@ pnpm run dev:workbench
 | 领域概念与容易混淆的词 | [CONTEXT.md](CONTEXT.md)                                                     |
 | 开发或让模型修改本仓   | [AGENTS.md](AGENTS.md)                                                       |
 
-产品称 **Builders' Workbench / Workbench / BW**，工程标识使用 `bw`。变更原因与验证证据查对应 commit / PR，当前知识以以上正本为准。
+Monica 原名 Builders' Workbench（BW），工程标识沿用 `bw`。变更原因与验证证据查对应 commit / PR，当前知识以以上正本为准。
