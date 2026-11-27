@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ShareListEntry } from '../../../../shared/workbench/share'
-import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
+import { useConfirmationDialog } from '@/components/dismiss/confirmation/confirmation-dialog-context'
 import { translate } from '@/i18n/i18n'
-import { reportShareFailure, shareErrorDescription } from '../artifacts/artifact-publish-flow'
+import { reportShareFailure, shareErrorDescription } from '../artifacts/workbench-artifact-publish'
 import { listShares, removeShare, ShareLinkError } from '../artifacts/share-server-client'
 import { Button } from '../ui/button'
 

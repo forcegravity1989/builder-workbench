@@ -1,7 +1,7 @@
 import type { AppState } from '@/store/types'
-import { structuredAgentSessionPaneKey } from '../../../../shared/structured-agent-session-projection'
-import { makePaneKey, isTerminalLeafId } from '../../../../shared/stable-pane-id'
-import { resolveRootlessTerminalLayoutLeafId } from '@/components/terminal-pane/terminal-layout-leaf-ids'
+import { structuredAgentSessionPaneKey } from '../../../../shared/agent-session/view/structured-agent-session-projection'
+import { makePaneKey, isTerminalLeafId } from '../../../../shared/workspace-layout/stable-pane-id'
+import { resolveRootlessTerminalLayoutLeafId } from '../../../../shared/workspace-layout/terminal-topology/terminal-pane-tree'
 import type { CycleScope, CycleSession } from './ports'
 import { cycleScopeForWorktree, cycleScopeKey } from './native-cycle-workspace'
 

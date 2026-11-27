@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import type { ExecutionHostId } from '../../../shared/execution-host'
+import type { ExecutionHostId } from '../../../shared/execution-host/execution-host'
 import type { WorkbenchCreationContext } from '../../../shared/workbench/creation-context'
 import { findGoalParentSuggestion } from './scoped-task-workspace'
 import { prefetchWorkspaceCreateBase } from './workspace-create-prefetch'

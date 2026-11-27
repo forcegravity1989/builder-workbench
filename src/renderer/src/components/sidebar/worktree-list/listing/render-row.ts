@@ -1,24 +1,16 @@
-import type { HostSectionRow } from '../../host-section-rows'
-import type { ReactNode } from 'react'
+import type { HostSectionRow } from '../../../../../../shared/sidebar-list/hosts/host-section-rows'
 
-type WorktreeItemRow = Extract<HostSectionRow, { type: 'item' }>
-export type RenderRow =
-  | HostSectionRow
-  | { type: 'lineage-group'; key: string; rows: WorktreeItemRow[] }
-  | { type: 'content'; key: string; content: ReactNode }
+export type RenderRow = HostSectionRow | { type: 'workbench-versions' }
 
 export function getRenderRowKey(row: RenderRow): string {
-  if (row.type === 'content') {
-    return `content:${row.key}`
+  if (row.type === 'workbench-versions') {
+    return 'workbench:versions'
   }
   if (row.type === 'host-header') {
     return `host:${row.hostId}`
   }
   if (row.type === 'header') {
     return row.hostId ? `hdr:${row.hostId}:${row.key}` : `hdr:${row.key}`
-  }
-  if (row.type === 'lineage-group') {
-    return `lineage-group:${row.key}`
   }
   if (row.type === 'imported-worktrees-card') {
     return `imported:${row.key}`
@@ -30,7 +22,7 @@ export function getRenderRowKey(row: RenderRow): string {
     return `pending:${row.creationId}`
   }
   if (row.type === 'folder-workspace') {
-    return `folder-workspace:${row.folderWorkspace.id}`
+    return row.key
   }
   return `wt:${row.rowKey}`
 }

@@ -1,14 +1,14 @@
 import { basename } from 'node:path'
 import { splitWorktreeIdForFilesystem } from '../../shared/worktree/id'
-import type { SessionMemory } from '../../shared/process-stats-types'
-import type { Store } from '../persistence'
-import { parseWorkspaceKey } from '../../shared/workspace-scope'
-import { folderWorkspaceToWorktree } from '../../shared/folder-workspace-worktree'
+import type { SessionMemory } from '../../shared/diagnostics/process-stats-types'
+import type { Store } from '../persistence/loading-store/store'
+import { parseWorkspaceKey } from '../../shared/workspace/identity/workspace-scope'
+import { folderWorkspaceRepoId } from '../../shared/folder-workspaces/folder-workspace-worktree'
 
-export type MemorySnapshotStore = Pick<
-  Store,
-  'getRepo' | 'getWorktreeMeta' | 'getFolderWorkspace' | 'getProjectGroups'
->
+export type MemorySnapshotStore = Pick<Store, 'getRepo' | 'getWorktreeMeta'> &
+  Partial<Pick<Store, 'getFolderWorkspace'>> & {
+    getProjectGroups?: () => Pick<ReturnType<Store['getProjectGroups']>[number], 'id' | 'name'>[]
+  }
 
 const APP_HISTORY_KEY = '__app__'
 const HISTORY_CAPACITY = 60
@@ -66,26 +66,39 @@ export type WorktreeMemoryBucket = {
   sessions: SessionMemory[]
 }
 
+/** Project-group names read once per snapshot, not once per folder bucket. */
+export type ProjectGroupNameLookup = (projectGroupId: string) => string | undefined
+
+export function createProjectGroupNameLookup(store: MemorySnapshotStore): ProjectGroupNameLookup {
+  let names: Map<string, string | undefined> | null = null
+  return (projectGroupId) => {
+    // SAFETY: Missing optional capabilities keep the original direct-call failure.
+    names ??= new Map(store.getProjectGroups!().map((group) => [group.id, group.name]))
+    return names.get(projectGroupId)
+  }
+}
+
 export function resolveWorktreeMemoryNames(
   worktreeId: string,
-  store: MemorySnapshotStore
+  store: MemorySnapshotStore,
+  projectGroupName: ProjectGroupNameLookup = createProjectGroupNameLookup(store)
 ): {
   worktreeName: string
   repoId: string
   repoName: string
 } {
   const scope = parseWorkspaceKey(worktreeId)
-  const folder = scope?.type === 'folder' ? store.getFolderWorkspace(scope.folderWorkspaceId) : null
+  // SAFETY: Missing optional capabilities keep the original direct-call failure.
+  const folder =
+    scope?.type === 'folder' ? store.getFolderWorkspace!(scope.folderWorkspaceId) : null
   if (folder) {
-    const worktree = folderWorkspaceToWorktree(folder)
-    const group = store.getProjectGroups().find((item) => item.id === folder.projectGroupId)
+    // Why: names only; building the full worktree record would normalize every attachment per sample.
     return {
-      worktreeName: worktree.displayName,
-      repoId: worktree.repoId,
-      repoName: group?.name?.trim() || worktree.displayName
+      worktreeName: folder.name,
+      repoId: folderWorkspaceRepoId(folder.projectGroupId),
+      repoName: projectGroupName(folder.projectGroupId)?.trim() || folder.name
     }
   }
-  // Orca worktree ids look like `${repoId}::${absolutePath}`.
   const parsed = splitWorktreeIdForFilesystem(worktreeId)
   const repoId = parsed?.repoId ?? worktreeId
   const worktreePath = parsed?.worktreePath ?? ''

@@ -1,37 +1,84 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { RateLimitService } from './service'
-import { fetchCursorRateLimits } from './cursor-fetcher'
-import { readCursorAuthSession, type CursorAuthReadResult } from './cursor-auth'
+import { RateLimitService } from './service/rate-limit-service'
+import { fetchCursorRateLimits } from './providers/cursor/cursor-fetcher'
+import { readCursorAuthSession, type CursorAuthReadResult } from './providers/cursor/cursor-auth'
 import { cursorAuthProvenance } from './cursor-usage-account-policy'
-import { fetchClaudeRateLimits } from './claude-fetcher'
-import { fetchCodexRateLimits } from './codex-fetcher'
-import {
-  deferred,
-  okProvider,
-  resetRateLimitProviderMocks,
-  unavailableProvider
-} from './rate-limit-service-test-harness'
-import type { ProviderRateLimits } from '../../shared/rate-limit-types'
+import type { ProviderRateLimits } from '../../shared/agent-usage/rate-limits/rate-limit-types'
 
-vi.mock('./claude-fetcher', () => ({
-  fetchClaudeRateLimits: vi.fn(),
-  fetchManagedAccountUsage: vi.fn()
+const { unavailable } = vi.hoisted(() => ({
+  unavailable:
+    (provider: ProviderRateLimits['provider']) => async (): Promise<ProviderRateLimits> => ({
+      provider,
+      session: null,
+      weekly: null,
+      updatedAt: Date.now(),
+      error: null,
+      status: 'unavailable'
+    })
 }))
-vi.mock('./codex-fetcher', () => ({
-  consumeCodexRateLimitResetCredit: vi.fn(),
-  fetchCodexRateLimits: vi.fn()
-}))
-vi.mock('./gemini-usage-fetcher', () => ({ fetchGeminiRateLimits: vi.fn() }))
-vi.mock('./kimi-fetcher', () => ({ fetchKimiRateLimits: vi.fn() }))
-vi.mock('./opencode-go-usage-fetcher', () => ({ fetchOpenCodeGoRateLimits: vi.fn() }))
-vi.mock('./minimax/minimax-fetcher', () => ({ fetchMiniMaxRateLimits: vi.fn() }))
-vi.mock('./grok-fetcher', () => ({ fetchGrokRateLimits: vi.fn() }))
-vi.mock('./grok-auth', () => ({ readGrokAuthSession: vi.fn() }))
-vi.mock('./cursor-fetcher', () => ({ fetchCursorRateLimits: vi.fn() }))
-vi.mock('./cursor-auth', () => ({ readCursorAuthSession: vi.fn() }))
-vi.mock('../minimax/minimax-cookie-store', () => ({ hasMiniMaxSessionCookie: vi.fn() }))
-vi.mock('../minimax/minimax-api-key-store', () => ({ hasMiniMaxApiKey: vi.fn(() => false) }))
 
+vi.mock('./providers/claude/claude-active-usage-fetch', () => ({
+  fetchActiveClaudeRateLimits: unavailable('claude')
+}))
+vi.mock('./providers/codex/codex-fetcher', () => ({
+  fetchCodexRateLimits: unavailable('codex')
+}))
+vi.mock('./providers/gemini/gemini-usage-fetcher', () => ({
+  fetchGeminiRateLimits: unavailable('gemini')
+}))
+vi.mock('./providers/opencode-go/opencode-go-usage-source-selection', () => ({
+  fetchOpenCodeGoUsage: unavailable('opencode-go')
+}))
+vi.mock('./providers/kimi/kimi-fetcher', () => ({ fetchKimiRateLimits: unavailable('kimi') }))
+vi.mock('./providers/minimax/minimax-fetcher', () => ({
+  fetchMiniMaxRateLimits: unavailable('minimax')
+}))
+vi.mock('./providers/grok/grok-fetcher', () => ({ fetchGrokRateLimits: unavailable('grok') }))
+vi.mock('./providers/grok/grok-auth', () => ({
+  readGrokAuthSession: () => ({ status: 'missing' })
+}))
+vi.mock('./providers/cursor/cursor-fetcher', () => ({
+  fetchCursorRateLimits: vi.fn()
+}))
+vi.mock('./providers/cursor/cursor-auth', () => ({
+  readCursorAuthSession: vi.fn()
+}))
+vi.mock('./providers/zcode/zcode-usage-fetcher', () => ({
+  fetchZcodeRateLimits: unavailable('zcode')
+}))
+vi.mock('./providers/antigravity/antigravity-usage-fetcher', () => ({
+  fetchAntigravityRateLimits: unavailable('antigravity')
+}))
+vi.mock('./providers/muse/muse-usage-fetcher', () => ({
+  fetchMuseRateLimits: unavailable('muse')
+}))
+vi.mock('../minimax/minimax-cookie-store', () => ({
+  hasMiniMaxSessionCookie: async () => false
+}))
+vi.mock('../minimax/minimax-api-key-store', () => ({ hasMiniMaxApiKey: async () => false }))
+vi.mock('../zcode/zcode-plan-api-key-store', () => ({ hasZcodePlanApiKey: async () => false }))
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
+}
+
+function okProvider(
+  provider: ProviderRateLimits['provider'],
+  usedPercent: number
+): ProviderRateLimits {
+  return {
+    provider,
+    session: { usedPercent, windowMinutes: 300, resetsAt: null, resetDescription: null },
+    weekly: null,
+    updatedAt: Date.now(),
+    error: null,
+    status: 'ok'
+  }
+}
 function signedIn(subject: string): CursorAuthReadResult {
   return {
     status: 'ok',
@@ -55,9 +102,8 @@ function reading(auth: CursorAuthReadResult): ProviderRateLimits {
 
 describe('Cursor account ownership across usage refreshes', () => {
   beforeEach(() => {
-    resetRateLimitProviderMocks()
-    vi.mocked(fetchClaudeRateLimits).mockResolvedValue(okProvider('claude', 0))
-    vi.mocked(fetchCodexRateLimits).mockResolvedValue(okProvider('codex', 0))
+    vi.mocked(fetchCursorRateLimits).mockReset()
+    vi.mocked(readCursorAuthSession).mockReset()
   })
 
   it('discards account A readings when Cursor changes to B during the request', async () => {
@@ -66,7 +112,7 @@ describe('Cursor account ownership across usage refreshes', () => {
     vi.mocked(fetchCursorRateLimits).mockResolvedValue(reading(accountA))
     const service = new RateLimitService()
     await service.refresh()
-    expect(service.getState().cursor?.session?.usedPercent).toBe(80)
+    expect((await service.getState()).cursor?.session?.usedPercent).toBe(80)
 
     const started = deferred<void>()
     const pending = deferred<ProviderRateLimits>()
@@ -80,9 +126,13 @@ describe('Cursor account ownership across usage refreshes', () => {
     pending.resolve(reading(accountA))
     await refresh
 
-    expect(service.getState().cursor).toMatchObject({ status: 'error', session: null, weekly: null })
-    expect(service.getState().cursor?.monthly).toBeUndefined()
-    expect(service.getState().cursorAuthConfigured).toBe(true)
+    expect((await service.getState()).cursor).toMatchObject({
+      status: 'error',
+      session: null,
+      weekly: null
+    })
+    expect((await service.getState()).cursor?.monthly).toBeUndefined()
+    expect((await service.getState()).cursorAuthConfigured).toBe(true)
   })
 
   it('clears the last reading when the Cursor login is removed', async () => {
@@ -91,14 +141,17 @@ describe('Cursor account ownership across usage refreshes', () => {
     vi.mocked(fetchCursorRateLimits).mockResolvedValue(reading(auth))
     const service = new RateLimitService()
     await service.refresh()
-    expect(service.getState().cursor?.session?.usedPercent).toBe(80)
+    expect((await service.getState()).cursor?.session?.usedPercent).toBe(80)
 
     vi.mocked(readCursorAuthSession).mockResolvedValue({ status: 'missing' })
-    vi.mocked(fetchCursorRateLimits).mockResolvedValue(unavailableProvider('cursor'))
+    vi.mocked(fetchCursorRateLimits).mockResolvedValue(await unavailable('cursor')())
     await service.refresh()
 
-    expect(service.getState().cursorAuthConfigured).toBe(false)
-    expect(service.getState().cursor).toMatchObject({ status: 'unavailable', session: null })
-    expect(service.getState().cursor?.buckets).toBeUndefined()
+    expect((await service.getState()).cursorAuthConfigured).toBe(false)
+    expect((await service.getState()).cursor).toMatchObject({
+      status: 'unavailable',
+      session: null
+    })
+    expect((await service.getState()).cursor?.buckets).toBeUndefined()
   })
 })

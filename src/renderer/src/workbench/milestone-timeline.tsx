@@ -1,6 +1,7 @@
 import { MilestoneNavigation, milestoneNodeActions } from './milestone-navigation'
 import { MilestoneDayAxis, MilestoneDayGrid, MilestoneRangeToolbar } from './milestone-day-axis'
 import { useRef, useState } from 'react'
+import { useNow } from '@/lib/window-activity/use-now'
 import { useMilestoneViewport, type MilestoneLocation } from './use-milestone-viewport'
 export type { MilestoneLocation } from './use-milestone-viewport'
 import { CalendarPlus, X } from 'lucide-react'
@@ -72,6 +73,7 @@ type Props = {
 export function MilestoneTimeline(props: Props) {
   const { draft, editing, edit } = props
   const [showActual, setShowActual] = useState(false)
+  const now = useNow(60_000)
   const enabled = editing && !props.busy && !showActual
   const today = milestoneDay(milestoneToday())
   const viewport = useRef<HTMLDivElement>(null)
@@ -380,7 +382,7 @@ export function MilestoneTimeline(props: Props) {
             <div
               className="wb-ml-today"
               style={{
-                left: labelWidth + (actualDay(new Date().toISOString()) - origin) * width,
+                left: labelWidth + (actualDay(new Date(now).toISOString()) - origin) * width,
                 top: versionHeight + 40
               }}
               aria-hidden="true"

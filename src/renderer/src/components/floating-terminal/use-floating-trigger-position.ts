@@ -12,7 +12,7 @@ import {
   type FloatingTerminalTriggerCommittedPosition,
   type FloatingTerminalTriggerPosition,
   type FloatingTerminalTriggerPositionSource
-} from './floating-terminal-trigger-position'
+} from './trigger/floating-terminal-trigger-position'
 
 const DRAG_THRESHOLD = 4
 

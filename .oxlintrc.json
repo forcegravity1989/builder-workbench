@@ -187,6 +187,9 @@
     "**/out",
     "cloud/**",
     ".github/actions/cloud-sql-rollout-lease/**",
-    "tests/e2e/.cross-version-checkouts"
+    "tests/e2e/.cross-version-checkouts",
+    "src/main/acp/generated/acp-protocol.generated.ts",
+    "src/cli/skills/bundled-skill-guides.ts",
+    "resources/plugins/declarative/*.mjs"
   ]
 }

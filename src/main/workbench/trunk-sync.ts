@@ -1,12 +1,12 @@
-import { parseGitRevListAheadBehindCounts } from '../../shared/git-rev-list-output'
+import { parseGitRevListAheadBehindCounts } from '../../shared/git/refs/git-rev-list-output'
 import { branchFullRef } from '../../shared/workbench/branch-ref'
 import { SourceCommit } from '../../shared/workbench/version-material'
-import { gitOptionsForWorktree, type GitRuntimeOptions } from '../git/git-runtime-options'
+import { gitOptionsForWorktree, type GitRuntimeOptions } from '../git/command-runner/git-runtime-options'
 import {
   postponeRepoRefMaintenance,
   withRepoRefMaintenancePaused
-} from '../git/local-repo-ref-maintenance'
-import { gitExecFileAsync } from '../git/runner'
+} from '../git/refs/maintenance/local-repo-ref-maintenance'
+import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
 import type { TrunkGitExec, TrunkSyncTarget } from './trunk-baseline'
 
 export const TRUNK_SYNC_TIMEOUT_MS = 60_000

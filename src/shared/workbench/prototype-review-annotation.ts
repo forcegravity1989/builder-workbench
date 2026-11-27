@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { BrowserAnnotationPayload } from '../browser-grab-types'
+import type { BrowserAnnotationPayload } from '../browser/element-grab/browser-grab-types'
 
 // A reviewer annotates a copy of the prototype in their own browser tab. Submitting hands those
 // notes to the document's owner; the owner's host keeps them per document until the owner has

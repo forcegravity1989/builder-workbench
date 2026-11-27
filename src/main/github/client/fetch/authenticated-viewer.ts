@@ -1,19 +1,13 @@
-import type { GitHubViewer } from '../../../../shared/github/pull-request-types'
-import { ghExecFileAsync, acquire, release } from '../../gh-utils'
-import type { IssueSourcePreference } from '../../../../shared/repo-types'
-import type { LocalGitExecOptions } from '../../gh-utils'
+import type { GitHubViewer } from '../../../../shared/github/pull-requests/pull-request-types'
+import { ghExecFileAsync } from '../../../git/command-runner/hosted-cli/gh-exec-file'
+import { acquire, release } from '../../execution/github-operation-slots'
+import type { IssueSourcePreference } from '../../../../shared/repository/repo-types'
+import type { LocalGitExecOptions } from '../../repositories/github-repository-identity'
 import {
   resolveGitHubRepoExecution,
   resolveIssueGitHubApiRepositorySource
-} from '../../github-api-repository'
-/**
- * Get the authenticated GitHub viewer when gh is available and logged in.
- * Returns null when gh is unavailable, unauthenticated, or the lookup fails.
- *
- * Runs through `ghExecFileAsync` for its deadline and tree kill: a `gh` that
- * never exits would otherwise hold one of the four GitHub concurrency slots
- * forever (#18234).
- */
+} from '../../repositories/github-api-repository'
+/** Use the bounded runner so failed viewer probes return null without stranding a GitHub admission slot. */
 export async function getAuthenticatedViewer(
   options?: Parameters<typeof ghExecFileAsync>[1]
 ): Promise<GitHubViewer | null> {
@@ -47,16 +41,26 @@ export async function getRepoAuthenticatedViewer(
   const { ownerRepo, ghOptions } = await resolveGitHubRepoExecution(
     repoPath,
     async () =>
-      (
-        await resolveIssueGitHubApiRepositorySource(
-          repoPath,
-          preference,
-          connectionId,
-          localGitOptions
-        )
-      ).source,
+      (await resolveIssueGitHubApiRepositorySource(
+        repoPath, preference, connectionId, localGitOptions
+      )).source,
     connectionId,
     localGitOptions
   )
   return ownerRepo ? getAuthenticatedViewer(ghOptions) : null
+}
+
+/** gh keys --cache by token, so a switched account never gets the old login. */
+export async function readViewerLogin(
+  ghOptions: Parameters<typeof ghExecFileAsync>[1]
+): Promise<string | null> {
+  try {
+    const { stdout } = await ghExecFileAsync(
+      ['api', '--cache', '60s', 'user', '--jq', '.login'],
+      ghOptions
+    )
+    return stdout.trim() || null
+  } catch {
+    return null
+  }
 }

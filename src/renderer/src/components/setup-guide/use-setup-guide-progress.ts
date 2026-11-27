@@ -1,31 +1,30 @@
-/* oxlint-disable react-doctor/no-adjust-state-on-prop-change -- Why: setup-guide readiness is driven by bounded IPC probes and browser focus events; the state cannot be derived synchronously from render inputs. */
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { useAppStore } from '@/store'
-import { isGitRepoKind } from '../../../../shared/repo-kind'
-import { hasFeatureInteraction } from '../../../../shared/feature-interactions'
-import { checkRuntimeHooks } from '@/runtime/runtime-hooks-client'
-import { getLocalPreflightContext, localPreflightContextKey } from '@/lib/local-preflight-context'
-import { hasEffectiveSetupCommand } from '@/lib/setup-script-status'
-import { getProviderRuntimeContextKey } from '@/lib/provider-runtime-context'
+import { useAppStore } from '@/store/index'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { useOrcaTeamFeatureBlocked } from '@/lib/orca-team-policy'
+import { ORCA_CLOUD_TEAM_POLICY_FLAGS } from '../../../../shared/orca-profiles/orca-cloud-team-policy'
+import { isGitRepoKind } from '../../../../shared/repository/repo-kind'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import { checkRuntimeHooks } from '@/runtime/repo-hooks/runtime-hooks-client'
+import { getLocalPreflightContext } from '@/runtime/hosts/preflight/local-preflight-context'
+import { hasEffectiveSetupCommand } from '@/runtime/repo-hooks/setup-script-status'
+import { getProviderRuntimeContextKey } from '@/runtime/hosts/observations/provider-runtime-context'
 import {
   COMPUTER_USE_SKILL_NAME,
   ORCA_CLI_SKILL_NAME,
   ORCHESTRATION_SKILL_NAME
-} from '@/lib/agent-feature-install-commands'
+} from '@/lib/skills/installation/agent-feature-skill-names'
 import {
   GLOBAL_AGENT_SKILL_SOURCE_KINDS,
   useInstalledAgentSkill
-} from '@/hooks/useInstalledAgentSkills'
-import { useActiveProjectSkillRuntime } from '@/hooks/useActiveProjectSkillRuntime'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import {
-  getFeatureWallSetupProgress,
-  type FeatureWallSetupProgress
-} from '../feature-wall/feature-wall-setup-progress'
+} from '@/hooks/skills/discovery/useInstalledAgentSkills'
+import { useOnboardingSkillRuntime } from '@/hooks/skills/runtime/use-onboarding-skill-runtime'
+import { getSetupGuideProgressSnapshot } from '../feature-wall/setup/feature-wall-setup-progress'
+import type { FeatureWallSetupProgress } from '../feature-wall/setup/feature-wall-setup-progress'
 import {
   deriveIntegrationConnectionStatus,
   deriveWorkbenchSetupIntegrationStatus
-} from '../feature-wall/use-integration-connection-status'
+} from '../feature-wall/setup/integrations/use-integration-connection-status'
 import { useSetupGuideBrowserMilestoneProgress } from './setup-guide-browser-milestone-progress'
 import {
   getComputerUsePermissionSetupState,
@@ -33,11 +32,13 @@ import {
   getSetupGuideProgressReady,
   getSetupScriptProbeSignature
 } from './setup-guide-progress-readiness'
+import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
 import {
   readSetupScriptProbeCache,
   setSetupScriptProbeCache,
   subscribeSetupScriptProbeCache
 } from './setup-script-probe-cache'
+import { localPreflightContextKey } from '../../runtime/hosts/preflight/local-preflight-context-key'
 
 const SETUP_SCRIPT_PROBE_SETTLE_TIMEOUT_MS = 15_000
 
@@ -47,17 +48,16 @@ export function useSetupGuideProgress(
   browserUseSkillInstalled: boolean
 ): FeatureWallSetupProgress {
   const workbenchShell = isWorkbenchShell()
-  const refreshAgentCapabilities = shouldRefreshCoreState && !workbenchShell
   const settings = useAppStore((s) => s.settings)
   const featureInteractions = useAppStore((s) => s.featureInteractions)
-  const worktreesByRepo = useAppStore((s) => s.worktreesByRepo)
+  const worktreesByRepo = useAppStore((s) => selectWorktreesByRepo(s))
   const preflightStatus = useAppStore((s) => s.preflightStatus)
   const preflightStatusChecked = useAppStore((s) => s.preflightStatusChecked)
   const preflightStatusContextKey = useAppStore((s) => s.preflightStatusContextKey)
   const preflightStatusError = useAppStore((s) => s.preflightStatusError)
   const preflightStatusLoading = useAppStore((s) => s.preflightStatusLoading)
   const refreshPreflightStatus = useAppStore((s) => s.refreshPreflightStatus)
-  const activeSkillRuntime = useActiveProjectSkillRuntime()
+  const activeSkillRuntime = useOnboardingSkillRuntime()
   const linearStatus = useAppStore((s) => s.linearStatus)
   const linearStatusChecked = useAppStore((s) => s.linearStatusChecked)
   const linearStatusContextKey = useAppStore((s) => s.linearStatusContextKey)
@@ -80,26 +80,25 @@ export function useSetupGuideProgress(
   const [computerUsePermissionStatusChecked, setComputerUsePermissionStatusChecked] =
     useState(false)
   const [computerUseUnavailable, setComputerUseUnavailable] = useState(false)
+  const computerUseBlocked = useOrcaTeamFeatureBlocked(ORCA_CLOUD_TEAM_POLICY_FLAGS.computerUse)
+  const skillOptions = {
+    enabled: shouldRefreshCoreState && !workbenchShell && activeSkillRuntime.enabled,
+    discoveryTarget: activeSkillRuntime.discoveryTarget,
+    runtimeTarget: activeSkillRuntime.discoveryRuntimeTarget,
+    agent: activeSkillRuntime.agent,
+    sourceKinds: GLOBAL_AGENT_SKILL_SOURCE_KINDS
+  }
   const { installed: detectedBrowserUseSkillInstalled, loading: detectedBrowserUseSkillLoading } =
-    useInstalledAgentSkill(ORCA_CLI_SKILL_NAME, {
-      enabled: refreshAgentCapabilities,
-      discoveryTarget: activeSkillRuntime.discoveryTarget,
-      sourceKinds: GLOBAL_AGENT_SKILL_SOURCE_KINDS
-    })
+    useInstalledAgentSkill(ORCA_CLI_SKILL_NAME, skillOptions)
   const { installed: computerUseSkillInstalled, loading: computerUseSkillLoading } =
     useInstalledAgentSkill(COMPUTER_USE_SKILL_NAME, {
-      enabled: refreshAgentCapabilities,
-      discoveryTarget: activeSkillRuntime.discoveryTarget,
-      sourceKinds: GLOBAL_AGENT_SKILL_SOURCE_KINDS
+      ...skillOptions,
+      enabled: skillOptions.enabled && !computerUseBlocked
     })
   const {
     installed: detectedOrchestrationSkillInstalled,
     loading: detectedOrchestrationSkillLoading
-  } = useInstalledAgentSkill(ORCHESTRATION_SKILL_NAME, {
-    enabled: refreshAgentCapabilities,
-    discoveryTarget: activeSkillRuntime.discoveryTarget,
-    sourceKinds: GLOBAL_AGENT_SKILL_SOURCE_KINDS
-  })
+  } = useInstalledAgentSkill(ORCHESTRATION_SKILL_NAME, skillOptions)
   const providerRuntimeContextKey = getProviderRuntimeContextKey(settings)
   const linearStatusCurrent = linearStatusContextKey === providerRuntimeContextKey
   const jiraStatusCurrent = jiraStatusContextKey === providerRuntimeContextKey
@@ -160,8 +159,7 @@ export function useSetupGuideProgress(
     }
     const signature = setupScriptProbeSignature
     let stale = false
-    // Why: setup-script checks can cross SSH/runtime streams. Bound sidebar
-    // visibility readiness so a wedged read cannot hide the checklist forever.
+    // Bound SSH/runtime setup probes so a wedged read cannot hide the checklist forever.
     const timeoutId = window.setTimeout(() => {
       if (activeSetupScriptProbeSignatureRef.current === signature) {
         setSetupScriptProbeCache({ signature, ready: true, hasSetupScript: false })
@@ -177,7 +175,9 @@ export function useSetupGuideProgress(
 
     async function refreshSetupScriptState(): Promise<void> {
       for (const repo of orderedGitRepos) {
-        const hooksResult = await checkRuntimeHooks(settings, repo.id).catch(() => null)
+        const hooksResult = await checkRuntimeHooks(getRepoExecutionHostId(repo), repo.id, {
+          background: true
+        }).catch(() => null)
         if (stale) {
           return
         }
@@ -202,16 +202,16 @@ export function useSetupGuideProgress(
       return
     }
     const permissionState = getComputerUsePermissionSetupState(status)
-    // oxlint-disable-next-line react-doctor/no-adjust-state-on-prop-change -- Why: async permission checks update setup progress after external OS state changes.
     setComputerUsePermissionStatusChecked(true)
     setComputerUsePermissionsReady(permissionState.ready)
     setComputerUseUnavailable(permissionState.unavailable)
   }, [])
 
+  const shouldReadComputerUsePermissions =
+    shouldRefreshCoreState && !workbenchShell && !computerUseBlocked && computerUseSkillInstalled
   useEffect(() => {
-    if (!refreshAgentCapabilities || !computerUseSkillInstalled) {
-      // Why: unavailable setup-guide steps must clear stale permission state before
-      // readiness is derived for the visible checklist.
+    if (!shouldReadComputerUsePermissions) {
+      // Unavailable steps must clear stale permission state before readiness is derived.
       setComputerUsePermissionStatusChecked(false)
       setComputerUsePermissionsReady(false)
       setComputerUseUnavailable(false)
@@ -221,7 +221,6 @@ export function useSetupGuideProgress(
     const refreshComputerUsePermissions = (): void => {
       void readComputerUsePermissions(() => stale)
     }
-    // oxlint-disable-next-line react-doctor/no-adjust-state-on-prop-change -- Why: refresh the setup checklist when the permission step becomes active.
     refreshComputerUsePermissions()
     const handleFocus = (): void => {
       void refreshComputerUsePermissions()
@@ -231,8 +230,7 @@ export function useSetupGuideProgress(
         void refreshComputerUsePermissions()
       }
     }
-    // Why: users grant Computer Use permissions outside the setup guide. Refresh
-    // on return so the checklist updates without requiring a remount.
+    // Users grant OS permissions elsewhere; refresh on return without remounting.
     window.addEventListener('focus', handleFocus)
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => {
@@ -240,97 +238,92 @@ export function useSetupGuideProgress(
       window.removeEventListener('focus', handleFocus)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [computerUseSkillInstalled, readComputerUsePermissions, refreshAgentCapabilities])
+  }, [readComputerUsePermissions, shouldReadComputerUsePermissions])
 
-  const preflightFacts = {
+  const connectionFacts = {
     preflightStatus,
     preflightStatusChecked,
     preflightStatusContextKey,
     preflightStatusError,
     preflightStatusLoading,
-    expectedPreflightContextKey
+    expectedPreflightContextKey,
+    linearStatus,
+    linearStatusChecked,
+    linearStatusContextKey,
+    jiraStatus,
+    jiraStatusChecked,
+    jiraStatusContextKey,
+    providerRuntimeContextKey
   }
   const taskSourceStatus = workbenchShell
-    ? deriveWorkbenchSetupIntegrationStatus(preflightFacts)
-    : deriveIntegrationConnectionStatus({
-        ...preflightFacts,
-        linearStatus,
-        linearStatusChecked,
-        linearStatusContextKey,
-        jiraStatus,
-        jiraStatusChecked,
-        jiraStatusContextKey,
-        providerRuntimeContextKey
-      })
+    ? deriveWorkbenchSetupIntegrationStatus(connectionFacts)
+    : deriveIntegrationConnectionStatus(connectionFacts)
   const hasConnectedTaskSource = taskSourceStatus.trackerConnected
   const gitRepoCount = orderedGitRepos.length
   const currentSetupScriptProbe = getCurrentSetupScriptProbeState(
     setupScriptProbe,
     setupScriptProbeSignature
   )
-  const currentComputerUsePermissionStatusChecked =
-    refreshAgentCapabilities && computerUseSkillInstalled
-      ? computerUsePermissionStatusChecked
-      : false
-  const currentComputerUsePermissionsReady =
-    refreshAgentCapabilities && computerUseSkillInstalled ? computerUsePermissionsReady : false
-  const currentComputerUseUnavailable =
-    refreshAgentCapabilities && computerUseSkillInstalled ? computerUseUnavailable : false
   const ready = getSetupGuideProgressReady({
     refreshEnabled: shouldRefreshCoreState,
     settingsLoaded: settings !== null,
-    agentCapabilitiesIncluded: !workbenchShell,
-    // Why: task-source readiness is a capability group. Once any provider is
-    // usable, unrelated stale provider checks should not hide setup progress.
+    // Any usable task provider settles this capability group; unrelated stale checks must not hide progress.
     preflightStatusChecked: !taskSourceStatus.checking,
     linearStatusChecked: true,
     jiraStatusChecked: true,
-    browserUseSkillDiscoveryLoading: detectedBrowserUseSkillLoading,
-    computerUseSkillDiscoveryLoading: computerUseSkillLoading,
-    orchestrationSkillDiscoveryLoading: detectedOrchestrationSkillLoading,
+    browserUseSkillDiscoveryLoading: !workbenchShell && detectedBrowserUseSkillLoading,
+    computerUseSkillDiscoveryLoading:
+      !workbenchShell && !computerUseBlocked && computerUseSkillLoading,
+    orchestrationSkillDiscoveryLoading: !workbenchShell && detectedOrchestrationSkillLoading,
     setupScriptProbeReady: currentSetupScriptProbe.ready,
-    computerUseSkillInstalled,
-    computerUsePermissionStatusChecked: currentComputerUsePermissionStatusChecked
+    computerUseSkillInstalled: !workbenchShell && !computerUseBlocked && computerUseSkillInstalled,
+    computerUsePermissionStatusChecked:
+      shouldReadComputerUsePermissions && computerUsePermissionStatusChecked
   })
 
-  const rawProgress = useMemo(() => {
-    const input = {
+  const { rawProgress, preBrowserSetupComplete } = useMemo(
+    () =>
+      getSetupGuideProgressSnapshot({
+        ready,
+        workbenchShell,
+        settings,
+        featureInteractions,
+        hasConnectedTaskSource,
+        browserUseSkillInstalled: shouldRefreshCoreState
+          ? detectedBrowserUseSkillInstalled
+          : browserUseSkillInstalled,
+        computerUseBlocked,
+        computerUseSkillInstalled,
+        computerUsePermissionsReady:
+          shouldReadComputerUsePermissions && computerUsePermissionsReady,
+        computerUseUnavailable: shouldReadComputerUsePermissions && computerUseUnavailable,
+        orchestrationSkillInstalled: shouldRefreshCoreState
+          ? detectedOrchestrationSkillInstalled
+          : orchestrationSkillInstalled,
+        gitRepoCount,
+        worktreesByRepo,
+        hasSetupScript: currentSetupScriptProbe.hasSetupScript
+      }),
+    [
+      shouldRefreshCoreState,
+      browserUseSkillInstalled,
       ready,
-      workbenchShell,
-      settings,
-      featureInteractions,
-      hasConnectedTaskSource,
-      browserUseSkillInstalled: browserUseSkillInstalled || detectedBrowserUseSkillInstalled,
+      computerUseUnavailable,
+      computerUsePermissionsReady,
+      computerUseBlocked,
       computerUseSkillInstalled,
-      computerUsePermissionsReady: currentComputerUsePermissionsReady,
-      computerUseUnavailable: currentComputerUseUnavailable,
-      orchestrationSkillInstalled:
-        orchestrationSkillInstalled || detectedOrchestrationSkillInstalled,
+      shouldReadComputerUsePermissions,
+      detectedBrowserUseSkillInstalled,
+      detectedOrchestrationSkillInstalled,
+      featureInteractions,
       gitRepoCount,
-      worktreesByRepo,
-      hasSetupScript: currentSetupScriptProbe.hasSetupScript
-    }
-    return getFeatureWallSetupProgress(input)
-  }, [
-    browserUseSkillInstalled,
-    ready,
-    currentComputerUseUnavailable,
-    currentComputerUsePermissionsReady,
-    computerUseSkillInstalled,
-    detectedBrowserUseSkillInstalled,
-    detectedOrchestrationSkillInstalled,
-    featureInteractions,
-    gitRepoCount,
-    hasConnectedTaskSource,
-    currentSetupScriptProbe.hasSetupScript,
-    orchestrationSkillInstalled,
-    settings,
-    worktreesByRepo,
-    workbenchShell
-  ])
-  const historicalSplitTerminalDone = hasFeatureInteraction(
-    featureInteractions,
-    'terminal-pane-split'
+      hasConnectedTaskSource,
+      currentSetupScriptProbe.hasSetupScript,
+      orchestrationSkillInstalled,
+      settings,
+      workbenchShell,
+      worktreesByRepo
+    ]
   )
-  return useSetupGuideBrowserMilestoneProgress(rawProgress, historicalSplitTerminalDone)
+  return useSetupGuideBrowserMilestoneProgress(rawProgress, preBrowserSetupComplete)
 }

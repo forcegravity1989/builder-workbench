@@ -2,7 +2,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 
 const { api, ownerApi } = vi.hoisted(() => {
   // 详情页删除评论后会重读列表（不再本地过滤），mock 按同样语义维护状态。
@@ -27,6 +26,7 @@ const { api, ownerApi } = vi.hoisted(() => {
 })
 vi.mock('@/lib/codehub-api', () => ({
   codehubApi: ownerApi,
+  getCodeHubRepoSourceContext: () => null,
   createTaskPageCodeHubApi: () => api
 }))
 // i18n 实例被详情页签的深层依赖(localized-catalog)读取,补最小 stub。
@@ -35,7 +35,7 @@ vi.mock('@/i18n/i18n', () => ({
   i18n: { language: 'en' }
 }))
 vi.mock('@/workbench/is-workbench-shell', () => ({ isWorkbenchShell: () => true }))
-vi.mock('@/components/task-project-source-combobox', () => ({ default: () => null }))
+vi.mock('@/components/task-page/source-selection/task-project-source-combobox', () => ({ default: () => null }))
 // Why: Files 页签会真挂 Monaco diff,本测试只看工具条与复制控件,照
 // pr-files-combined-diff-section-index.test.tsx 的先例把 diff 体 mock 掉。
 vi.mock('./FilesTab', () => ({ CodeHubFilesTab: () => null }))
@@ -81,7 +81,7 @@ it('keeps filter transitions and issue creation connected after extracting the c
     taskPickerRepos: [repo],
     taskPickerGroups: [],
     repoSelection: new Set(['r1'])
-  } as unknown as TaskPageComposerActionsModel
+  } as unknown as Parameters<typeof TaskPageCodeHubFilters>[0]['model']
   const view = render(
     <TooltipProvider>
       <TaskPageCodeHubFilters model={model} />
@@ -131,7 +131,7 @@ it('loads the detail and removes a deleted comment from the displayed conversati
     setCodehubDetailItem: vi.fn(),
     handleUseCodeHubItem: vi.fn(),
     setCodehubRefreshNonce: vi.fn()
-  } as unknown as TaskPageComposerActionsModel
+  } as unknown as Parameters<typeof TaskPageCodeHubDetail>[0]['model']
   render(<TaskPageCodeHubDetail model={model} />)
   await screen.findByText('Review comment')
   expect(screen.getByText('Body')).toBeTruthy()
@@ -175,7 +175,7 @@ it('shows a merge request branch and copy control without the old action form', 
     setCodehubDetailItem: vi.fn(),
     handleUseCodeHubItem: vi.fn(),
     setCodehubRefreshNonce: vi.fn()
-  } as unknown as TaskPageComposerActionsModel
+  } as unknown as Parameters<typeof TaskPageCodeHubDetail>[0]['model']
   render(<TaskPageCodeHubDetail model={model} />)
   expect(await screen.findByText('feat/task-style → main')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Copy GitHub link' })).toBeTruthy()

@@ -30,8 +30,8 @@
           "error",
           {
             "allow": [
-              "agent-map-*",
               "comment-md-*",
+              "bt-*",
               "compact-agent-*",
               "feature-wall-*",
               "is-*",
@@ -59,22 +59,23 @@
               "scrollbar-sleek-lg",
               "scrollbar-sleek-parent",
               "toaster",
-              "vc-*",
               "worktree-sidebar-scrollbar",
-              "xterm-*"
+              "xterm-*",
+              "agent-map-*",
+              "vc-*"
             ]
           }
         ]
       }
     },
     {
-      "files": ["**/src/renderer/src/workbench/**/*.tsx"],
+      "files": ["**/*.test.tsx"],
       "rules": {
         "shadcn/no-unknown-classes": "off"
       }
     },
     {
-      "files": ["**/*.test.tsx"],
+      "files": ["**/src/renderer/src/workbench/**/*.tsx"],
       "rules": {
         "shadcn/no-unknown-classes": "off"
       }

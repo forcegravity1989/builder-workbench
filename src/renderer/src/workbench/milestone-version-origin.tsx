@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useAppStore } from '@/store'
-import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import { findRepoForHost } from '@/store/repos/repo-host-identity'
 import { openProjectOverview, type VersionOverviewOptions } from './project-page-state'
 
 export function MilestoneVersionOrigin({

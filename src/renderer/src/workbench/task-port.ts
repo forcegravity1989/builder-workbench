@@ -1,11 +1,11 @@
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getRepoTaskSourceContext } from './task-source-context'
 import type { AppState } from '@/store/types'
 import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
 import type { WorkItemsBatchResult } from '../../../shared/github/work-item-batch-types'
-import type { GitHubOwnerRepo } from '../../../shared/github/pull-request-types'
-import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
-import type { Repo } from '../../../shared/repo-types'
-import type { TaskSourceContext } from '../../../shared/task-source-context'
+import type { GitHubRepositoryIdentity as GitHubOwnerRepo } from '../../../shared/github/repositories/repository-identity'
+import type { GitHubWorkItem } from '../../../shared/github/work-items/work-item-types'
+import type { Repo } from '../../../shared/repository/repo-types'
+import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'
 import { codeHubTaskItemFromDetail } from './codehub-task-item'
 import {
   createTaskReferenceReader,
@@ -89,7 +89,7 @@ async function openDetail(
     returnToPreviousView: true
   }
   if (task.reference.provider === 'github') {
-    const source = getTaskPageRepoSourceContext(repo, 'github')
+    const source = getRepoTaskSourceContext(repo, 'github')
     const identity = gitHubIdentityForTaskReference(repo, task.reference.repository)
     const sourceContext =
       source?.localTaskAccount && identity

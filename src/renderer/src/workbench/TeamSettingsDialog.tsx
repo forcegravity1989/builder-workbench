@@ -17,9 +17,9 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { cacheGeneratedRuntimePairingLink } from '@/components/settings/runtime-pairing-link-state'
-import { parsePairingCode } from '../../../shared/pairing'
+import { parsePairingCode } from '../../../shared/remote-runtime/pairing/pairing'
 import { TeamBindingForm } from './TeamBindingForm'
 import { TeamSettingsMembers } from './TeamSettingsMembers'
 import { logWorkbenchError, notifyWorkbenchError } from './error-feedback'

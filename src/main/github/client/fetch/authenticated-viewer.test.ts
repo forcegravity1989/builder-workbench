@@ -5,8 +5,9 @@ const { exec, resolveExecution, resolveSource } = vi.hoisted(() => ({
   resolveExecution: vi.fn(),
   resolveSource: vi.fn()
 }))
-vi.mock('../../gh-utils', () => ({ ghExecFileAsync: exec, acquire: vi.fn(), release: vi.fn() }))
-vi.mock('../../github-api-repository', () => ({
+vi.mock('../../../git/command-runner/hosted-cli/gh-exec-file', () => ({ ghExecFileAsync: exec }))
+vi.mock('../../execution/github-operation-slots', () => ({ acquire: vi.fn(), release: vi.fn() }))
+vi.mock('../../repositories/github-api-repository', () => ({
   resolveGitHubRepoExecution: resolveExecution,
   resolveIssueGitHubApiRepositorySource: resolveSource
 }))

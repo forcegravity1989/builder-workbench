@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Worktree } from '../../shared/worktree/types'
 import type { CreateWorktreeResult } from '../../shared/worktree/create-types'
-import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/runtime-managed-worktree-create-types'
+import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/workspaces/creation/runtime-managed-worktree-create-types'
 import { normalizeStoredWorkbenchVersionBinding } from '../../shared/workbench/version-binding'
 import type { VersionHistoryCatalog } from '../../shared/workbench/version-history'
 import type { PlanningMaterial } from '../../shared/workbench/version-material'

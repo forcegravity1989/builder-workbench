@@ -1,4 +1,4 @@
-import type * as GhUtils from './gh-utils'
+import type * as GhUtils from '../git/command-runner/hosted-cli/gh-exec-file'
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
@@ -7,12 +7,12 @@ import { join } from 'node:path'
 import { expect, it, vi } from 'vitest'
 
 const { gh, codehub } = vi.hoisted(() => ({ gh: vi.fn(), codehub: vi.fn() }))
-vi.mock('./gh-utils', async (load) => ({
+vi.mock('../git/command-runner/hosted-cli/gh-exec-file', async (load) => ({
   ...(await load<typeof GhUtils>()),
   ghExecFileAsync: gh
 }))
 vi.mock('../codehub/issue-state', () => ({ applyCodeHubIssueState: codehub }))
-import { updateIssue } from './issue-update'
+import { updateIssue } from './issues/issue-update'
 
 it('keeps GitHub state and body on the GitHub upstream when origin is a CodeHub mirror', async () => {
   const repo = mkdtempSync(join(tmpdir(), 'orca-forge-routing-'))
@@ -32,9 +32,29 @@ it('keeps GitHub state and body on the GitHub upstream when origin is a CodeHub 
       expect.objectContaining({ host: 'github.com' })
     )
     expect(gh).toHaveBeenCalledWith(
-      ['api', '-X', 'PATCH', 'repos/acme/project/issues/12', '--raw-field', 'body=Reviewed'],
+      ['api', '-X', 'PATCH', 'repos/acme/project/issues/12', '--input', '-'],
+      expect.objectContaining({ host: 'github.com', stdin: JSON.stringify({ body: 'Reviewed' }) })
+    )
+    gh.mockClear()
+    expect(
+      await updateIssue(
+        '/unavailable/remote/checkout',
+        22,
+        { state: 'closed' },
+        null,
+        {
+          taskRepository: { host: 'github.com', owner: 'team', repo: 'remote-project' }
+        },
+        'origin'
+      )
+    ).toEqual({ ok: true })
+    expect(gh).toHaveBeenCalledTimes(1)
+    expect(gh).toHaveBeenLastCalledWith(
+      ['issue', 'close', '22', '--repo', 'team/remote-project'],
       expect.objectContaining({ host: 'github.com' })
     )
+    expect(gh.mock.calls[0]?.[1]).not.toHaveProperty('cwd')
+    expect(gh.mock.calls[0]?.[1]).not.toHaveProperty('wslDistro')
   } finally {
     // The parallel origin probe may still hold a Windows cwd handle after the
     // upstream result wins; allow it to close before removing the fixture.

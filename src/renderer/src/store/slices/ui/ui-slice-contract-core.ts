@@ -1,20 +1,41 @@
-import type { StateCreator } from 'zustand'
 import type { AutomationEditorRequest } from '@/components/automations/automation-editor-request'
-import type { AppState } from '../../types'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
-import type { GitHubWorkItem } from '../../../../../shared/github/work-item-types'
-import type { GitLabWorkItem } from '../../../../../shared/gitlab-types'
-import type { JiraIssue } from '../../../../../shared/jira-types'
-import type { LinearIssue } from '../../../../../shared/linear/issue-types'
-import type { TaskProvider } from '../../../../../shared/task-providers'
-import type { TuiAgent } from '../../../../../shared/tui-agent'
-import type { LaunchSource } from '../../../../../shared/telemetry-events'
-import type { TaskSourceContext } from '../../../../../shared/task-source-context'
-import type { ExecutionHostId } from '../../../../../shared/execution-host'
-import type { TaskResumeState, TopLevelView } from '../../../../../shared/ui-chrome-types'
 import type { WorkbenchTaskScope } from '../../../../../shared/workbench/task-scope'
+import type {
+  AgentSubjectRead,
+  AgentSubjectReadIntent
+} from '@/attention/agent-subject-read-actions'
+import type { StateCreator } from 'zustand'
+import type { AppState } from '../../types'
+import type { GitHubWorkItem } from '../../../../../shared/github/work-items/work-item-types'
+import type { GitLabWorkItem } from '../../../../../shared/gitlab/gitlab-types'
+import type { JiraIssue } from '../../../../../shared/jira/jira-types'
+import type { LinearIssue } from '../../../../../shared/linear/issue-types'
+import type { TaskProvider } from '../../../../../shared/work-items/task-providers'
+import type { TuiAgent } from '../../../../../shared/agent-launch/catalog/tui-agent'
+import type { LaunchSource } from '../../../../../shared/telemetry/schemas/telemetry-property-schemas'
+import type { TaskSourceContext } from '../../../../../shared/work-items/task-source-context'
+import type { ExecutionHostId } from '../../../../../shared/execution-host/execution-host'
+import type { TaskResumeState, TopLevelView } from '../../../../../shared/ui-chrome/ui-chrome-types'
+import type {
+  AutomationRunPageOrigin,
+  AutomationsPageLocation,
+  AutomationsPageVisitMode
+} from './automations-page-location'
+
+/** Open an automation (runId null) or one of its runs once its host's list has loaded. */
+export type PendingAutomationRunNavigation = {
+  automationId: string
+  runId: string | null
+  hostId?: ExecutionHostId
+  /** With runId null: open the automation's run history instead of its detail. */
+  paneTab?: 'overview' | 'runs'
+  /** With a runId: where Escape returns; defaults to the automation detail. */
+  origin?: AutomationRunPageOrigin
+}
 
 export type PendingSidebarWorktreeReveal = {
+  rowKey?: string
   worktreeId: string
   executionHostId?: ExecutionHostId
   behavior: 'auto' | 'smooth'
@@ -42,6 +63,8 @@ export type AgentSendPopoverTargetMode = {
   sendingPaneKey?: string
   error?: string
   onPromptDelivered?: () => void
+  /** Told the send's own result the moment the prompt is handed to an agent. */
+  onPromptHandedOff?: (delivered: Promise<unknown>) => void
 }
 
 export type OpenAgentSendPopoverTargetModeArgs = {
@@ -52,25 +75,25 @@ export type OpenAgentSendPopoverTargetModeArgs = {
   label: string
   launchSource: LaunchSource
   onPromptDelivered?: () => void
+  onPromptHandedOff?: (delivered: Promise<unknown>) => void
 }
 
 export type TaskPageData = {
+  openCodeHubTask?: CodeHubTaskItem
+  openCodeHubSourceContext?: TaskSourceContext | null
+  workbenchTaskScope?: WorkbenchTaskScope | null
   preselectedRepoId?: string
   prefilledName?: string
-  taskSource?: TaskProvider
+  taskSource?: TaskProvider | 'codehub'
   openGitHubWorkItem?: GitHubWorkItem
   openGitHubSourceContext?: TaskSourceContext | null
   openGitHubInitialTab?: 'conversation' | 'checks' | 'files'
-  openCodeHubTask?: CodeHubTaskItem
-  openCodeHubSourceContext?: TaskSourceContext | null
   openGitLabWorkItem?: GitLabWorkItem
   openGitLabSourceContext?: TaskSourceContext | null
   openLinearIssue?: LinearIssue
   openLinearSourceContext?: TaskSourceContext | null
   openJiraIssue?: JiraIssue
   openJiraSourceContext?: TaskSourceContext | null
-  /** Optional local entry filters: native version label and complete goal references. */
-  workbenchTaskScope?: WorkbenchTaskScope | null
 }
 
 export type NewWorkspaceDraft = {
@@ -85,7 +108,7 @@ export type NewWorkspaceDraft = {
   note: string
   attachments: string[]
   linkedWorkItem: {
-    provider?: 'github' | 'gitlab' | 'codehub' | 'linear' | 'jira'
+    provider?: 'github' | 'gitlab' | 'linear' | 'jira' | 'codehub'
     type: 'issue' | 'pr' | 'mr'
     number: number
     title: string
@@ -106,6 +129,8 @@ export type NewWorkspaceDraft = {
   linkedGitLabMR?: number | null
   // Why: repo-scoped start ref from the "Start from" picker; absent means "use the repo's effective base ref".
   baseBranch?: string
+  // False keeps a restored base-ref choice out of the name pill; legacy drafts omit this and restore as a branch pick.
+  baseBranchNamesWorkspace?: boolean
   // Why: review worktrees start from a head ref/SHA while Source Control compares against the provider target branch.
   compareBaseRef?: string
 }
@@ -119,6 +144,7 @@ export type UiViewHistory =
   | 'space'
   | 'skills'
   | 'artifacts'
+  | 'mobile'
 
 export type UISliceCore = {
   sidebarOpen: boolean
@@ -130,14 +156,19 @@ export type UISliceCore = {
   openAgentSendPopoverTargetMode: (args: OpenAgentSendPopoverTargetModeArgs) => void
   closeAgentSendPopoverTargetMode: (id?: string, instanceId?: string) => void
   sendPromptToSidebarAgentTarget: (paneKey: string) => Promise<boolean>
-  /** Bumped to ask the active worktree's Source Control notes send menu to open (keyboard shortcut). `issuedAt` bounds staleness so a request the menu never consumed can't reopen it much later. */
+  /** Shortcut request for the active notes menu; issuedAt expires requests the menu never consumed. */
   diffNotesSendMenuOpenRequest: { worktreeId: string; nonce: number; issuedAt: number } | null
   /** Reveal Source Control and request its notes send menu open; returns false (no-op) when the active worktree has no unsent notes. */
   openDiffNotesSendMenuForActiveWorktree: () => boolean
   consumeDiffNotesSendMenuOpenRequest: (worktreeId: string) => void
-  /** Per-agent "I've looked at this" timestamps (paneKey → ts). A row is unvisited when no ack exists or stateStartedAt is newer than the last ack. Persisted so visited rows don't return bold on relaunch. */
+  /** Persisted read timestamps by pane; absent ack or newer stateStartedAt makes the row unvisited. */
   acknowledgedAgentsByPaneKey: Record<string, number>
-  acknowledgeAgents: (paneKeys: string[]) => void
+  /** `explicit` only from a user action on the row (Mark read, a jump, a dashboard ack). */
+  acknowledgeAgents: (
+    paneKeys: string[],
+    reads?: readonly AgentSubjectRead[],
+    intent?: AgentSubjectReadIntent
+  ) => void
   unacknowledgeAgents: (paneKeys: string[]) => void
   /** Per-pane cutoffs used to hide activity entries cleared by the user. */
   activityClearedAtByPaneKey: Record<string, number>
@@ -152,6 +183,7 @@ export type UISliceCore = {
   previousViewBeforeAutomations: Exclude<UiViewHistory, 'automations'>
   previousViewBeforeSpace: Exclude<UiViewHistory, 'space'>
   previousViewBeforeSkills: Exclude<UiViewHistory, 'skills'>
+  previousViewBeforeMobile: Exclude<UiViewHistory, 'mobile'>
   previousViewBeforeArtifacts: Exclude<UiViewHistory, 'artifacts'>
   setActiveView: (view: UISliceCore['activeView']) => void
   taskPageData: TaskPageData
@@ -164,34 +196,40 @@ export type UISliceCore = {
   newWorkspaceDraft: NewWorkspaceDraft | null
   openTaskPage: (
     data?: UISliceCore['taskPageData'],
-    options?: {
-      recordTasksInteraction?: boolean
-      /** Skip the 'tasks' sentinel before a detail entry so Back returns to the actual origin view, not the Tasks list. */
-      returnToPreviousView?: boolean
-    }
+    options?: { recordTasksInteraction?: boolean; returnToPreviousView?: boolean }
   ) => void
   closeTaskPage: () => void
   openActivityPage: () => void
   closeActivityPage: () => void
   selectedAutomationId: string | null
   setSelectedAutomationId: (id: string | null) => void
-  pendingAutomationRunNavigation: {
-    automationId: string
-    runId: string | null
-    hostId?: ExecutionHostId
-  } | null
-  setPendingAutomationRunNavigation: (
-    navigation: { automationId: string; runId: string | null; hostId?: ExecutionHostId } | null
-  ) => void
+  pendingAutomationRunNavigation: PendingAutomationRunNavigation | null
+  setPendingAutomationRunNavigation: (navigation: PendingAutomationRunNavigation | null) => void
+  /** A history replay's target sub-page; the Automations page applies it and clears it. */
+  automationsPageLocationRequest: AutomationsPageLocation | null
+  setAutomationsPageLocationRequest: (location: AutomationsPageLocation | null) => void
+  /** Record a settled Automations sub-page in back/forward history. */
+  /** Record a settled Automations sub-page in back/forward history. */
+  recordAutomationsPageVisit: (location: AutomationsPageLocation) => void
+  /** How the next recorded sub-page enters history; consumed by the next record. */
+  /** Set when the user opens Automations (sidebar, deep link, Back/Forward); the page then
+   *  focuses its title once. A page restored at launch or on reload leaves focus alone. */
+  automationsPageFocusTitleOnOpen: boolean
+  setAutomationsPageFocusTitleOnOpen: (value: boolean) => void
+  automationsPageNextVisitMode: AutomationsPageVisitMode
+  setAutomationsPageNextVisitMode: (mode: AutomationsPageVisitMode) => void
   pendingAutomationEditorRequest: AutomationEditorRequest | null
   consumeAutomationEditorRequest: (request: AutomationEditorRequest) => void
   openAutomationEditor: (request: AutomationEditorRequest) => void
   openAutomationsPage: () => void
   closeAutomationsPage: () => void
-  openSpacePage: () => void
+  openSpacePage: (presentation?: 'inline') => void
   closeSpacePage: () => void
   openSkillsPage: () => void
   closeSkillsPage: () => void
+  /** The template Bot templates last showed; it reopens on it. Null shows the first. */
+  botTemplateSelected: string | null
+  selectBotTemplate: (templateId: string) => void
   pendingSkillShareId: string | null
   openSkillShare: (shareId: string) => void
   clearPendingSkillShare: () => void
@@ -201,6 +239,8 @@ export type UISliceCore = {
   clearPendingSkillsSharedView: () => void
   openArtifactsPage: () => void
   closeArtifactsPage: () => void
+  openMobilePage: () => void
+  closeMobilePage: () => void
   setNewWorkspaceDraft: (draft: NonNullable<UISliceCore['newWorkspaceDraft']>) => void
   clearNewWorkspaceDraft: () => void
   pendingRevealWorktree: PendingSidebarWorktreeReveal | null
@@ -208,6 +248,7 @@ export type UISliceCore = {
   revealWorktreeInSidebar: (
     worktreeId: string,
     options?: {
+      rowKey?: string
       behavior?: PendingSidebarWorktreeReveal['behavior']
       highlight?: boolean
       beginRename?: boolean

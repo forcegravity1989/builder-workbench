@@ -1,8 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { DaemonClient } from '../../src/main/daemon/client'
-import { getDaemonSocketPath, getDaemonTokenPath } from '../../src/main/daemon/daemon-spawner'
-import { DEFAULT_LOCAL_ORCA_PROFILE_ID } from '../../src/shared/orca-profiles'
+import { DaemonClient } from '../../src/main/daemon/transport/client/daemon-client'
+import {
+  getDaemonSocketPath,
+  getDaemonTokenPath
+} from '../../src/main/daemon/launch/daemon-spawner'
+import { DEFAULT_LOCAL_ORCA_PROFILE_ID } from '../../src/shared/orca-profiles/orca-profiles'
 import type { ElectronApplication, Page } from '@stablyai/playwright-test'
 import { test, expect } from './helpers/orca-app'
 import { TEST_REPO_PATH_FILE } from './global-setup'
@@ -23,8 +26,8 @@ import {
   readCompletedWorkerLedger,
   seedCurrentCodexTranscript
 } from './helpers/completed-worker-retirement-fixture'
-import { RuntimeClient } from '../../src/cli/runtime-client'
-import type { RuntimeTerminalSummary } from '../../src/shared/runtime-types'
+import { RuntimeClient } from '../../src/cli/runtime/client'
+import type { RuntimeTerminalSummary } from '../../src/shared/terminal/runtime/runtime-terminal-contracts'
 import { splitWorktreeIdForFilesystem } from '../../src/shared/worktree/id'
 
 const PROVIDER_SESSION_ID = '019feb51-2269-71c2-89c6-faa8dc65c8dd'

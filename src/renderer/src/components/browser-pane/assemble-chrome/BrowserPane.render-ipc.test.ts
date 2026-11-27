@@ -12,7 +12,9 @@ describe('BrowserPagePane render IPC boundary', () => {
       'const liveBrowserUrl =',
       source.indexOf('function BrowserPagePane')
     )
-    const end = source.indexOf('const annotationSend =', start)
+    const end = source.indexOf('const markup =', start)
+    expect(start).toBeGreaterThanOrEqual(0)
+    expect(end).toBeGreaterThan(start)
     const renderUrlDerivation = source.slice(start, end)
 
     expect(renderUrlDerivation).toContain('getLiveBrowserUrl(browserTab.id)')

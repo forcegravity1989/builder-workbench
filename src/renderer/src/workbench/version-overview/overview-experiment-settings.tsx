@@ -2,13 +2,12 @@ import { ErrorDetails } from '../error-feedback'
 import { useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useProjectPage } from '../project-page-state'
-import { getProjectHostSetupProjectionFromState } from '@/store/project-host-setup-selector'
-import { SearchableSetting } from '@/components/settings/SearchableSetting'
+import { getProjectHostSetupProjectionFromState } from '@/store/projects/project-host-setup-selector'
+import { SearchableSetting } from '@/components/settings/section-layout/SearchableSetting'
 import {
-  SettingsRow,
   SettingsSubsectionHeader,
-  SettingsSwitch
-} from '@/components/settings/SettingsFormControls'
+  SettingsSwitchRow
+} from '@/components/settings/form-controls/SettingsFormControls'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -19,6 +18,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import {
+  WORKBENCH_OVERVIEW_EXPERIMENTS_SETTINGS_ID,
   overviewExperimentEnabled,
   overviewExperimentEntries,
   overviewProjectId
@@ -64,7 +64,7 @@ export function OverviewExperimentSettings() {
       description={`版本总览统计 ${overviewExperimentEntries.map((entry) => entry.title).join(' ')}`}
       keywords={overviewExperimentEntries.flatMap((entry) => [...entry.keywords])}
       className="space-y-3 py-2"
-      id="workbench-overview-experiments"
+      id={WORKBENCH_OVERVIEW_EXPERIMENTS_SETTINGS_ID}
     >
       <SettingsSubsectionHeader title="按项目设置" />
       <Card
@@ -111,23 +111,15 @@ export function OverviewExperimentSettings() {
           </div>
           <div className="divide-y divide-border border-t border-border">
             {overviewExperimentEntries.map((entry) => (
-              <SettingsRow
+              <SettingsSwitchRow
                 key={entry.key}
                 label={entry.title}
                 description={entry.description}
-                control={
-                  <SettingsSwitch
-                    checked={overviewExperimentEnabled(settings, project?.id, entry.key)}
-                    disabled={!settings || !project || busy}
-                    ariaLabel={entry.title}
-                    onChange={() => {
-                      void save(
-                        entry.key,
-                        !overviewExperimentEnabled(settings, project?.id, entry.key)
-                      )
-                    }}
-                  />
-                }
+                checked={overviewExperimentEnabled(settings, project?.id, entry.key)}
+                disabled={!settings || !project || busy}
+                onChange={() => {
+                  void save(entry.key, !overviewExperimentEnabled(settings, project?.id, entry.key))
+                }}
               />
             ))}
           </div>

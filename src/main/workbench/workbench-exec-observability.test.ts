@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { _resetTracerForTests, setActiveSink, type TracerSink } from '../observability/tracer'
+import { setActiveSink, type TracerSink } from '../observability/tracer'
 import { listCloudDragonPipelines } from './cloud-dragon-cli-ops'
 import {
   bwCbExecFileAsync,
@@ -12,10 +12,10 @@ const { ghExecMock, commandExecMock } = vi.hoisted(() => ({
   commandExecMock: vi.fn()
 }))
 
-vi.mock('../git/command-runner/gh-exec-file', () => ({
+vi.mock('../git/command-runner/hosted-cli/gh-exec-file', () => ({
   ghExecFileAsync: ghExecMock
 }))
-vi.mock('../git/command-runner/command-exec-file', () => ({
+vi.mock('../git/command-runner/process-capture/command-exec-file', () => ({
   commandExecFileAsync: commandExecMock
 }))
 vi.mock('./cloud-dragon-package-ops', () => ({ CLOUDDRAGON_PROJECT_ID: 'fixture-group' }))
@@ -49,7 +49,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  _resetTracerForTests()
+  setActiveSink(null)
 })
 
 describe('BW exec wrappers', () => {

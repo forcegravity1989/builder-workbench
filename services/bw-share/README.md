@@ -32,19 +32,19 @@
 
 ## HTTP 接口
 
-| 方法与路径                                  | 用途             | 请求头                     | 成功响应                              |
-| ------------------------------------------- | ---------------- | -------------------------- | ------------------------------------- |
-| `GET /healthz`                              | 存活检查         | —                          | `200 {"status":"ok","time":"..."}`    |
-| `POST /api/client-tokens`                   | 登记设备         | `x-enroll-key`             | `201 {token, createdAt}`              |
-| `POST /api/shares`                          | 新建分享         | `x-upload-token`           | `201 {id, url, editToken, expiresAt}` |
-| `PUT /api/shares/:id`                       | 覆盖内容         | `x-edit-token`             | `200 {id, url, expiresAt, updatedAt}` |
-| `DELETE /api/shares/:id`                    | 删除             | `x-edit-token`             | `204`                                 |
-| `GET /s/:id`                                | 打开查看页       | —                          | `200 text/html`                       |
-| `GET /s/:id/raw`                            | 原始 HTML        | —                          | `200 text/html`                       |
-| `GET /s/:id/content`                        | 内容+批注桥      | —                          | `200 text/html`                       |
-| `GET /api/shares/:id/annotations`            | 批注列表         | —                          | `200 {items:[...]}`                   |
-| `POST /api/shares/:id/annotations`           | 添加批注         | `content-type: application/json` | `201 {annotation, deleteToken}` |
-| `DELETE /api/shares/:id/annotations/:aid`    | 删除批注         | `x-delete-token` 或 `x-edit-token` | `204`                          |
+| 方法与路径                                | 用途        | 请求头                             | 成功响应                              |
+| ----------------------------------------- | ----------- | ---------------------------------- | ------------------------------------- |
+| `GET /healthz`                            | 存活检查    | —                                  | `200 {"status":"ok","time":"..."}`    |
+| `POST /api/client-tokens`                 | 登记设备    | `x-enroll-key`                     | `201 {token, createdAt}`              |
+| `POST /api/shares`                        | 新建分享    | `x-upload-token`                   | `201 {id, url, editToken, expiresAt}` |
+| `PUT /api/shares/:id`                     | 覆盖内容    | `x-edit-token`                     | `200 {id, url, expiresAt, updatedAt}` |
+| `DELETE /api/shares/:id`                  | 删除        | `x-edit-token`                     | `204`                                 |
+| `GET /s/:id`                              | 打开查看页  | —                                  | `200 text/html`                       |
+| `GET /s/:id/raw`                          | 原始 HTML   | —                                  | `200 text/html`                       |
+| `GET /s/:id/content`                      | 内容+批注桥 | —                                  | `200 text/html`                       |
+| `GET /api/shares/:id/annotations`         | 批注列表    | —                                  | `200 {items:[...]}`                   |
+| `POST /api/shares/:id/annotations`        | 添加批注    | `content-type: application/json`   | `201 {annotation, deleteToken}`       |
+| `DELETE /api/shares/:id/annotations/:aid` | 删除批注    | `x-delete-token` 或 `x-edit-token` | `204`                                 |
 
 创建与更新的请求体：
 

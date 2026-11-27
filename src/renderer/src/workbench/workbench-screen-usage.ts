@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useAppStore } from '@/store'
-import type { FeatureInteractionId } from '../../../shared/feature-interaction-catalog'
+import type { FeatureInteractionId } from '../../../shared/feature-education/interactions/feature-interaction-catalog'
 
 /**
  * Counts one feature interaction each time a BW screen becomes the user's
