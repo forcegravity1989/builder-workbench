@@ -16,7 +16,7 @@ import { openOverviewFromCatalog } from '../version-overview/open-version-overvi
 import { openAddProject } from '../project-page-state'
 import { useVersionCatalogForRepo } from '../use-version-catalog'
 import { requestVersionSidebarFocus } from '../version-sidebar-state'
-import { setBrowsedVersion, useBrowsedVersion } from '../version-context-state'
+import { setBrowsedVersion } from '../version-context-state'
 import { navigateVersionWorkflow } from '../version-nav-actions'
 import { activateVersionWorktree } from '../version-worktree-host'
 import { openMonicaProjectPage, followMonicaGuide } from './open-monica-destination'
@@ -65,14 +65,17 @@ function VersionChoice({
 }) {
   const hostId = getRepoExecutionHostId(repo)
   const catalog = useVersionCatalogForRepo(repo.id, hostId, 0, true)
-  const previous = useBrowsedVersion(repo.id)
-  const entries = catalog.catalog?.entries ?? []
-  const match =
-    entries.find((e) => e.version === (version ?? previous)) ??
-    (!version && entries.length === 1 ? entries[0] : null)
   const workspace = page === 'version-workspace'
   const requiresVersion = !workspace || Boolean(version)
-  const error = catalog.error ?? catalog.materialError
+  const error =
+    workspace && !version && catalog.home ? null : (catalog.error ?? catalog.materialError)
+  const reading = catalog.loading && requiresVersion
+  const entries = !reading && !error ? (catalog.catalog?.entries ?? []) : []
+  const match = version
+    ? entries.find((entry) => entry.version === version)
+    : entries.length === 1
+      ? entries[0]
+      : undefined
   const opened = useRef(false)
 
   function open(selected?: string): void {
@@ -120,22 +123,16 @@ function VersionChoice({
     }
   }
   useEffect(() => {
-    if (
-      !catalog.loading &&
-      !error &&
-      ((!requiresVersion && catalog.home) || (requiresVersion && match))
-    ) {
+    if ((!requiresVersion && catalog.home) || (!reading && !error && requiresVersion && match)) {
       open(match?.version)
     }
   })
   return (
     <ChoiceDialog
-      title={catalog.loading ? '正在读取版本' : '选择版本'}
+      title={reading ? '正在读取版本' : '选择版本'}
       description={
         error ??
-        (version && !match && !catalog.loading
-          ? `未找到 ${version}，请选择可用版本。`
-          : repo.displayName)
+        (version && !match && !reading ? `未找到 ${version}，请选择可用版本。` : repo.displayName)
       }
     >
       {error && (
@@ -149,7 +146,7 @@ function VersionChoice({
             {entry.version}
           </Button>
         ))}
-      {!catalog.loading && !error && requiresVersion && entries.length === 0 && (
+      {!reading && !error && requiresVersion && entries.length === 0 && (
         <p>这个项目还没有可打开的版本。</p>
       )}
     </ChoiceDialog>
