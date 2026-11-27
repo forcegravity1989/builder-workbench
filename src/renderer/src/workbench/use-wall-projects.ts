@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { buildWallProjects, isWallRowVisible } from './workbench-wall-projects'
 
 export type WallProjectFilters = { location: string; type: string }

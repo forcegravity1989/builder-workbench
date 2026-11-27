@@ -63,3 +63,10 @@ export function isBwCliInstallId(value: unknown): value is BwCliInstallId {
 export function formatBwCliInstallCommandLines(cli: BwCliInstallId): string[] {
   return BW_CLI_INSTALL_COMMANDS[cli].map((argv) => argv.join(' '))
 }
+type BwCliStatus = { installed: boolean; authenticated: boolean }
+
+export type BwCliPreflightFields = {
+  codehub?: BwCliStatus
+  welink?: BwCliStatus & { wslDistro?: string }
+  cloudbuild?: BwCliStatus
+}

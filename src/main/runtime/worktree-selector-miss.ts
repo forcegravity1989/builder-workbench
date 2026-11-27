@@ -1,6 +1,6 @@
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../shared/constants'
-import { parseWorkspaceKey } from '../../shared/workspace-scope'
-import { WORKTREE_ID_SEPARATOR } from '../../shared/worktree/id'
+import { FLOATING_TERMINAL_WORKTREE_ID } from '../../shared/workspace/identity/floating-workspace-id'
+import { parseWorkspaceKey } from '../../shared/workspace/identity/workspace-scope'
+import { WORKTREE_ID_SEPARATOR } from '../../shared/terminal/pty/lifecycle/pty-session-id-format'
 import { startSpan } from '../observability/tracer'
 
 /**

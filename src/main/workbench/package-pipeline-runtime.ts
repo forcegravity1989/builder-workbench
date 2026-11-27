@@ -1,4 +1,4 @@
-import { parseExecutionHostId } from '../../shared/execution-host'
+import { parseExecutionHostId } from '../../shared/execution-host/execution-host'
 import type { MetricScope } from '../../shared/workbench/metrics'
 import type {
   PackageDownloadReceipt,
@@ -8,10 +8,10 @@ import type {
   PackagePipelinePort
 } from '../../shared/workbench/package-pipeline'
 import { isCodeHubGitRemote } from '../../shared/codehub'
-import { parseGitHubOwnerRepo } from '../github/github-repository-identity'
-import { gitExecFileAsync } from '../git/runner'
-import type { GitRemoteIdentity } from '../../shared/git-remote-identity'
-import { probeGitRemoteIdentity } from '../repo-git-remote-identity'
+import { parseGitHubOwnerRepo } from '../github/repositories/github-remote-identity-parsing'
+import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
+import type { GitRemoteIdentity } from '../../shared/git/remotes/git-remote-identity'
+import { probeGitRemoteIdentity } from '../workspaces/catalog/repo-git-remote-identity'
 import { launchCloudDragonPipeline, listCloudDragonPipelines } from './cloud-dragon-cli-ops'
 import { downloadCloudDragonPackage, readCloudDragonLatest } from './cloud-dragon-package-ops'
 import {

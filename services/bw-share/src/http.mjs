@@ -193,7 +193,10 @@ export function createRequestHandler({
         // Sandboxed share content cannot send this content type without a CORS preflight (which
         // this API never allows), so requiring it keeps untrusted shared pages from writing
         // annotations to their own share while the same-origin viewer keeps working.
-        const contentType = headerValue(request.headers['content-type']).split(';')[0].trim().toLowerCase()
+        const contentType = headerValue(request.headers['content-type'])
+          .split(';')[0]
+          .trim()
+          .toLowerCase()
         if (contentType !== 'application/json') {
           throw new ShareError(415, 'unsupported_media_type', 'Use content-type: application/json.')
         }

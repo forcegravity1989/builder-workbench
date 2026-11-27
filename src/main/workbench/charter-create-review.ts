@@ -1,5 +1,5 @@
 import { isCodeHubGitRemote, parseCodeHubRemote } from '../../shared/codehub'
-import type { GitRemoteIdentity } from '../../shared/git-remote-identity'
+import type { GitRemoteIdentity } from '../../shared/git/remotes/git-remote-identity'
 import { CHARTER_BRANCH } from '../../shared/workbench/project-charter'
 import type { CharterSubmitOutcome } from '../../shared/workbench/charter'
 import { createGitHubPullRequest } from '../github/client/create/create-github-pull-request'
@@ -7,7 +7,7 @@ import { createCodeHubMr } from '../codehub/mr-creation'
 import { runTrunkBaseline } from './trunk-baseline'
 import { execMessage, oneLine } from './charter-remote-probe'
 import type { WorkbenchWorkspaceRepo } from './workspace-resolver'
-import type { ExecutionHostId } from '../../shared/execution-host'
+import type { ExecutionHostId } from '../../shared/execution-host/execution-host'
 /** main v0.4 正本的 PR 正文;接入首建与编辑分别对应 create_project / edit_project_card。 */
 const FIRST_CHARTER_BODY =
   '第一次接入写下的项目名片。合入之后这个仓就被管过了。\n\n这些件全是 Workbench 自己写的,没有起 agent。开工工具跟人走本机,不进仓。'

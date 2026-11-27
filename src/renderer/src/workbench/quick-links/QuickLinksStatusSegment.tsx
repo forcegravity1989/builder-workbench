@@ -3,9 +3,9 @@ import { Copy, Link, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { STATUS_BAR_CONTEXT_MENU_EXEMPT_PROPS } from '@/components/status-bar/status-bar-context-menu-policy'
+import { STATUS_BAR_CONTEXT_MENU_EXEMPT_PROPS } from '@/components/status-bar/composition/status-bar-context-menu-policy'
 import { useAppStore } from '@/store'
-import { useActiveRepo } from '@/store/selectors'
+import { useActiveRepo } from '@/store/repos/use-repository-catalog'
 import { translate } from '@/i18n/i18n'
 import {
   displayQuickLinkUrl,

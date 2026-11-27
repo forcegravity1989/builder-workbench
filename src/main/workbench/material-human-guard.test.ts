@@ -80,8 +80,10 @@ function withDecision(doc: AcceptanceMaterial): AcceptanceMaterial {
 
 it('names every human-only acceptance field the incoming document would change', () => {
   expect(isModelSaveChannel({})).toBe(true)
-  expect(isModelSaveChannel({ clientKind: 'runtime' })).toBe(false)
-  expect(isModelSaveChannel({ clientKind: 'mobile' })).toBe(false)
+  expect(isModelSaveChannel({ caller: { kind: 'desktop' } })).toBe(false)
+  expect(isModelSaveChannel({ caller: { kind: 'local-cli' } })).toBe(true)
+  expect(isModelSaveChannel({ caller: { kind: 'paired-device', deviceId: 'paired', agent: true } })).toBe(true)
+  expect(isModelSaveChannel({ caller: { kind: 'paired-device', deviceId: 'paired' } })).toBe(false)
   const base = material()
   expect(acceptanceHumanFieldChanges(base, base)).toEqual([])
   expect(acceptanceHumanFieldChanges(null, base)).toEqual([])
@@ -198,7 +200,7 @@ it('refuses model-channel saves that write an acceptance verdict', async () => {
         throw new Error('human channels must not trigger the guard read')
       },
       acceptanceSave(withDecision(material())),
-      { clientKind: 'runtime' }
+      { caller: { kind: 'desktop' } }
     )
   ).resolves.toBeUndefined()
   // The draft pre-acceptance channel is retired: the model may not create or
@@ -359,7 +361,7 @@ it('guards the plan risk report and meeting minutes on the model channel', async
         throw new Error('human channels must not trigger the guard read')
       },
       planSave('用户填写的风险'),
-      { clientKind: 'runtime' }
+      { caller: { kind: 'desktop' } }
     )
   ).resolves.toBeUndefined()
 

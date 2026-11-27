@@ -1,0 +1,140 @@
+import { useEffect, useRef, useState } from 'react'
+import { cn } from '../../lib/class-names'
+import { HomeSlide } from './slides/HomeSlide'
+import { WorktreeListSlide } from './slides/WorktreeListSlide'
+import { TerminalSlide } from './slides/TerminalSlide'
+import { useTranslate } from '@/i18n/use-translate'
+import { forceLayoutReflow } from '@/lib/overlay-interaction/force-layout-reflow'
+
+const DWELL_MS = 4500
+const TAP_BEFORE_PUSH_MS = 240
+
+type Phase = 'normal' | 'reset'
+
+export function PhoneCarousel(): React.JSX.Element {
+  const t = useTranslate()
+  const [activeIdx, setActiveIdx] = useState(0)
+  const [phase, setPhase] = useState<Phase>('normal')
+  const [tappingSlide, setTappingSlide] = useState<number | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  // oxlint-disable-next-line react-doctor/effect-needs-cleanup -- Cleanup clears all four timers the schedule chain re-arms.
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduce) {
+      return
+    }
+
+    let cancelled = false
+    let dwellTimer: ReturnType<typeof setTimeout> | null = null
+    let tapTimer: ReturnType<typeof setTimeout> | null = null
+    let advanceTimer: ReturnType<typeof setTimeout> | null = null
+    let resetTimer: ReturnType<typeof setTimeout> | null = null
+
+    const schedule = (idx: number): void => {
+      dwellTimer = setTimeout(() => {
+        if (cancelled) {
+          return
+        }
+        if (idx < 2) {
+          setTappingSlide(idx)
+          tapTimer = setTimeout(() => {
+            if (cancelled) {
+              return
+            }
+            setTappingSlide(null)
+          }, 320)
+          advanceTimer = setTimeout(() => {
+            if (cancelled) {
+              return
+            }
+            const next = idx + 1
+            setActiveIdx(next)
+            schedule(next)
+          }, TAP_BEFORE_PUSH_MS)
+        } else {
+          setPhase('reset')
+          setActiveIdx(0)
+          resetTimer = setTimeout(() => {
+            if (cancelled) {
+              return
+            }
+            setPhase('normal')
+            schedule(0)
+          }, 30)
+        }
+      }, DWELL_MS)
+    }
+
+    schedule(0)
+
+    return () => {
+      cancelled = true
+      if (dwellTimer) {
+        clearTimeout(dwellTimer)
+      }
+      if (tapTimer) {
+        clearTimeout(tapTimer)
+      }
+      if (advanceTimer) {
+        clearTimeout(advanceTimer)
+      }
+      if (resetTimer) {
+        clearTimeout(resetTimer)
+      }
+    }
+  }, [])
+
+  // Flush the no-transition reset before re-enabling transitions for the next slide.
+  useEffect(() => {
+    if (phase !== 'reset') {
+      return
+    }
+    const id = requestAnimationFrame(() => {
+      forceLayoutReflow(containerRef.current)
+    })
+    return () => cancelAnimationFrame(id)
+  }, [phase])
+
+  const slideClass = (idx: number): string =>
+    cn(
+      'mp-screen-slide',
+      phase === 'reset' && 'is-reset',
+      idx === activeIdx && 'is-active',
+      idx < activeIdx && 'is-past'
+    )
+
+  return (
+    <div className="mp-phone-frame">
+      <div className="mp-phone-screen" ref={containerRef}>
+        <div
+          className={slideClass(0)}
+          role="img"
+          aria-label={t(
+            'auto.components.mobile.PhoneCarousel.89c7713645',
+            'Orca Mobile home screen'
+          )}
+        >
+          <HomeSlide tapping={tappingSlide === 0} />
+        </div>
+        <div
+          className={slideClass(1)}
+          role="img"
+          aria-label={t('auto.components.mobile.PhoneCarousel.93217b41c1', 'Worktree list')}
+        >
+          <WorktreeListSlide tapping={tappingSlide === 1} />
+        </div>
+        <div
+          className={slideClass(2)}
+          role="img"
+          aria-label={t('auto.components.mobile.PhoneCarousel.96d651cb87', 'Terminal session')}
+        >
+          <TerminalSlide />
+        </div>
+      </div>
+    </div>
+  )
+}

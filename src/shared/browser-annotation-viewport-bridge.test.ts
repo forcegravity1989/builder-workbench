@@ -4,7 +4,7 @@ import {
   buildBrowserAnnotationViewportBridgeScript,
   browserAnnotationMarkerSelector,
   isValidBrowserAnnotationViewportBridgeMarkers
-} from './browser-annotation-viewport-bridge'
+} from './browser/annotations/browser-annotation-viewport-bridge'
 
 type BridgeState = {
   requestUpdate: EventListener

@@ -10,23 +10,26 @@ import type {
 import { WorkspaceScopeError } from './workspace-scope-error'
 import { acceptanceHumanFieldChanges } from './acceptance-human-guard'
 import { planHumanFieldChanges } from './plan-human-guard'
+import type { RpcCallerIdentity } from '../runtime/rpc/callers/rpc-caller-identity'
 
 /** Caller identity as seen by the RPC dispatcher; never taken from the request payload. */
 export type MaterialSaveCaller = {
-  clientKind?: 'mobile' | 'runtime'
+  caller?: RpcCallerIdentity
 }
 
 /**
  * Channel boundary for human-only material fields: acceptance verdicts, Issue
  * notes and carry marks, preparation review and meeting-minutes confirmation,
  * plus the planning risk report and its minutes confirmation and closure marks.
- * Desktop IPC and paired device sockets arrive with an authenticated clientKind;
- * the local Unix-socket CLI — the channel in-session models execute — arrives
- * without one. A human typing `bw materials save` by hand is refused too: these
- * fields are recorded in the BW UI, the CLI channel round-trips them unchanged.
+ * Desktop IPC and paired device sockets supply the transport-proven caller.
+ * Local and paired agent CLI requests round-trip human fields unchanged.
  */
 export function isModelSaveChannel(caller: MaterialSaveCaller): boolean {
-  return caller.clientKind === undefined
+  const identity = caller.caller
+  return !(
+    identity?.kind === 'desktop' ||
+    (identity?.kind === 'paired-device' && identity.agent !== true)
+  )
 }
 
 /**

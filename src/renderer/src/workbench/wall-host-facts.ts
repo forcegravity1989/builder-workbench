@@ -1,6 +1,6 @@
-import { parseExecutionHostId } from '../../../shared/execution-host'
-import type { PublicKnownRuntimeEnvironment } from '../../../shared/runtime-environments'
-import type { RuntimeEnvironmentStatus } from '../store/slices/runtime-status-types'
+import { parseExecutionHostId } from '../../../shared/execution-host/execution-host'
+import type { PublicKnownRuntimeEnvironment } from '../../../shared/remote-runtime/host-catalog/runtime-environments'
+import type { RuntimeEnvironmentStatus } from '../../../shared/remote-runtime/host-status/runtime-host-status'
 
 export type WallHostFact = {
   hostId: string

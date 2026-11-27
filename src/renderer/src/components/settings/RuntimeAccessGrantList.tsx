@@ -1,6 +1,6 @@
 import { Copy, Loader2, RefreshCw, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import type { RuntimeAccessGrant } from '../../../../shared/runtime-access-grants'
+import type { RuntimeAccessGrant } from '../../../../shared/remote-runtime/host-catalog/runtime-access-grants'
 import { Button } from '../ui/button'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'

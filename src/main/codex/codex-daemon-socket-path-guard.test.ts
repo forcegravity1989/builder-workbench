@@ -12,18 +12,18 @@ vi.mock('electron', () => ({
 }))
 
 import {
-  applyCodexDaemonSocketGuard,
+  applyCodexDaemonOverride,
   codexDaemonSocketPath,
   codexDaemonSocketPathExceedsLimit,
   stripCodexDaemonOverride
-} from './codex-daemon-socket-path-guard'
+} from './configuration/shared-server/codex-daemon-socket-path-guard'
 import {
   syncSystemConfigIntoLegacySharedCodexHome,
   syncSystemConfigIntoManagedCodexHome
-} from './codex-config-mirror'
-import { getCodexConfigSyncStatus } from './config-sync-stall'
-import { getCodexSettingsBaselinePath } from './config-settings-baseline'
-import { extractOrdinaryCodexSettings } from './config-toml-runtime-owned-sections'
+} from './configuration/settings/codex-config-mirror'
+import { getCodexConfigSyncStatus } from './configuration/settings/config-sync-stall'
+import { getCodexSettingsBaselinePath } from './configuration/settings/config-settings-baseline'
+import { extractOrdinaryCodexSettings } from './configuration/toml/config-toml-runtime-owned-sections'
 
 const UUID = '9dd962e2-449d-44c4-9733-0633f255064a'
 const MAC_MANAGED_HOME = `/Users/john/Library/Application Support/orca/codex-accounts/${UUID}/home`
@@ -59,26 +59,26 @@ describe('codexDaemonSocketPathExceedsLimit', () => {
   })
 })
 
-describe('applyCodexDaemonSocketGuard', () => {
+describe('applyCodexDaemonOverride', () => {
   it('upserts the daemon setting using the existing TOML table or dotted keys', () => {
     const config = '[features]\nhooks = true\ndaemon_auto_start = true\n\n[tui]\ntheme = "dark"\n'
-    const guarded = applyCodexDaemonSocketGuard(config, MAC_MANAGED_HOME, 'darwin')
+    const guarded = applyCodexDaemonOverride(config, MAC_MANAGED_HOME, true)
     expect(guarded).toBe(`[features]\nhooks = true\n${OVERRIDE_LINE}\n\n[tui]\ntheme = "dark"\n`)
     expect(stripCodexDaemonOverride(guarded)).toBe(
       '[features]\nhooks = true\n\n[tui]\ntheme = "dark"\n'
     )
     const dottedConfig = 'features.hooks = true\n\n[tui]\ntheme = "dark"\n'
-    expect(applyCodexDaemonSocketGuard(dottedConfig, MAC_MANAGED_HOME, 'darwin')).toBe(
+    expect(applyCodexDaemonOverride(dottedConfig, MAC_MANAGED_HOME, true)).toBe(
       `features.hooks = true\nfeatures.${OVERRIDE_LINE}\n\n[tui]\ntheme = "dark"\n`
     )
   })
 
   it('preserves CRLF and strips the runtime setting before promoting or moving homes', () => {
     const crlf = 'model = "gpt-5"\r\n'
-    const guarded = applyCodexDaemonSocketGuard(crlf, MAC_MANAGED_HOME, 'darwin')
+    const guarded = applyCodexDaemonOverride(crlf, MAC_MANAGED_HOME, true)
     expect(guarded).toBe(`model = "gpt-5"\r\n\r\n[features]\r\n${OVERRIDE_LINE}\r\n`)
     expect(extractOrdinaryCodexSettings(guarded)).toBe('model = "gpt-5"')
-    expect(applyCodexDaemonSocketGuard(guarded, 'C:\\short\\home', 'win32')).toBe(crlf)
+    expect(applyCodexDaemonOverride(guarded, 'C:\\short\\home', false)).toBe(crlf)
   })
 })
 

@@ -1,14 +1,14 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { parsePairingCode } from '../../../shared/pairing'
-import { findEnvironmentWithHostKey } from '../../../shared/runtime-environment-host-key-match'
+import { parsePairingCode } from '../../../shared/remote-runtime/pairing/pairing'
+import { findEnvironmentWithHostKey } from '../../../shared/remote-runtime/host-catalog/runtime-environment-host-key-match'
 import {
-  addOrUpdateEnvironmentFromPairingCode,
+  addEnvironmentFromPairingCode,
   listEnvironments,
   removeEnvironment,
-  setEnvironmentReconnectOnLaunch
-} from '../../../shared/runtime-environment-store'
-import { RuntimeEnvironmentStoreError } from '../../../shared/runtime-environment-store-records'
+  updateEnvironmentFromPairingCode
+} from '../../../shared/remote-runtime/host-store/runtime-environment-store'
+import { RuntimeEnvironmentStoreError } from '../../../shared/remote-runtime/host-store/runtime-environment-store-records'
 import type { TeamDirectoryMember } from '../../../shared/team-directory'
 
 export type TeamHostSyncResult = { added: number; updated: number }
@@ -22,6 +22,7 @@ export type TeamHostSyncDeps = {
 }
 
 const MANAGED_FILE = 'workbench-team-hosts.json'
+const pendingSyncs = new Map<string, Promise<TeamHostSyncResult>>()
 
 function readManagedIds(userDataPath: string): Set<string> {
   try {
@@ -57,7 +58,27 @@ function isNameTaken(error: unknown): boolean {
  * Saves the other members' published links as remote hosts, disconnected. Hosts the user saved
  * by hand are never rewritten, and nothing is removed.
  */
-export async function syncTeamHosts(
+export function syncTeamHosts(
+  hosts: TeamDirectoryMember[],
+  currentMemberId: string | null,
+  deps: TeamHostSyncDeps
+): Promise<TeamHostSyncResult> {
+  const { userDataPath } = deps
+  const previous = pendingSyncs.get(userDataPath)
+  const run = (previous ? previous.catch(() => undefined) : Promise.resolve()).then(() =>
+    syncTeamHostsOnce(hosts, currentMemberId, deps)
+  )
+  pendingSyncs.set(userDataPath, run)
+  const clear = () => {
+    if (pendingSyncs.get(userDataPath) === run) {
+      pendingSyncs.delete(userDataPath)
+    }
+  }
+  void run.then(clear, clear)
+  return run
+}
+
+async function syncTeamHostsOnce(
   hosts: TeamDirectoryMember[],
   currentMemberId: string | null,
   deps: TeamHostSyncDeps
@@ -76,42 +97,41 @@ export async function syncTeamHosts(
       continue
     }
     const existing = findEnvironmentWithHostKey(
-      listEnvironments(deps.userDataPath),
+      await listEnvironments(deps.userDataPath),
       offer.publicKeyB64
     )
     const name = host.name ?? host.member_id
     try {
       if (!existing) {
-        const { environment } = saveHost(deps, name, host, host.orca_endpoint)
+        const environment = await saveHost(deps, name, host, host.orca_endpoint)
         try {
-          setEnvironmentReconnectOnLaunch(deps.userDataPath, environment.id, false)
           deps.holdDisconnected(environment.id)
           managed.add(environment.id)
           writeManagedIds(deps.userDataPath, managed)
         } catch (error) {
-          // A host that cannot be held disconnected would connect on launch, so it is not kept.
+          // Roll back an import that could not be recorded as managed.
           managed.delete(environment.id)
-          removeEnvironment(deps.userDataPath, environment.id)
+          await removeEnvironment(deps.userDataPath, environment.id)
           throw error
         }
         result.added += 1
         continue
       }
       const endpoint = existing.endpoints[0]
+      const needsTeamAccessMode =
+        existing.accessMode === undefined && offer.accessMode === 'team-read'
       if (
         !managed.has(existing.id) ||
-        (endpoint?.deviceToken === offer.deviceToken && endpoint?.endpoint === offer.endpoint)
+        (endpoint?.deviceToken === offer.deviceToken &&
+          endpoint?.endpoint === offer.endpoint &&
+          !needsTeamAccessMode)
       ) {
         continue
       }
-      const wasHeld = existing.reconnectOnLaunch === false
-      addOrUpdateEnvironmentFromPairingCode(deps.userDataPath, {
-        name: existing.name,
-        pairingCode: host.orca_endpoint
+      await updateEnvironmentFromPairingCode(deps.userDataPath, existing.id, {
+        pairingCode: host.orca_endpoint,
+        expectedPairingRevision: existing.pairingRevision ?? existing.createdAt
       })
-      if (wasHeld) {
-        setEnvironmentReconnectOnLaunch(deps.userDataPath, existing.id, false)
-      }
       await deps.invalidateTransport(existing.id)
       result.updated += 1
     } catch {
@@ -121,21 +141,26 @@ export async function syncTeamHosts(
   return result
 }
 
-function saveHost(
+async function saveHost(
   deps: TeamHostSyncDeps,
   name: string,
   host: TeamDirectoryMember,
   pairingCode: string
-): ReturnType<typeof addOrUpdateEnvironmentFromPairingCode> {
+): ReturnType<typeof addEnvironmentFromPairingCode> {
   try {
-    return addOrUpdateEnvironmentFromPairingCode(deps.userDataPath, { name, pairingCode })
+    return await addEnvironmentFromPairingCode(deps.userDataPath, {
+      name,
+      pairingCode,
+      reconnectOnLaunch: false
+    })
   } catch (error) {
     if (!isNameTaken(error)) {
       throw error
     }
-    return addOrUpdateEnvironmentFromPairingCode(deps.userDataPath, {
+    return addEnvironmentFromPairingCode(deps.userDataPath, {
       name: `${name}（${host.member_id}）`,
-      pairingCode
+      pairingCode,
+      reconnectOnLaunch: false
     })
   }
 }

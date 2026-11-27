@@ -8,11 +8,15 @@ import { ACCEPTANCE_SECTIONS, type AcceptanceSectionId } from './acceptance-sect
  * last section whose top passed the container top + 60px wins.
  */
 export function useAcceptanceJourneySpy() {
+  const prepare = useRef<HTMLElement>(null)
+  const showcase = useRef<HTMLElement>(null)
+  const minutes = useRef<HTMLElement>(null)
+  const archive = useRef<HTMLElement>(null)
   const sectionRefs: Record<AcceptanceSectionId, RefObject<HTMLElement | null>> = {
-    prepare: useRef<HTMLElement>(null),
-    showcase: useRef<HTMLElement>(null),
-    minutes: useRef<HTMLElement>(null),
-    archive: useRef<HTMLElement>(null)
+    prepare,
+    showcase,
+    minutes,
+    archive
   }
   const [activeSection, setActiveSection] = useState<AcceptanceSectionId>('prepare')
   // Set while a navigation click is settling; user activity clears it so the spy

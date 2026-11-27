@@ -11,10 +11,11 @@ import type {
   CharterRemoteProbe
 } from '../../shared/workbench/charter'
 import { parseCodeHubRemote } from '../../shared/codehub'
-import { acquire, extractExecError, release } from '../github/gh-utils'
+import { acquire, release } from '../github/execution/github-operation-slots'
+import { extractExecError } from '../git/command-runner/process-capture/exec-error'
 import { bwGhExecFileAsync } from './workbench-exec-observability'
-import { parseGitHubRemoteIdentity } from '../github/github-remote-identity-parsing'
-import { githubHostExecOptions } from '../github/github-repository-host'
+import { parseGitHubRemoteIdentity } from '../github/repositories/github-remote-identity-parsing'
+import { githubHostExecOptions } from '../github/repositories/github-repository-host'
 import { fetchCodeHubRepoFileRaw, viewCodeHubProject } from '../codehub/repo-reads'
 
 export function oneLine(value: string): string {

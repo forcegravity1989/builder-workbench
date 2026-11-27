@@ -1,5 +1,5 @@
-import { isSafeGitRemoteName } from '../../shared/git-push-target-validation'
-import { buildNarrowForkFetchRefspec } from '../git/fork-remote-refspec'
+import { isSafeGitRemoteName } from '../../shared/git/remotes/git-push-target-validation'
+import { buildNarrowForkFetchRefspec } from '../git/refs/fork-remotes/fork-remote-refspec'
 import { fixedWorkspaceRequestForBranch } from '../../shared/workbench/fixed-workspace'
 import { WorkspaceScopeError } from './workspace-scope-error'
 

@@ -1,7 +1,7 @@
 import { notifyWorkbenchError } from './error-feedback'
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
-import type { Repo } from '../../../shared/repo-types'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
+import type { Repo } from '../../../shared/repository/repo-types'
 import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'
 
 const refresh = createSnapshotCache(() => ({

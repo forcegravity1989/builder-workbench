@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
+import { readRuntimeStatuses } from '@/store/slices/runtime-status/views/runtime-status-owner'
 import { useAppStore } from '@/store'
-import { runtimeHostConnectionStateForEntry } from '@/runtime/runtime-host-connection-state'
+import { runtimeHostConnectionStateForEntry } from '@/runtime/hosts/connections/runtime-host-connection-state'
+import { getEnvironmentSshTargetConnectionGeneration } from '@/store/slices/ssh/runtime-environment-ssh'
+import { selectRuntimeAwareSshStatus } from '@/store/slices/ssh/runtime-environment-ssh-selectors'
 import {
-  getEnvironmentSshTargetConnectionGeneration,
-  selectRuntimeAwareSshStatus
-} from '@/store/slices/runtime-environment-ssh'
-import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
-import type { Repo } from '../../../shared/repo-types'
+  getRepoExecutionHostId,
+  parseExecutionHostId
+} from '../../../shared/execution-host/execution-host'
+import type { Repo } from '../../../shared/repository/repo-types'
 import { versionCatalogSourceKey, versionCatalogSshTargetId } from './version-catalog-source'
-import { PrioritySemaphore } from '../../../shared/priority-semaphore'
+import { PrioritySemaphore } from '../../../shared/concurrency/priority-semaphore'
 
 const discoveryReads = new PrioritySemaphore(8)
 
@@ -29,7 +31,12 @@ export function useVersionCatalogDiscovery(sources: readonly Repo[], revision: s
             sshTargetId
               ? [
                   sshTargetId,
-                  selectRuntimeAwareSshStatus(state, host.environmentId, sshTargetId),
+                  selectRuntimeAwareSshStatus(
+                    state,
+                    readRuntimeStatuses(),
+                    host.environmentId,
+                    sshTargetId
+                  ),
                   getEnvironmentSshTargetConnectionGeneration(host.environmentId, sshTargetId)
                 ]
               : null

@@ -1,6 +1,6 @@
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import { isCodeHubHost } from '../../../shared/codehub'
-import { stripCredentialsFromMessage } from '../../../shared/git-remote-error'
+import { stripCredentialsFromMessage } from '../../../shared/git/remotes/git-remote-error'
 
 /**
  * CodeHub 克隆主机与网页主机不一致的站点。绿区用 `codehub-dg-g.huawei.com` 克隆（https 和

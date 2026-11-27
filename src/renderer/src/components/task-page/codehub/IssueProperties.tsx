@@ -5,7 +5,8 @@ import { Check, FolderKanban, LoaderCircle, Pencil, X } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import type { CodeHubApi } from '../../../../../shared/codehub-api'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
+import { ImeInput } from '@/lib/text-input/ime/ime-text-field'
 
 export function CodeHubIssueProperties({
   api,
@@ -168,7 +169,7 @@ export function CodeHubIssueProperties({
                     </div>
                   )}
                 </div>
-                <input
+                <ImeInput
                   value={labelInput}
                   onChange={(event) => setLabelInput(event.target.value)}
                   onKeyDown={(event) => {

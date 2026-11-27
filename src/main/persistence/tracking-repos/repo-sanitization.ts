@@ -1,13 +1,21 @@
-import type { RepoProjectHostSetupMethod } from '../../../shared/project-types'
-import type { Repo } from '../../../shared/repo-types'
-import type { GitRemoteIdentity } from '../../../shared/git-remote-identity'
-import { stripCredentialsFromMessage } from '../../../shared/git-remote-error'
-import { normalizeRepoBadgeColor } from '../../../shared/repo-badge-color'
-import { sanitizeRepoIcon } from '../../../shared/repo-icon'
+import { stripCredentialsFromMessage } from '../../../shared/git/remotes/git-remote-error'
+import type { RepoProjectHostSetupMethod } from '../../../shared/project/project-types'
+import type { Repo } from '../../../shared/repository/repo-types'
+import { editorFormatterSchema } from '../../../shared/editor/formatting/editor-formatter'
+import type { GitRemoteIdentity } from '../../../shared/git/remotes/git-remote-identity'
+import { normalizeRepoBadgeColor } from '../../../shared/repository/appearance/repo-badge-color'
+import { sanitizeRepoIcon } from '../../../shared/repository/appearance/repo-icon'
+import {
+  normalizeGhAccountBinding,
+  type GhAccountBinding
+} from '../../../shared/github/accounts/account-binding'
+import { normalizeJiraProjectReference } from '../../../shared/jira/jira-project-reference'
+
+import { sanitizeAgentWorkspaceTrustDecision } from '../../../shared/agent-launch/permissions/agent-workspace-trust-decision'
 import {
   normalizeCustomWorktreeVisibilitySources,
   normalizeWorktreeVisibilitySourcePreferences
-} from '../../../shared/worktree/visibility-sources'
+} from '../../../shared/worktree/visibility/visibility-sources'
 
 export function sanitizeRepoUpstream(value: unknown): Repo['upstream'] | undefined {
   if (value === undefined) {
@@ -25,17 +33,13 @@ export function sanitizeRepoUpstream(value: unknown): Repo['upstream'] | undefin
   if (!owner || !repo) {
     return undefined
   }
-  // Why: an `upstream` remote may live on a different server than `origin`, so
-  // dropping the host forced consumers to re-infer it from origin and could bind
-  // a GHES parent to a same-named github.com repo. Absent host stays absent so
-  // records written before this survive unchanged.
+  // Preserve upstream host identity to distinguish GHES forks from same-named github.com repos.
   const host = typeof candidate.host === 'string' ? candidate.host.trim() : ''
   return host ? { owner, repo, host } : { owner, repo }
 }
 
 export function sanitizeGitRemoteIdentity(value: unknown): GitRemoteIdentity | null | undefined {
-  // Why: `null` is a resolved "no usable remote" marker; dropping it would make
-  // a settled repo indistinguishable from one whose identity probe is pending.
+  // Null means resolved with no usable remote; absence means identity probing is pending.
   if (value === null) {
     return null
   }
@@ -81,18 +85,24 @@ export function sanitizeRepoUpdatesForPersistence<
   T extends Partial<
     Pick<
       Repo,
-      | 'projectVisibility'
       | 'badgeColor'
+      | 'projectVisibility'
+      | 'editorFormatter'
       | 'repoIcon'
       | 'upstream'
       | 'gitRemoteIdentity'
       | 'worktreeBasePath'
       | 'projectHostSetupMethod'
       | 'forkSyncMode'
+      | 'agentWorkspaceTrust'
+      | 'defaultJiraProject'
       | 'customWorktreeVisibilitySources'
       | 'worktreeVisibilitySourcePreferences'
     >
-  >
+  > & {
+    ghAccount?: GhAccountBinding | null
+    browserProfileId?: string | null
+  }
 >(updates: T): T {
   const sanitized = { ...updates }
   if (
@@ -101,6 +111,17 @@ export function sanitizeRepoUpdatesForPersistence<
     sanitized.projectVisibility !== 'team'
   ) {
     delete sanitized.projectVisibility
+  }
+  if ('editorFormatter' in sanitized && sanitized.editorFormatter !== undefined) {
+    sanitized.editorFormatter = editorFormatterSchema.parse(sanitized.editorFormatter)
+  }
+  if ('defaultJiraProject' in sanitized) {
+    const reference = normalizeJiraProjectReference(sanitized.defaultJiraProject)
+    if (reference === undefined) {
+      delete sanitized.defaultJiraProject
+    } else {
+      sanitized.defaultJiraProject = reference
+    }
   }
   if ('badgeColor' in sanitized) {
     const badgeColor = normalizeRepoBadgeColor(sanitized.badgeColor)
@@ -118,7 +139,7 @@ export function sanitizeRepoUpdatesForPersistence<
       sanitized.repoIcon = repoIcon
     }
   }
-  // Why: `null` is a valid "not a fork" / "no usable remote" marker; only drop malformed shapes.
+  // Preserve explicit null markers; discard only malformed values.
   if ('upstream' in sanitized) {
     const upstream = sanitizeRepoUpstream(sanitized.upstream)
     if (upstream === undefined) {
@@ -156,6 +177,30 @@ export function sanitizeRepoUpdatesForPersistence<
       delete sanitized.forkSyncMode
     } else {
       sanitized.forkSyncMode = forkSyncMode
+    }
+  }
+  if ('agentWorkspaceTrust' in sanitized) {
+    const agentWorkspaceTrust = sanitizeAgentWorkspaceTrustDecision(sanitized.agentWorkspaceTrust)
+    if (agentWorkspaceTrust === undefined) {
+      delete sanitized.agentWorkspaceTrust
+    } else {
+      sanitized.agentWorkspaceTrust = agentWorkspaceTrust
+    }
+  }
+  if (
+    'browserProfileId' in sanitized &&
+    sanitized.browserProfileId != null &&
+    (typeof sanitized.browserProfileId !== 'string' || !sanitized.browserProfileId.trim())
+  ) {
+    delete sanitized.browserProfileId
+  }
+  // Null explicitly clears ghAccount; only malformed shapes are discarded.
+  if ('ghAccount' in sanitized && sanitized.ghAccount != null) {
+    const ghAccount = normalizeGhAccountBinding(sanitized.ghAccount)
+    if (!ghAccount) {
+      delete sanitized.ghAccount
+    } else {
+      sanitized.ghAccount = ghAccount
     }
   }
   if ('customWorktreeVisibilitySources' in sanitized) {
