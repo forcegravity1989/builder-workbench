@@ -2,6 +2,32 @@ import type { BotTemplate } from '../bot-templates'
 
 export const BOT_TEMPLATES_CODING: readonly BotTemplate[] = [
   {
+    id: 'bw-maintenance',
+    category: 'coding',
+    name: 'Monica Fix',
+    line: 'Queues GitHub issues marked by a maintainer and hands them to repair workers.',
+    firstChat:
+      'Create this bot on the project computer. Select a registered project, then enable its scheduled check.',
+    mascot: 'B1',
+    watches: 'Open GitHub issues labeled bw-bot-fix, including older issues labeled later',
+    does: 'Starts one repair worker at a time and reports questions, progress and the pull request here.',
+    reports: 'When work is queued, needs attention or has a pull request',
+    connectors: [],
+    schedules: [
+      {
+        id: 'labeled-issues',
+        when: 'Every 5 minutes',
+        what: 'Check issues assigned to the bot',
+        rrule: '*/5 * * * *',
+        prompt:
+          '在本 Bot 所在的执行机，使用所属 CLI 执行 orca bot maintenance tick --repo <首次配置确认的项目 ID>。用户要求本轮跳过 CI 时加 --skip-ci。首次配置尚未完成时先询问项目。只通过这个命令派发，切勿手动补开 worker。向原对话回告排队、提问、失败、PR 和检查的变化；队列为空或没有变化时静默。'
+      }
+    ],
+    events: [],
+    skills: [],
+    example: ['#42 is being fixed. #51 is queued.', 'The pull request for #42 is ready to review.']
+  },
+  {
     id: 'pr-review',
     category: 'coding',
     name: 'Pull request review',
