@@ -1,22 +1,29 @@
 #!/usr/bin/env node
 
 // Workbench Windows 发布：出包 → tag → 上传三资产 → 建 GitHub Release → 读回。
-// 本脚本是 Builder Workbench 专用（只 3 个 Windows 资产），不复用 Orca 的多平台发布器。
+// 本脚本是 Builder Workbench 专用（Windows 资产及旧名兼容资产），不复用 Orca 的多平台发布器。
 // 版本描述（Release body）一律由 --notes-file 传入，按 references/release-notes-spec.md 撰写；
 // 脚本绝不自动拼 body（不用 gh 的 --generate-notes），以免退回已合 PR 的扁平罗列。
 
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, readFileSync, statSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs'
+import {
+  copyFileSync,
+  existsSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+  mkdtempSync,
+  rmSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { truncateReleaseBody } from './create-draft-release.mjs'
 
-// electron-builder.config.cjs 的 win artifactName 为 'workbench-windows-setup.${ext}'；latest.yml 是更新清单。
+// electron-builder.config.cjs 的 win artifactName 为 'monica-windows-setup.${ext}'；latest.yml 是更新清单。
 export const WORKBENCH_RELEASE_ASSETS = [
-  'workbench-windows-setup.exe',
-  'workbench-windows-setup.exe.blockmap',
+  'monica-windows-setup.exe',
+  'monica-windows-setup.exe.blockmap',
   'latest.yml'
 ]
 
@@ -173,6 +180,17 @@ export function assertPublishAuthorized({ publish, notesFile }) {
   }
 }
 
+function truncateReleaseBody(body) {
+  const limit = 120_000
+  const notice =
+    '\n\n---\nRelease notes were truncated because GitHub release bodies are limited to 125,000 characters.'
+  if (body.length <= limit) {
+    return body
+  }
+
+  return `${body.slice(0, limit - notice.length).trimEnd()}${notice}`
+}
+
 function defaultExec(command, args, options = {}) {
   return execFileSync(command, args, { encoding: 'utf8', ...options })
 }
@@ -243,7 +261,7 @@ export async function runWorkbenchRelease({
   const args = parseReleaseArgs(argv)
   const version = resolveReleaseVersion({ explicitVersion: args.version })
   const tag = deriveReleaseTag(version)
-  const title = `Workbench ${version}`
+  const title = `Monica ${version}`
   const distDir = resolve(cwd, args.distDir)
   const notesFile = args.notesFile ? resolve(cwd, args.notesFile) : null
 
@@ -308,9 +326,15 @@ export async function runWorkbenchRelease({
     )
   }
 
+  const legacyAssets = assets
+    .filter((asset) => asset.name.startsWith('monica-'))
+    .map((asset) => ({ ...asset, alias: asset.name.replace(/^monica-/, 'workbench-') }))
   const ghArgs = buildGhReleaseCreateArgs({
     tag,
-    assetPaths: assets.map((asset) => asset.path),
+    assetPaths: [
+      ...assets.map((asset) => asset.path),
+      ...legacyAssets.map((asset) => join(distDir, asset.alias))
+    ],
     target: args.target === 'HEAD' ? head : args.target,
     title,
     notesFile: args.notesFile ?? '<notes-file>',
@@ -334,7 +358,7 @@ export async function runWorkbenchRelease({
     throw new Error(`发布中止：\n  - ${blockers.join('\n  - ')}`)
   }
 
-  // body 可能超 GitHub 上限，复用 create-draft-release 的截断，写临时文件交给 gh。
+  // body 可能超 GitHub 上限，截断后写临时文件交给 gh。
   const body = truncateReleaseBody(readFileSync(notesFile, 'utf8'))
   const tmpDir = mkdtempSync(join(tmpdir(), 'wb-release-'))
   try {
@@ -343,9 +367,14 @@ export async function runWorkbenchRelease({
 
     log('')
     log(`创建 Release ${tag} …`)
+    const legacyAssetPaths = legacyAssets.map((asset) => {
+      const aliasPath = join(tmpDir, asset.alias)
+      copyFileSync(asset.path, aliasPath)
+      return aliasPath
+    })
     const publishArgs = buildGhReleaseCreateArgs({
       tag,
-      assetPaths: assets.map((asset) => asset.path),
+      assetPaths: [...assets.map((asset) => asset.path), ...legacyAssetPaths],
       target: args.target === 'HEAD' ? head : args.target,
       title,
       notesFile: notesPath,

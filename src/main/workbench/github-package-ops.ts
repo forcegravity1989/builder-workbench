@@ -120,9 +120,12 @@ function formatTimestamp(value: string | undefined): string {
 
 /** 安装包本体名列表：排除更新器元数据（latest.yml / blockmap）。 */
 function installerAssets(assets: { name?: string }[] | undefined): string[] {
-  return (assets ?? [])
+  const installers = (assets ?? [])
     .map((asset) => asset.name ?? '')
     .filter((name) => name && !UPDATE_METADATA.test(name) && INSTALLER_BODY.test(name))
+  return installers.includes('monica-windows-setup.exe')
+    ? installers.filter((name) => name !== 'workbench-windows-setup.exe')
+    : installers
 }
 
 async function fetchReleases(context: GhContext): Promise<ReleaseList> {
