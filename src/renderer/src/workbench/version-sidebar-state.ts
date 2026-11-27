@@ -23,11 +23,20 @@ let projection: VersionSidebarProjection = {
 let projectionKey = ''
 let focusSequence = 0
 let focusRequest: { repoId: string; sequence: number } | null = null
-type NavigationReveal = { rowKey: string; version: string; guide: boolean; sequence: number }
+type NavigationReveal = {
+  rowKey: string
+  version: string | undefined
+  guide: boolean
+  sequence: number
+}
 let navigationReveal: NavigationReveal | null = null
 let endNavigationReveal: (() => void) | undefined
 
-export function revealNavigationVersion(rowKey: string, version: string, guide: boolean): void {
+export function revealNavigationVersion(
+  rowKey: string,
+  version: string | undefined,
+  guide: boolean
+): void {
   endNavigationReveal?.()
   navigationReveal = { rowKey, version, guide, sequence: ++focusSequence }
   let started = false
@@ -69,13 +78,13 @@ export function clearNavigationVersion(): void {
   endNavigationReveal?.()
 }
 
-export function useNavigationVersion(rowKey: string): NavigationReveal | null {
+export function useNavigationVersion(rowKey?: string): NavigationReveal | null {
   const reveal = useSyncExternalStore(
     subscribe,
     () => navigationReveal,
     () => null
   )
-  return reveal?.rowKey === rowKey ? reveal : null
+  return rowKey === undefined || reveal?.rowKey === rowKey ? reveal : null
 }
 let treeRevealSequence = 0
 let treeRevealRequest: VersionTreeWorktreeRevealRequest | null = null

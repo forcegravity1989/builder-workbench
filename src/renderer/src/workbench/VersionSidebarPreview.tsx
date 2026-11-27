@@ -30,7 +30,7 @@ export function VersionSidebarPreview({
   versionElements: RefObject<Map<string, HTMLDivElement>>
   renderRow: (entry: VersionCatalogEntry) => ReactNode
   /** #762: a reveal request targeting an overflow version force-expands 更多版本. */
-  forceReveal?: { version: string; sequence: number; temporary?: boolean } | null
+  forceReveal?: { version: string; sequence: number; onCollapse?: () => void } | null
 }): React.JSX.Element {
   const moreVersionsId = useId()
   const activeOlderVersion =
@@ -45,7 +45,7 @@ export function VersionSidebarPreview({
   // A fresh reveal request wins over the active-version auto-expand so an explicitly
   // collapsed 更多版本 reopens even when the active version is itself an overflow version.
   const revealKey =
-    forcedOlderVersion && !forcedOlderVersion.temporary
+    forcedOlderVersion && !forcedOlderVersion.onCollapse
       ? `request:${forcedOlderVersion.version}:${forcedOlderVersion.sequence}`
       : activeOlderVersion
         ? `${activeOlderVersion}:${activeContextKey}`
@@ -95,7 +95,7 @@ export function VersionSidebarPreview({
     return () => cancelAnimationFrame(frame)
   }, [activeOlderVersion, activeRevealKey, repoId, versionElements])
 
-  const showMore = overflow.expanded || Boolean(forcedOlderVersion?.temporary)
+  const showMore = overflow.expanded || Boolean(forcedOlderVersion?.onCollapse)
   const moreVersionCount = entries.length - PREVIEW_LIMIT
   return (
     <div className="flex min-w-0 flex-col" style={rowSpacing}>
@@ -109,7 +109,12 @@ export function VersionSidebarPreview({
             aria-expanded={showMore}
             aria-controls={moreVersionsId}
             className="ml-2 h-6 justify-start self-start px-1.5 text-[11px] font-normal text-muted-foreground hover:text-worktree-sidebar-accent-foreground"
-            onClick={() => setOverflow({ ...overflow, expanded: !showMore })}
+            onClick={() => {
+              if (showMore) {
+                forcedOlderVersion?.onCollapse?.()
+              }
+              setOverflow({ ...overflow, expanded: !showMore })
+            }}
           >
             {showMore ? '收起更多版本' : `显示另外 ${moreVersionCount} 个版本`}
           </Button>

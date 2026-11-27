@@ -37,7 +37,11 @@ import { useProjectPage } from './project-page-state'
 import { toRuntimeExecutionHostId } from '../../../shared/execution-host/execution-host'
 import type { Repo } from '../../../shared/repository/repo-types'
 import { versionRepoIdentity } from '../../../shared/workbench/version-repo-identity'
-import { replayWorkbenchGuide, useWorkbenchScreenGuide } from './WorkbenchScreenGuide'
+import {
+  cancelWorkbenchGuide,
+  replayWorkbenchGuide,
+  useWorkbenchScreenGuide
+} from './WorkbenchScreenGuide'
 import { useWorkbenchScreenUsage } from './workbench-screen-usage'
 import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { useCycleView } from './cycle-view-state'
@@ -131,7 +135,8 @@ export function WorkbenchVersionNav({
     }
     return undefined
   }, [activeView, activeWorktree, projectPage, taskScope, taskRepoId, taskRepoMatches])
-  const project = useProjectVersionCatalog(repo, undefined, preference)
+  const navigationReveal = useNavigationVersion(getRepoRowIdentity(repo))
+  const project = useProjectVersionCatalog(repo, undefined, preference, Boolean(navigationReveal))
   const catalog = project.primary
   const materialReady = catalog?.materialReady ?? false
   const hasSourceProblems = project.sourceProblems.length > 0
@@ -144,7 +149,6 @@ export function WorkbenchVersionNav({
   const browsedVersion = useBrowsedVersion(repoId)
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const focusRequest = useVersionSidebarFocusRequest()
-  const navigationReveal = useNavigationVersion(getRepoRowIdentity(repo))
   const sectionCollapsed = collapsed && !navigationReveal
   const versionElements = useRef(new Map<string, HTMLDivElement>())
 
@@ -261,7 +265,7 @@ export function WorkbenchVersionNav({
   )
   const lastNavigationScroll = useRef('')
   useEffect(() => {
-    if (!navigationReveal) {
+    if (!navigationReveal?.version) {
       return
     }
     const key = `${navigationReveal.sequence}:${activeStep}`
@@ -279,6 +283,15 @@ export function WorkbenchVersionNav({
     }
   }, [navigationReveal, activeStep, entries])
 
+  const stopNavigationReveal = useCallback(() => {
+    if (navigationReveal?.guide) {
+      cancelWorkbenchGuide('workbench-versions')
+    }
+    if (navigationReveal) {
+      clearNavigationVersion()
+    }
+  }, [navigationReveal])
+
   const toggleVersion = useCallback(
     (version: string) => {
       const next = new Set(expandedVersions)
@@ -287,10 +300,10 @@ export function WorkbenchVersionNav({
       } else {
         next.add(version)
       }
-      clearNavigationVersion()
+      stopNavigationReveal()
       setExpandedOverrideAndStore(next)
     },
-    [expandedVersions, navigationReveal, setExpandedOverrideAndStore]
+    [expandedVersions, navigationReveal, setExpandedOverrideAndStore, stopNavigationReveal]
   )
 
   const versions = useMemo(() => entries.map((entry) => entry.version), [entries])
@@ -504,7 +517,7 @@ export function WorkbenchVersionNav({
         icon={Layers}
         collapsed={sectionCollapsed}
         onToggle={() => {
-          clearNavigationVersion()
+          stopNavigationReveal()
           setCollapsed(!sectionCollapsed)
         }}
         action={
@@ -523,7 +536,9 @@ export function WorkbenchVersionNav({
               variant="ghost"
               size="icon-xs"
               data-contextual-tour-target={
-                navigationReveal?.guide ? undefined : 'workbench-versions-start'
+                navigationReveal?.guide && navigationReveal.version
+                  ? undefined
+                  : 'workbench-versions-start'
               }
               aria-label="新建版本"
               title="新建版本"
@@ -560,7 +575,13 @@ export function WorkbenchVersionNav({
             versionElements={versionElements}
             renderRow={renderVersionRow}
             forceReveal={
-              navigationReveal ? { ...navigationReveal, temporary: true } : treeReveal.forceReveal
+              navigationReveal?.version
+                ? {
+                    version: navigationReveal.version,
+                    sequence: navigationReveal.sequence,
+                    onCollapse: stopNavigationReveal
+                  }
+                : treeReveal.forceReveal
             }
           />
         </>

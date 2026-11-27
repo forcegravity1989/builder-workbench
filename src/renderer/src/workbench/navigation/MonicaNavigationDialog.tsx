@@ -96,8 +96,8 @@ function VersionChoice({
         state.setSidebarBody('workspaces')
         if (selected) {
           setBrowsedVersion(repo.id, selected)
-          revealNavigationVersion(getRepoRowIdentity(repo), selected, guide)
         }
+        revealNavigationVersion(getRepoRowIdentity(repo), selected, guide)
         onOpened()
       } else {
         toast.error('未能进入项目工作区，请检查主机连接。')
