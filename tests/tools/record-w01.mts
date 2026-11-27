@@ -17,7 +17,20 @@ if (git(['remote', 'get-url', 'origin']) !== `https://github.com/${remote}.git`)
 const gh = (args: string[]) =>
   execFileSync('gh', args, { encoding: 'utf8', timeout: 120_000 }).trim()
 const reviewQuery = ['api', `repos/${remote}/pulls?state=open&head=yuzhup:bw/project`]
-async function verifyRemote() {
+async function verifyRemote(
+  submittedHead: string | undefined,
+  initialHead: string | undefined,
+  reviewBaseHead: string | undefined
+) {
+  if (
+    !submittedHead ||
+    !initialHead ||
+    !reviewBaseHead ||
+    submittedHead === initialHead ||
+    submittedHead === reviewBaseHead
+  ) {
+    throw new Error('Recording does not identify a new material commit')
+  }
   const readback = readDirectionResult(repoPath, true)
   if (!readback.charter.includes(process.env.W01_VISION ?? '让运营每天看清变化，及时安排跟进')) {
     throw new Error('The material worktree does not contain this run’s vision')
@@ -34,6 +47,17 @@ async function verifyRemote() {
   if (reviews.length !== 1 || reviews[0].headRefOid !== remoteHead || remoteHead !== localHead) {
     throw new Error('Remote PR, remote branch and local material commit disagree')
   }
+  if (localHead !== submittedHead) {
+    throw new Error('The remote review does not belong to this recording')
+  }
+  const committedCharter = git(['show', `${submittedHead}:.bw/project.toml`])
+  const committedMilestones = JSON.parse(git(['show', `${submittedHead}:.bw/milestones.json`]))
+  if (
+    committedCharter.replace(/\r\n/g, '\n') !== readback.charter.trim().replace(/\r\n/g, '\n') ||
+    JSON.stringify(committedMilestones) !== JSON.stringify(readback.milestones)
+  ) {
+    throw new Error('The committed materials differ from the recorded worktree')
+  }
   await writeFile(
     path.join(outputDir, 'readback.json'),
     JSON.stringify({ ...readback, reviews, remoteHead }, null, 2)
@@ -45,7 +69,7 @@ if (process.argv[5] === '--verify') {
   if (!result.results.includes('review-submitted')) {
     throw new Error('This capture did not reach the submitted result')
   }
-  await verifyRemote()
+  await verifyRemote(result.submittedHead, result.initialHead, result.reviewBaseHead)
   await writeFile(
     file,
     JSON.stringify(
@@ -65,7 +89,8 @@ if (process.argv[5] === '--publish') {
     !result.success ||
     !result.remoteSubmitted ||
     !result.runtime ||
-    !evidence.remoteHead ||
+    !result.submittedHead ||
+    evidence.remoteHead !== result.submittedHead ||
     !encoder ||
     !Number.isFinite(trim) ||
     trim < 0 ||
@@ -180,6 +205,7 @@ const repo = repos.find((candidate) => path.resolve(candidate.path) === path.res
 if (!repo) {
   throw new Error('Register the dedicated sample through Workbench before recording')
 }
+const initialHead = git(['rev-parse', 'bw/project'])
 const chapters: { index: number; start: number }[] = []
 const results: string[] = []
 const events: { kind: string; at: number }[] = []
@@ -187,6 +213,8 @@ let startedAt = 0
 let duration = 0
 let recording = false
 let success = false
+let submittedHead: string | undefined
+let reviewBaseHead: string | undefined
 try {
   await runDirectionJourney(page, repo.id, {
     submit: process.env.W01_SUBMIT === '1',
@@ -220,6 +248,12 @@ try {
         await page.waitForTimeout(350)
       },
       async result(name) {
+        if (name === 'review-summary') {
+          reviewBaseHead = git(['rev-parse', 'bw/project'])
+        }
+        if (name === 'review-submitted') {
+          submittedHead = git(['rev-parse', 'bw/project'])
+        }
         results.push(name)
         events.push({ kind: name, at: (Date.now() - startedAt) / 1000 })
         await page.screenshot({ path: path.join(outputDir, `${name}.png`) })
@@ -230,7 +264,7 @@ try {
   duration = (Date.now() - startedAt) / 1000
   await page.screencast.stop()
   recording = false
-  await verifyRemote()
+  await verifyRemote(submittedHead, initialHead, reviewBaseHead)
   success = true
 } finally {
   if (recording) {
@@ -248,6 +282,9 @@ try {
         runtime: { pid: runtime.ProcessId, sourceRoot: process.cwd() },
         repoPath,
         repoId: repo.id,
+        initialHead,
+        submittedHead,
+        reviewBaseHead,
         recordedAt: new Date().toISOString(),
         chapters,
         results,

@@ -124,6 +124,9 @@ export async function runDirectionJourney(
     await expect(board.getByRole('button', { name: '查看评审', exact: true })).toBeVisible({
       timeout: 120_000
     })
+    await expect(page.getByText('里程碑已提交评审', { exact: true })).toBeVisible({
+      timeout: 120_000
+    })
     await observer.result?.('review-submitted')
   }
 }

@@ -1,19 +1,37 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { translate } from '@/i18n/i18n'
 import recording from './assets/w01.json'
 import videoUrl from './assets/w01.webm?url'
 import './direction-recording.css'
 
-const titles = ['找到项目', '明确共同方向', '安排阶段成果', '评审并更新']
 const allChapters = [0, 1, 2, 3] as const
-const actions = [
-  '从项目墙进入运营看板的项目总览。',
-  '编辑共同方向，核对改动后提交评审。',
-  '添加阶段成果与特性，保存到项目材料工作区。',
-  '核对本次改动并更新评审，等待人确认合入。'
-]
 
 export function DirectionRecording() {
+  const titles = [
+    translate('guidance.direction.wall.title', 'Find the project'),
+    translate('guidance.direction.card.title', 'Agree on the direction'),
+    translate('guidance.direction.draft.title', 'Plan milestone outcomes'),
+    translate('guidance.direction.review.title', 'Review and update')
+  ]
+  const actions = [
+    translate(
+      'guidance.direction.recording.wall',
+      'From the project wall, open the operations dashboard overview.'
+    ),
+    translate(
+      'guidance.direction.recording.direction',
+      'Edit the shared direction and check the change before submitting it for review.'
+    ),
+    translate(
+      'guidance.direction.recording.milestones',
+      'Add an outcome and feature, then save them in the project material worktree.'
+    ),
+    translate(
+      'guidance.direction.recording.review',
+      'Check and submit the changes for review. A person confirms the merge.'
+    )
+  ]
   const video = useRef<HTMLVideoElement>(null)
   const [active, setActive] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -59,7 +77,10 @@ export function DirectionRecording() {
 
   return (
     <div className="direction-recording">
-      <ol aria-label="旅程步骤" className="direction-recording-steps">
+      <ol
+        aria-label={translate('guidance.direction.recording.steps', 'Journey steps')}
+        className="direction-recording-steps"
+      >
         {allChapters.map((index) => (
           <li key={index}>
             <Button
@@ -77,15 +98,20 @@ export function DirectionRecording() {
         <header className="direction-recording-toolbar">
           <p aria-live="polite">{actions[active]}</p>
           <Button size="xs" disabled={error} onClick={toggle}>
-            {playing ? '暂停' : '播放'}
+            {playing
+              ? translate('guidance.direction.pause', 'Pause')
+              : translate('guidance.direction.recording.play', 'Play')}
           </Button>
           <Button size="xs" variant="outline" disabled={error} onClick={() => seek(0, true)}>
-            重播
+            {translate('guidance.direction.restart', 'Replay')}
           </Button>
         </header>
         {error && (
           <div role="alert">
-            演示视频未能加载。
+            {translate(
+              'guidance.direction.recording.loadError',
+              'Could not load the journey recording.'
+            )}
             <Button
               variant="outline"
               onClick={() => {
@@ -93,7 +119,7 @@ export function DirectionRecording() {
                 video.current?.load()
               }}
             >
-              重试
+              {translate('guidance.direction.recording.retry', 'Retry')}
             </Button>
           </div>
         )}
@@ -103,7 +129,10 @@ export function DirectionRecording() {
           muted
           playsInline
           preload="auto"
-          aria-label="运营看板：真实 BW 窗口录制"
+          aria-label={translate(
+            'guidance.direction.recording.video',
+            'Operations dashboard: real Workbench recording'
+          )}
           onLoadedMetadata={() => {
             if (video.current) {
               video.current.playbackRate = 1.6
@@ -138,7 +167,12 @@ export function DirectionRecording() {
             )
           }}
         />
-        <footer>样例项目 · 真实 BW 录屏 · 等待过程已压缩，评审由人确认</footer>
+        <footer>
+          {translate(
+            'guidance.direction.recording.footer',
+            'Sample project · Real Workbench recording · Waits shortened · Review is confirmed by a person'
+          )}
+        </footer>
       </section>
     </div>
   )
