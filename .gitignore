@@ -114,6 +114,8 @@ playwright-report/
 /.claude/skills/*
 !/.claude/skills/workbench-start/
 !/.claude/skills/workbench-start/**
+!/.claude/skills/orca-sync/
+!/.claude/skills/orca-sync/**
 !/.claude/skills/improve-workbench/
 !/.claude/skills/improve-workbench/**
 !/.claude/skills/journey-review/
