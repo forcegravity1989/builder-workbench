@@ -113,18 +113,22 @@ if (process.argv[5] === '--publish') {
     '-i',
     path.join(outputDir, 'w01.webm'),
     '-an',
-    '-c:v',
-    'vp8',
-    '-deadline',
-    'realtime',
-    '-speed',
-    '8',
-    '-crf',
-    '8',
-    '-b:v',
-    '1M',
-    '-threads',
-    '1',
+    ...(trim === 0
+      ? ['-c:v', 'copy']
+      : [
+          '-c:v',
+          'vp8',
+          '-deadline',
+          'realtime',
+          '-speed',
+          '8',
+          '-crf',
+          '8',
+          '-b:v',
+          '1M',
+          '-threads',
+          '1'
+        ]),
     '-y',
     nextVideo
   ])
