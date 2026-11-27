@@ -31223,6 +31223,8 @@
     "setupGuideReopen": "You can reopen it from Help → Getting Started with BW.",
     "selectSetupScriptProject": "Select a Git project first, then configure its setup script here.",
     "setupScriptProject": "Target project: {{project}}",
+    "askMonica": "Ask Monica",
+    "monicaOpenFailed": "Could not open Monica",
     "explore": "Explore BW",
     "exploreDescription": "Browse work journeys and feature demonstrations in BW.",
     "exploreFooter": "Reopen any time from the bottom question mark > Explore BW.",
