@@ -1,6 +1,7 @@
 import React from 'react'
 import { ExternalLink, KanbanSquare, Map as MapIcon, Table as TableIcon } from 'lucide-react'
 import { useAppStore } from '@/store'
+import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { Button } from '@/components/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
@@ -143,7 +144,14 @@ function ProjectViewTab({
                   'Switch to a Table, Board, or Roadmap view to work with this project in Orca.'
                 )}
           </p>
-          {workbench ? (
+          {workbench && isWebClientLocation() ? (
+            <p className="text-xs text-muted-foreground">
+              {t(
+                'guidance.feedbackOnDesktop',
+                'To send feedback, open Help in the BW desktop app.'
+              )}
+            </p>
+          ) : workbench ? (
             <Button
               type="button"
               size="xs"

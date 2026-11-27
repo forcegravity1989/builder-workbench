@@ -41,10 +41,15 @@ export function renderOrcaAccountSettingsSection(
       title={t('auto.components.settings.orcaAccount.title', 'Orca Account')}
       description={
         serverName === null
-          ? t(
-              'auto.components.settings.orcaAccount.description',
-              'Share work instantly and reach your desktop from Orca Mobile wherever you are.'
-            )
+          ? isWorkbenchShell()
+            ? t(
+                'auto.components.settings.orcaAccount.workbenchDescription',
+                'This account is used by Orca cloud connectors on the bot host.'
+              )
+            : t(
+                'auto.components.settings.orcaAccount.description',
+                'Share work instantly and reach your desktop from Orca Mobile wherever you are.'
+              )
           : t(
               'components.settings.orcaAccount.server.sectionDescription',
               'The Orca account {{host}} runs as, for its bots’ Slack, GitHub, Linear and webhooks.',

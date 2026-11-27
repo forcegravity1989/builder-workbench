@@ -26904,6 +26904,11 @@
     "failed": "无法停止 {{host}}。请在“设置 > SSH”中关闭其浏览器控制。"
   },
   "macosUpdateRequirement": {
+    "workbenchTitle": "BW 更新需要 macOS {{macos}}",
+    "workbenchDescription": "BW {{version}} 需要 macOS {{macos}} 或更高版本。当前版本仍可使用，但这台 Mac 将收不到新的更新。",
+    "workbenchUpgradeDescription": "这台 Mac 可以升级。更新 macOS 后即可安装最新版 BW。",
+    "workbenchWhyIntro": "BW 更新了包括 Electron 在内的桌面运行环境，以支持以下改进：",
+    "workbenchHelpAction": "打开 BW 文档",
     "title": "Orca 更新现在需要 macOS {{macos}}",
     "description": "Orca {{version}} 需要 macOS {{macos}} 或更高版本。此版本仍可使用，但不会在此 Mac 上获得新更新。",
     "checking": "正在检查此 Mac 是否可以升级…",
@@ -30379,6 +30384,8 @@
     }
   },
   "guidance": {
+    "feedbackOnDesktop": "请到 BW 桌面应用的「帮助」中发送反馈。",
+    "skillsOnDesktop": "请在 BW 桌面应用中打开「设置 → 技能」。",
     "about": "关于 BW",
     "reportCrash": "报告崩溃",
     "experiences": "能力体验",

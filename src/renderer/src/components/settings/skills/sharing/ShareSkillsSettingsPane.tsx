@@ -13,6 +13,13 @@ type HowToStep = { key: string; title: string; description: string }
 export function WorkbenchSkillsSettingsPane(): React.JSX.Element {
   const t = useTranslate()
   const openSkillsPage = useAppStore((state) => state.openSkillsPage)
+  if (isWebClientLocation()) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        {t('guidance.skillsOnDesktop', 'Open Settings → Skills in the BW desktop app.')}
+      </p>
+    )
+  }
   return (
     <Button type="button" variant="outline" size="sm" onClick={openSkillsPage}>
       <BookOpen className="size-4" />

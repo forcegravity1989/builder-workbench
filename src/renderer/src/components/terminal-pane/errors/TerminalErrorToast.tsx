@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react'
 import { AlertTriangle, X } from 'lucide-react'
 import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
+import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { Button } from '@/components/ui/button'
 import { CopyTextButton } from '@/components/clipboard/CopyTextButton'
@@ -163,6 +164,10 @@ export function TerminalErrorToast({
               'auto.components.terminal.pane.TerminalErrorToast.cc6d997c65',
               'Restart the terminal daemon from here to clear stale daemon state.'
             )}
+          </p>
+        ) : showIssueLink && isWorkbenchShell() && isWebClientLocation() ? (
+          <p className="mt-3 text-xs text-muted-foreground">
+            {t('guidance.feedbackOnDesktop', 'To send feedback, open Help in the BW desktop app.')}
           </p>
         ) : showIssueLink ? (
           <p className="mt-3 text-xs text-muted-foreground">

@@ -182,10 +182,17 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
           {t('auto.components.sidebar.SidebarSettingsHelpMenu.e565171a7c', 'Keyboard Shortcuts')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => openModal('feedback')}>
-          <MessageSquareText className="size-3.5" />
-          {t('auto.components.sidebar.SidebarSettingsHelpMenu.4cf5b868d7', 'Send Feedback')}
-        </DropdownMenuItem>
+        {isBW && !showWorkbenchDesktopHelp ? (
+          <DropdownMenuItem disabled>
+            <MessageSquareText className="size-3.5" />
+            {t('guidance.feedbackOnDesktop', 'To send feedback, open Help in the BW desktop app.')}
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onSelect={() => openModal('feedback')}>
+            <MessageSquareText className="size-3.5" />
+            {t('auto.components.sidebar.SidebarSettingsHelpMenu.4cf5b868d7', 'Send Feedback')}
+          </DropdownMenuItem>
+        )}
         {showWorkbenchDesktopHelp && window.api.app.openCrashReport ? (
           <DropdownMenuItem onSelect={() => void window.api.app.openCrashReport?.()}>
             <Bug className="size-3.5" aria-hidden />
