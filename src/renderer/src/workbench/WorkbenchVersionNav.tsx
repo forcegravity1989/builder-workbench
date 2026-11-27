@@ -1,3 +1,4 @@
+import { getRepoRowIdentity } from '@/store/repos/repo-host-identity'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 import { versionTreeKey } from './version-material-selection'
 import {
@@ -44,7 +45,9 @@ import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified
 import { VersionTreeDisplayProvider, type VersionTreeDisplayInput } from './VersionNativeTrees'
 import { VersionCatalogSourceProblem } from './VersionCatalogSourceProblem'
 import {
+  clearNavigationVersion,
   consumeVersionSidebarFocus,
+  useNavigationVersion,
   publishVersionSidebarProjection,
   useVersionSidebarFocusRequest
 } from './version-sidebar-state'
@@ -141,6 +144,8 @@ export function WorkbenchVersionNav({
   const browsedVersion = useBrowsedVersion(repoId)
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const focusRequest = useVersionSidebarFocusRequest()
+  const navigationReveal = useNavigationVersion(getRepoRowIdentity(repo))
+  const sectionCollapsed = collapsed && !navigationReveal
   const versionElements = useRef(new Map<string, HTMLDivElement>())
 
   const expandedKey = repoId ? `workbench.version-expanded:${repoId}` : null
@@ -225,9 +230,7 @@ export function WorkbenchVersionNav({
       return
     }
     consumeVersionSidebarFocus(focusRequest.sequence)
-    const selected = focusRequest.version
-      ? entries.find((entry) => entry.version === focusRequest.version)
-      : entries[0]
+    const selected = entries[0]
     if (!selected) {
       return
     }
@@ -253,17 +256,41 @@ export function WorkbenchVersionNav({
     setExpandedOverrideAndStore
   ])
 
+  const activeStep = useAppStore((state) =>
+    state.activeContextualTourId === 'workbench-versions' ? state.activeContextualTourStepIndex : 0
+  )
+  const lastNavigationScroll = useRef('')
+  useEffect(() => {
+    if (!navigationReveal) {
+      return
+    }
+    const key = `${navigationReveal.sequence}:${activeStep}`
+    if (lastNavigationScroll.current === key) {
+      return
+    }
+    const row = versionElements.current.get(navigationReveal.version)
+    const target =
+      navigationReveal.guide && activeStep === 1
+        ? row?.querySelector('[data-contextual-tour-target="workbench-versions-plan"]')
+        : row?.querySelector('button')
+    if (target) {
+      target.scrollIntoView({ block: 'nearest' })
+      lastNavigationScroll.current = key
+    }
+  }, [navigationReveal, activeStep, entries])
+
   const toggleVersion = useCallback(
     (version: string) => {
       const next = new Set(expandedVersions)
-      if (next.has(version)) {
+      if (next.has(version) || navigationReveal?.version === version) {
         next.delete(version)
       } else {
         next.add(version)
       }
+      clearNavigationVersion()
       setExpandedOverrideAndStore(next)
     },
-    [expandedVersions, setExpandedOverrideAndStore]
+    [expandedVersions, navigationReveal, setExpandedOverrideAndStore]
   )
 
   const versions = useMemo(() => entries.map((entry) => entry.version), [entries])
@@ -374,7 +401,10 @@ export function WorkbenchVersionNav({
       >
         <VersionNavGroup
           entry={entry}
-          expanded={expandedVersions.has(entry.version)}
+          expanded={
+            expandedVersions.has(entry.version) || navigationReveal?.version === entry.version
+          }
+          guidedVersion={navigationReveal?.guide ? navigationReveal.version : undefined}
           browsed={browsedVersion === entry.version}
           busy={busyKey !== null}
           initializing={busyKey === `${entry.version}:init`}
@@ -472,8 +502,11 @@ export function WorkbenchVersionNav({
     >
       <WorkbenchSidebarSectionHeader
         icon={Layers}
-        collapsed={collapsed}
-        onToggle={() => setCollapsed((value) => !value)}
+        collapsed={sectionCollapsed}
+        onToggle={() => {
+          clearNavigationVersion()
+          setCollapsed(!sectionCollapsed)
+        }}
         action={
           <>
             <Button
@@ -489,7 +522,9 @@ export function WorkbenchVersionNav({
               type="button"
               variant="ghost"
               size="icon-xs"
-              data-contextual-tour-target="workbench-versions-start"
+              data-contextual-tour-target={
+                navigationReveal?.guide ? undefined : 'workbench-versions-start'
+              }
               aria-label="新建版本"
               title="新建版本"
               onClick={() => setDialog({ mode: 'create' })}
@@ -502,7 +537,7 @@ export function WorkbenchVersionNav({
         版本
       </WorkbenchSidebarSectionHeader>
 
-      {!collapsed ? (
+      {!sectionCollapsed ? (
         <>
           {project.sourceProblems.map(({ key, ...problem }) => (
             <VersionCatalogSourceProblem key={key} {...problem} />
@@ -524,7 +559,9 @@ export function WorkbenchVersionNav({
             activeContextKey={`${activeView}:${activeObjectKey}`}
             versionElements={versionElements}
             renderRow={renderVersionRow}
-            forceReveal={treeReveal.forceReveal}
+            forceReveal={
+              navigationReveal ? { ...navigationReveal, temporary: true } : treeReveal.forceReveal
+            }
           />
         </>
       ) : null}

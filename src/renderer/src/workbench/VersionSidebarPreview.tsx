@@ -30,7 +30,7 @@ export function VersionSidebarPreview({
   versionElements: RefObject<Map<string, HTMLDivElement>>
   renderRow: (entry: VersionCatalogEntry) => ReactNode
   /** #762: a reveal request targeting an overflow version force-expands 更多版本. */
-  forceReveal?: { version: string; sequence: number } | null
+  forceReveal?: { version: string; sequence: number; temporary?: boolean } | null
 }): React.JSX.Element {
   const moreVersionsId = useId()
   const activeOlderVersion =
@@ -44,11 +44,12 @@ export function VersionSidebarPreview({
       : null
   // A fresh reveal request wins over the active-version auto-expand so an explicitly
   // collapsed 更多版本 reopens even when the active version is itself an overflow version.
-  const revealKey = forcedOlderVersion
-    ? `request:${forcedOlderVersion.version}:${forcedOlderVersion.sequence}`
-    : activeOlderVersion
-      ? `${activeOlderVersion}:${activeContextKey}`
-      : null
+  const revealKey =
+    forcedOlderVersion && !forcedOlderVersion.temporary
+      ? `request:${forcedOlderVersion.version}:${forcedOlderVersion.sequence}`
+      : activeOlderVersion
+        ? `${activeOlderVersion}:${activeContextKey}`
+        : null
   const [overflow, setOverflow] = useState({
     repoId,
     revealKey,
@@ -94,7 +95,7 @@ export function VersionSidebarPreview({
     return () => cancelAnimationFrame(frame)
   }, [activeOlderVersion, activeRevealKey, repoId, versionElements])
 
-  const showMore = overflow.expanded
+  const showMore = overflow.expanded || Boolean(forcedOlderVersion?.temporary)
   const moreVersionCount = entries.length - PREVIEW_LIMIT
   return (
     <div className="flex min-w-0 flex-col" style={rowSpacing}>

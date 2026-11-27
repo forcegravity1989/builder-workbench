@@ -15,7 +15,7 @@ import { getRepoExecutionHostId } from '../../../../shared/execution-host/execut
 import { openOverviewFromCatalog } from '../version-overview/open-version-overview'
 import { openAddProject } from '../project-page-state'
 import { useVersionCatalogForRepo } from '../use-version-catalog'
-import { requestVersionSidebarFocus } from '../version-sidebar-state'
+import { revealNavigationVersion } from '../version-sidebar-state'
 import { setBrowsedVersion } from '../version-context-state'
 import { navigateVersionWorkflow } from '../version-nav-actions'
 import { activateVersionWorktree } from '../version-worktree-host'
@@ -96,7 +96,7 @@ function VersionChoice({
         state.setSidebarBody('workspaces')
         if (selected) {
           setBrowsedVersion(repo.id, selected)
-          requestVersionSidebarFocus(repo.id, selected)
+          revealNavigationVersion(getRepoRowIdentity(repo), selected, guide)
         }
         onOpened()
       } else {
@@ -124,7 +124,7 @@ function VersionChoice({
   }
   useEffect(() => {
     if ((!requiresVersion && catalog.home) || (!reading && !error && requiresVersion && match)) {
-      open(match?.version)
+      open(requiresVersion ? match?.version : undefined)
     }
   })
   return (

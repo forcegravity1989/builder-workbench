@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { useAppStore } from '@/store'
 
 export type VersionSidebarProjection = {
   repoId: string | null
@@ -21,7 +22,61 @@ let projection: VersionSidebarProjection = {
 }
 let projectionKey = ''
 let focusSequence = 0
-let focusRequest: { repoId: string; version?: string; sequence: number } | null = null
+let focusRequest: { repoId: string; sequence: number } | null = null
+type NavigationReveal = { rowKey: string; version: string; guide: boolean; sequence: number }
+let navigationReveal: NavigationReveal | null = null
+let endNavigationReveal: (() => void) | undefined
+
+export function revealNavigationVersion(rowKey: string, version: string, guide: boolean): void {
+  endNavigationReveal?.()
+  navigationReveal = { rowKey, version, guide, sequence: ++focusSequence }
+  let started = false
+  const end = () => {
+    unsubscribe()
+    window.clearTimeout(timer)
+    navigationReveal = null
+    endNavigationReveal = undefined
+    emit()
+  }
+  const timer = guide
+    ? window.setTimeout(() => {
+        if (!started) {
+          end()
+        }
+      }, 8500)
+    : undefined
+  const unsubscribe = useAppStore.subscribe((next, previous) => {
+    if (
+      next.activeView !== previous.activeView ||
+      next.activeWorktreeId !== previous.activeWorktreeId ||
+      next.activeWorkspaceExecutionHostId !== previous.activeWorkspaceExecutionHostId ||
+      (started && next.activeContextualTourId !== 'workbench-versions')
+    ) {
+      end()
+    } else if (
+      guide &&
+      next.activeContextualTourId === 'workbench-versions' &&
+      previous.activeContextualTourId !== next.activeContextualTourId
+    ) {
+      started = true
+    }
+  })
+  endNavigationReveal = end
+  emit()
+}
+
+export function clearNavigationVersion(): void {
+  endNavigationReveal?.()
+}
+
+export function useNavigationVersion(rowKey: string): NavigationReveal | null {
+  const reveal = useSyncExternalStore(
+    subscribe,
+    () => navigationReveal,
+    () => null
+  )
+  return reveal?.rowKey === rowKey ? reveal : null
+}
 let treeRevealSequence = 0
 let treeRevealRequest: VersionTreeWorktreeRevealRequest | null = null
 
@@ -46,8 +101,9 @@ export function publishVersionSidebarProjection(next: VersionSidebarProjection):
   emit()
 }
 
-export function requestVersionSidebarFocus(repoId: string, version?: string): void {
-  focusRequest = { repoId, version, sequence: ++focusSequence }
+export function requestVersionSidebarFocus(repoId: string): void {
+  clearNavigationVersion()
+  focusRequest = { repoId, sequence: ++focusSequence }
   emit()
 }
 
