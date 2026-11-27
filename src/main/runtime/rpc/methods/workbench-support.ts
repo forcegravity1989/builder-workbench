@@ -24,7 +24,8 @@ async function greetIfNew(runtime: RpcContext['runtime'], bot: Bot): Promise<voi
     const chats = runtimeBotChats(runtime)
     const host = await requireStructuredHost(runtime)
     const sessionId = await chats.ensure(bot.id)
-    const sends = await host.journalReads(sessionId).sendFingerprints()
+    const reads = await host.journalReads(sessionId)
+    const sends = await reads.sendFingerprints()
     if (sends.length === 0) {
       await chats.sendToSession(bot.id, sessionId, botFirstKickoff(bot), undefined, 'bot-created')
     }
