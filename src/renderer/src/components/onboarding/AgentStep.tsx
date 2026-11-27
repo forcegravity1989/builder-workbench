@@ -12,6 +12,7 @@ import { useTranslate } from '@/i18n/use-translate'
 import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
 import { useScrollEdgeFades } from '@/lib/list-interaction/use-scroll-edge-fades'
 import { cn } from '@/lib/class-names'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type { AgentSurface } from './use-onboarding-flow-types'
 import { AgentPickerButton, AgentSectionHeader } from './AgentPickerButton'
 import { YoloPermissionsControl } from './YoloPermissionsControl'
@@ -168,15 +169,25 @@ export function AgentStep({
       {selectedEntry && (
         <div className="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-status-warning-border px-4 py-2.5 text-xs text-muted-foreground">
           <span>
-            <Trans
-              i18n={i18n}
-              defaults={t(
-                'auto.components.onboarding.AgentStep.agentNotOnPath',
-                "<agent>{{agent}}</agent> isn't on your PATH yet. Orca will set it as your default and you can install it any time.",
-                { agent: selectedEntry.label }
-              )}
-              components={{ agent: <span className="font-medium text-foreground" /> }}
-            />
+            {isWorkbenchShell() ? (
+              <>
+                <span className="font-medium text-foreground">{selectedEntry.label}</span>{' '}
+                {t(
+                  'auto.components.onboarding.AgentStep.0e00a37e49',
+                  "isn't on your PATH yet. Workbench will set it as your default and you can install it any time."
+                )}
+              </>
+            ) : (
+              <Trans
+                i18n={i18n}
+                defaults={t(
+                  'auto.components.onboarding.AgentStep.agentNotOnPath',
+                  "<agent>{{agent}}</agent> isn't on your PATH yet. Orca will set it as your default and you can install it any time.",
+                  { agent: selectedEntry.label }
+                )}
+                components={{ agent: <span className="font-medium text-foreground" /> }}
+              />
+            )}
           </span>
           <Button
             type="button"

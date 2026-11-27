@@ -9,6 +9,8 @@ import { cn } from '@/lib/class-names'
 import { OnboardingInlineCommandTerminal } from './OnboardingInlineCommandTerminal'
 import { useTranslate } from '@/i18n/use-translate'
 import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { CodeHubRow } from './CodeHubRow'
 
 type GitHubSetupState = 'checking' | 'connected' | 'not-installed' | 'not-authenticated'
 
@@ -234,9 +236,32 @@ const CAPABILITIES = [
   }
 ] as const
 
+const WORKBENCH_CAPABILITIES = [
+  {
+    key: 'auto.components.onboarding.IntegrationsStep.c773943637',
+    fallback:
+      'Start a workspace from any CodeHub issue or merge request, prefilled with its title and context'
+  },
+  {
+    key: 'auto.components.onboarding.IntegrationsStep.6d4596cdf7',
+    fallback: 'Browse CodeHub issues and merge requests in the Tasks view without leaving Workbench'
+  },
+  {
+    key: 'auto.components.onboarding.IntegrationsStep.c1ee44aa7a',
+    fallback: 'GitHub works too — issues, pull requests, and CI checks via the GitHub CLI'
+  },
+  {
+    key: 'auto.components.onboarding.IntegrationsStep.09df324e47',
+    fallback:
+      'Read, comment on, and merge pull requests or merge requests without leaving Workbench'
+  }
+] as const
+
 export function IntegrationsStep(): React.JSX.Element {
   const t = useTranslate()
   const refreshPreflightStatus = useAppStore((s) => s.refreshPreflightStatus)
+  const workbenchShell = isWorkbenchShell()
+  const capabilities = workbenchShell ? WORKBENCH_CAPABILITIES : CAPABILITIES
 
   useEffect(() => {
     void refreshPreflightStatus()
@@ -245,7 +270,7 @@ export function IntegrationsStep(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <ul className="-mt-6 space-y-1.5 text-[14px] leading-relaxed text-muted-foreground">
-        {CAPABILITIES.map(({ key, fallback }) => (
+        {capabilities.map(({ key, fallback }) => (
           <li key={key} className="flex gap-2.5">
             <span className="mt-2 size-1 shrink-0 rounded-full bg-muted-foreground" aria-hidden />
             <span>{t(key, fallback)}</span>
@@ -254,17 +279,25 @@ export function IntegrationsStep(): React.JSX.Element {
       </ul>
 
       <div className="space-y-3">
+        {workbenchShell ? <CodeHubRow /> : null}
         <GitHubRow />
         <div className="mt-4 rounded-xl border border-border bg-muted/10 px-5 py-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-[14px] font-medium text-foreground/70">
-              {t('auto.components.onboarding.IntegrationsStep.3a3e360289', 'More task sources')}
+              {workbenchShell
+                ? t('auto.components.onboarding.IntegrationsStep.bw_setup_later', 'Set up later')
+                : t('auto.components.onboarding.IntegrationsStep.3a3e360289', 'More task sources')}
             </span>
             <span className="text-[13px] leading-relaxed text-muted-foreground">
-              {t(
-                'auto.components.onboarding.IntegrationsStep.277f30eb34',
-                'Linear, GitLab, Bitbucket, Azure DevOps, Gitea, and Jira live in Settings > Integrations.'
-              )}
+              {workbenchShell
+                ? t(
+                    'auto.components.onboarding.IntegrationsStep.bw_setup_later_description',
+                    'You can connect or retry GitHub and CodeHub in Settings → Integrations.'
+                  )
+                : t(
+                    'auto.components.onboarding.IntegrationsStep.277f30eb34',
+                    'Linear, GitLab, Bitbucket, Azure DevOps, Gitea, and Jira live in Settings > Integrations.'
+                  )}
             </span>
           </div>
         </div>

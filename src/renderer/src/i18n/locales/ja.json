@@ -15228,7 +15228,8 @@
           "yoloPermissionsDescription": "Agent は確認なしでコマンドを実行しファイルを編集します。一部はサンドボックスも回避します。信頼できるプロジェクトでのみ使用してください。",
           "showMoreAgents_other": "Agent をさらに {{count}} 件表示 →",
           "agentNotOnPath": "<agent>{{agent}}</agent> はまだ PATH にありません。Orca がデフォルトに設定します。インストールはいつでも可能です。",
-          "showMoreAgents": "{{value0}} 件の Agent をさらに表示 →"
+          "showMoreAgents": "{{value0}} 件の Agent をさらに表示 →",
+          "0e00a37e49": "はまだ PATH にありません。Workbench がデフォルトに設定します。インストールはいつでもできます。"
         },
         "IntegrationsStep": {
           "277f30eb34": "Linear、GitLab、Bitbucket、Azure DevOps、Gitea、Jira は [設定] > [連携] にあります。",
@@ -15258,7 +15259,11 @@
           "98883abe0a": "CodeHub ログイン",
           "96d7cf755a": "CodeHub サインインコマンド",
           "ed425b91ac": "Enter キーで CodeHub CLI の認証を実行します。コマンド終了後に CodeHub を自動で再確認します。",
-          "110d12dbb6": "このランタイムではまだ codehub-cli のステータスを利用できません。"
+          "110d12dbb6": "このランタイムではまだ codehub-cli のステータスを利用できません。",
+          "c773943637": "CodeHub のイシューまたはマージリクエストからワークスペースを開始。タイトルとコンテキストが事前入力されます",
+          "6d4596cdf7": "Workbench を離れずにタスクビューで CodeHub のイシューとマージリクエストを閲覧",
+          "c1ee44aa7a": "GitHub もサポート — GitHub CLI でイシュー、プルリクエスト、CI チェックを処理",
+          "09df324e47": "Workbench を離れずにプルリクエストやマージリクエストを読み、コメントし、マージ"
         },
         "NotificationStep": {
           "3bede04483": "テスト通知を送信する",
@@ -15275,9 +15280,11 @@
           "4f7bce5644": "Agent の完了やターミナルの要対応時に macOS が通知します。",
           "95d99b52fa": "Orca の通知を許可",
           "4f6a1da718": "システム設定を開く",
-          "90b5d2e363": "macOS が Orca の通知を配信していません"
+          "90b5d2e363": "macOS が Orca の通知を配信していません",
+          "72256f6d85": "デスクトップ通知が届いた後に Workbench が再生するアラートを選択してください。"
         },
         "OnboardingFlow": {
+          "1130745139": "タスクソースを設定",
           "1b5e182e9f": "Orca へようこそ",
           "adaa0aa627": "オンボーディングステップ {{value0}}: {{value1}} に進みます。",
           "a249f81538": "Orca",
@@ -15290,7 +15297,13 @@
           "198b148b3c": "デフォルトの Agent を選択",
           "windowsTerminalTitle": "Windows ターミナルの既定値を設定",
           "windowsTerminalSubtitle": "新規ペインで使う既定のシェルと、ターミナルでの右クリックの動作を選びます。",
-          "stepOfTotal": "{{current}} / {{total}}"
+          "stepOfTotal": "{{current}} / {{total}}",
+          "c64d33bfb8": "Workbench オンボーディング",
+          "78d1d003d2": "Workbench",
+          "685d4ffbeb": "Workbench へようこそ",
+          "43b8463d5c": "Workbench はすべての CLI Agent と連携します。最もよく使うものを選んでください。いつでも切り替えられます。",
+          "54fbfde99e": "Agent の完了やサポートが必要なときに Workbench が通知します。",
+          "9977a23fbe": "必要な CLI をインストールしましょう。CodeHub はイシューとマージリクエスト、GitHub はイシューとプルリクエストを扱います。どちらも任意です。"
         },
         "OnboardingFooter": {
           "ba58547306": "戻る",
@@ -15357,7 +15370,8 @@
           "loadingDistros": "ディストリビューションを読み込んでいます",
           "windowsDefault": "Windows のデフォルト",
           "rightClickBehavior": "右クリックの動作",
-          "rightClickBehaviorDescription": "Windows で慣れたターミナルのマウス操作に合うものを選びます。"
+          "rightClickBehaviorDescription": "Windows で慣れたターミナルのマウス操作に合うものを選びます。",
+          "184e11638a": "Workbench が新しい Windows ターミナルペインで開くシェルを選択してください。"
         },
         "mac": {
           "notification": {

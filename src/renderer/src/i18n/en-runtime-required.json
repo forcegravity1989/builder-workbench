@@ -377,6 +377,12 @@
           "showMoreAgents": "Show {{value0}} more agents →",
           "showMoreAgents_one": "Show {{count}} more agent →",
           "showMoreAgents_other": "Show {{count}} more agents →"
+        },
+        "IntegrationsStep": {
+          "09df324e47": "Read, comment on, and merge pull requests or merge requests without leaving Workbench",
+          "6d4596cdf7": "Browse CodeHub issues and merge requests in the Tasks view without leaving Workbench",
+          "c1ee44aa7a": "GitHub works too — issues, pull requests, and CI checks via the GitHub CLI",
+          "c773943637": "Start a workspace from any CodeHub issue or merge request, prefilled with its title and context"
         }
       },
       "prCheckCounts": {

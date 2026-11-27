@@ -1,6 +1,7 @@
 import { toast } from 'sonner'
 import type { AppState } from '@/store/types'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import {
   ONBOARDING_FINAL_STEP,
   ONBOARDING_FLOW_VERSION
@@ -18,7 +19,9 @@ type TaskSourcesLinearStatus = TaskSourcesSnapshotProps['linear_status']
 export type TaskSourcesExitAction = TaskSourcesSnapshotProps['exit_action']
 
 export function shouldSkipIntegrationsStep(status: AppState['preflightStatus']): boolean {
-  return status?.gh.installed === true
+  return (
+    status?.gh.installed === true && (!isWorkbenchShell() || status.codehub?.installed === true)
+  )
 }
 
 export function shouldSkipWindowsTerminalStep(isWindows: boolean): boolean {

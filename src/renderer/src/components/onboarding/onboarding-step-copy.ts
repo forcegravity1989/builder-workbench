@@ -1,4 +1,5 @@
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export const stepCopy = {
   agent_surface: {
@@ -37,10 +38,15 @@ export const stepCopy = {
       )
     },
     get subtitle() {
-      return translate(
-        'components.onboarding.flow.agentTerminal.subtitle',
-        "Orca works with every CLI agent. Choose the one you'll reach for most."
-      )
+      return isWorkbenchShell()
+        ? translate(
+            'auto.components.onboarding.OnboardingFlow.43b8463d5c',
+            "Workbench works with every CLI agent. Choose the one you'll reach for most. Switch any time."
+          )
+        : translate(
+            'components.onboarding.flow.agentTerminal.subtitle',
+            "Orca works with every CLI agent. Choose the one you'll reach for most."
+          )
     }
   },
   theme: {
@@ -62,24 +68,33 @@ export const stepCopy = {
       )
     },
     get subtitle() {
-      return translate(
-        'auto.components.onboarding.OnboardingFlow.ff92d15436',
-        'Orca will notify you when agents are done or need help.'
-      )
+      return isWorkbenchShell()
+        ? translate(
+            'auto.components.onboarding.OnboardingFlow.54fbfde99e',
+            'Workbench will notify you when agents are done or need help.'
+          )
+        : translate(
+            'auto.components.onboarding.OnboardingFlow.ff92d15436',
+            'Orca will notify you when agents are done or need help.'
+          )
     }
   },
   integrations: {
     get title() {
-      return translate(
-        'auto.components.onboarding.OnboardingFlow.ae3b00ca82',
-        'Set up GitHub tasks'
-      )
+      return isWorkbenchShell()
+        ? translate('auto.components.onboarding.OnboardingFlow.1130745139', 'Set up task sources')
+        : translate('auto.components.onboarding.OnboardingFlow.ae3b00ca82', 'Set up GitHub tasks')
     },
     get subtitle() {
-      return translate(
-        'auto.components.onboarding.OnboardingFlow.97c42cda00',
-        'Install the GitHub CLI to:'
-      )
+      return isWorkbenchShell()
+        ? translate(
+            'auto.components.onboarding.OnboardingFlow.9977a23fbe',
+            'Install the CLIs you need — CodeHub for issues and merge requests, GitHub for issues and pull requests. Both are optional.'
+          )
+        : translate(
+            'auto.components.onboarding.OnboardingFlow.97c42cda00',
+            'Install the GitHub CLI to:'
+          )
     }
   },
   windows_terminal: {

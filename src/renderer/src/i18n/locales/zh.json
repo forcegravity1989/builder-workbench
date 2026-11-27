@@ -15873,7 +15873,8 @@
           "yoloPermissionsDescription": "智能体会在不询问的情况下运行命令和编辑文件，部分智能体还会绕过沙箱，仅在你信任的项目中使用",
           "showMoreAgents_other": "再显示 {{count}} 个智能体 →",
           "agentNotOnPath": "<agent>{{agent}}</agent> 尚未添加到 PATH。Orca 会将其设为默认，你可以随时安装",
-          "showMoreAgents": "显示另外 {{value0}} 个代理→"
+          "showMoreAgents": "显示另外 {{value0}} 个代理→",
+          "0e00a37e49": "还不在你的 PATH 上。Workbench 会把它设为默认，你可以随时再安装。"
         },
         "IntegrationsStep": {
           "277f30eb34": "Linear、GitLab、Bitbucket、Azure DevOps、Gitea 和 Jira 位于\"设置\">\"集成\"中",
@@ -15903,7 +15904,13 @@
           "98883abe0a": "CodeHub 登录",
           "96d7cf755a": "CodeHub 登录命令",
           "ed425b91ac": "按回车执行 CodeHub CLI 登录。命令结束后自动复查 CodeHub。",
-          "110d12dbb6": "当前运行时暂不支持读取 codehub-cli 状态。"
+          "110d12dbb6": "当前运行时暂不支持读取 codehub-cli 状态。",
+          "c773943637": "从任意 CodeHub 议题或合并请求发起工作区，标题与上下文自动带齐",
+          "6d4596cdf7": "在任务视图里浏览 CodeHub 议题与合并请求，无需离开 Workbench",
+          "c1ee44aa7a": "GitHub 同样支持——通过 GitHub CLI 处理议题、拉取请求与 CI 检查",
+          "09df324e47": "阅读、评论并合并拉取请求或合并请求，无需离开 Workbench",
+          "bw_setup_later": "稍后设置",
+          "bw_setup_later_description": "可在「设置 → 集成」中连接 GitHub 或 CodeHub，也可在那里重试。"
         },
         "NotificationStep": {
           "3bede04483": "发送测试通知",
@@ -15920,9 +15927,11 @@
           "4f7bce5644": "当代理完成或终端需要处理时，macOS 会提醒你",
           "95d99b52fa": "允许 Orca 发送通知",
           "4f6a1da718": "打开系统设置",
-          "90b5d2e363": "macOS 未送达 Orca 的通知"
+          "90b5d2e363": "macOS 未送达 Orca 的通知",
+          "72256f6d85": "选择桌面通知送达后 Workbench 播放的提示音。"
         },
         "OnboardingFlow": {
+          "1130745139": "设置任务源",
           "1b5e182e9f": "欢迎使用 Orca",
           "adaa0aa627": "前往入门步骤 {{value0}}：{{value1}}",
           "a249f81538": "Orca",
@@ -15935,7 +15944,13 @@
           "198b148b3c": "选择默认代理",
           "windowsTerminalTitle": "设置 Windows 终端默认值",
           "windowsTerminalSubtitle": "为新面板选择默认 Shell，以及终端中右键单击的行为",
-          "stepOfTotal": "{{current}} / {{total}}"
+          "stepOfTotal": "{{current}} / {{total}}",
+          "c64d33bfb8": "Workbench 新手引导",
+          "78d1d003d2": "Workbench",
+          "685d4ffbeb": "欢迎使用 Workbench",
+          "43b8463d5c": "Workbench 兼容所有 CLI 智能体。选一个你最常用的，随时可以更换。",
+          "54fbfde99e": "当智能体完成任务或需要帮助时，Workbench 会通知你。",
+          "9977a23fbe": "按需安装 CLI——CodeHub 管议题与合并请求，GitHub 管议题与拉取请求。两者都是可选的。"
         },
         "OnboardingFooter": {
           "ba58547306": "返回",
@@ -16002,7 +16017,8 @@
           "loadingDistros": "正在加载发行版",
           "windowsDefault": "Windows 默认值",
           "rightClickBehavior": "右键单击行为",
-          "rightClickBehaviorDescription": "选择符合你在 Windows 上使用习惯的终端鼠标行为"
+          "rightClickBehaviorDescription": "选择符合你在 Windows 上使用习惯的终端鼠标行为",
+          "184e11638a": "选择 Workbench 为新 Windows 终端面板打开的 shell。"
         },
         "mac": {
           "notification": {

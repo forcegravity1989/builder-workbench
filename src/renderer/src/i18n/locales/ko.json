@@ -15621,7 +15621,8 @@
           "showMoreAgents_one": "에이전트 {{count}}개 더 보기 →",
           "showMoreAgents_other": "에이전트 {{count}}개 더 보기 →",
           "agentNotOnPath": "<agent>{{agent}}</agent>이(가) 아직 PATH에 없습니다. Orca가 기본값으로 설정하며, 언제든 설치할 수 있습니다.",
-          "showMoreAgents": "에이전트 {{value0}}개 더 보기→"
+          "showMoreAgents": "에이전트 {{value0}}개 더 보기→",
+          "0e00a37e49": "아직 PATH에 없습니다. Workbench가 기본값으로 설정합니다. 나중에 언제든 설치할 수 있습니다."
         },
         "IntegrationsStep": {
           "277f30eb34": "Linear, GitLab, Bitbucket, Azure DevOps, Gitea 및 Jira는 설정 > 연동에 있습니다.",
@@ -15651,7 +15652,11 @@
           "98883abe0a": "CodeHub 로그인",
           "96d7cf755a": "CodeHub 로그인 명령",
           "ed425b91ac": "Enter 키를 눌러 CodeHub CLI 인증을 실행하세요. 명령이 끝나면 CodeHub를 자동으로 다시 확인합니다.",
-          "110d12dbb6": "이 런타임에서는 아직 codehub-cli 상태를 사용할 수 없습니다."
+          "110d12dbb6": "이 런타임에서는 아직 codehub-cli 상태를 사용할 수 없습니다.",
+          "c773943637": "CodeHub 이슈 또는 병합 요청에서 워크스페이스를 시작합니다. 제목과 컨텍스트가 미리 채워집니다",
+          "6d4596cdf7": "Workbench를 벗어나지 않고 작업 보기에서 CodeHub 이슈와 병합 요청을 탐색합니다",
+          "c1ee44aa7a": "GitHub도 지원됩니다 — GitHub CLI로 이슈, 풀 리퀘스트, CI 검사를 처리하세요",
+          "09df324e47": "Workbench를 벗어나지 않고 풀 리퀘스트 또는 병합 요청을 읽고, 댓글을 달고, 병합합니다"
         },
         "NotificationStep": {
           "3bede04483": "테스트 알림 보내기",
@@ -15668,9 +15673,11 @@
           "4f7bce5644": "에이전트가 완료되거나 터미널에 주의가 필요할 때 macOS가 알려 줍니다.",
           "95d99b52fa": "Orca 알림 허용",
           "4f6a1da718": "시스템 설정 열기",
-          "90b5d2e363": "macOS가 Orca 알림을 전달하지 않고 있습니다"
+          "90b5d2e363": "macOS가 Orca 알림을 전달하지 않고 있습니다",
+          "72256f6d85": "데스크톱 알림이 전달된 후 Workbench가 재생하는 알림음을 선택하세요."
         },
         "OnboardingFlow": {
+          "1130745139": "작업 소스 설정",
           "1b5e182e9f": "Orca에 오신 것을 환영합니다",
           "adaa0aa627": "온보딩 단계 {{value0}}: {{value1}}로 이동",
           "a249f81538": "Orca",
@@ -15683,7 +15690,13 @@
           "198b148b3c": "기본 에이전트를 선택하세요",
           "windowsTerminalTitle": "Windows 터미널 기본값 설정",
           "windowsTerminalSubtitle": "새 창에서 사용할 기본 셸과 터미널에서 오른쪽 클릭이 동작하는 방식을 선택하세요.",
-          "stepOfTotal": "{{current}} / {{total}}"
+          "stepOfTotal": "{{current}} / {{total}}",
+          "c64d33bfb8": "Workbench 온보딩",
+          "78d1d003d2": "Workbench",
+          "685d4ffbeb": "Workbench에 오신 것을 환영합니다",
+          "43b8463d5c": "Workbench는 모든 CLI 에이전트와 함께 작동합니다. 가장 자주 사용할 것을 선택하세요. 언제든지 변경할 수 있습니다.",
+          "54fbfde99e": "에이전트가 작업을 마치거나 도움이 필요할 때 Workbench가 알려드립니다.",
+          "9977a23fbe": "필요한 CLI를 설치하세요. CodeHub는 이슈와 병합 요청을, GitHub은 이슈와 풀 리퀘스트를 담당합니다. 둘 다 선택 사항입니다."
         },
         "OnboardingFooter": {
           "ba58547306": "뒤로",
@@ -15750,7 +15763,8 @@
           "loadingDistros": "배포판을 불러오는 중",
           "windowsDefault": "Windows 기본값",
           "rightClickBehavior": "오른쪽 클릭 동작",
-          "rightClickBehaviorDescription": "Windows에서 익숙한 터미널 마우스 동작을 선택하세요."
+          "rightClickBehaviorDescription": "Windows에서 익숙한 터미널 마우스 동작을 선택하세요.",
+          "184e11638a": "Workbench가 새 Windows 터미널 창에서 열 셸을 선택하세요."
         },
         "mac": {
           "notification": {

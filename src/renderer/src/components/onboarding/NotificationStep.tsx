@@ -20,6 +20,7 @@ import {
 } from '@/components/notifications/mac-notification-permission-card'
 import { useMountedRef } from '@/hooks/useMountedRef'
 import { useTranslate } from '@/i18n/use-translate'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 type NotificationStepProps = {
   settings: GlobalSettings | null
@@ -179,10 +180,15 @@ export function NotificationStep({
             {t('auto.components.onboarding.NotificationStep.0af746e41f', 'Choose a sound')}
           </h2>
           <p className="text-[13px] leading-relaxed text-muted-foreground">
-            {t(
-              'auto.components.onboarding.NotificationStep.0fe570690c',
-              'Pick the alert Orca plays after a desktop notification is delivered.'
-            )}
+            {isWorkbenchShell()
+              ? t(
+                  'auto.components.onboarding.NotificationStep.72256f6d85',
+                  'Pick the alert Workbench plays after a desktop notification is delivered.'
+                )
+              : t(
+                  'auto.components.onboarding.NotificationStep.0fe570690c',
+                  'Pick the alert Orca plays after a desktop notification is delivered.'
+                )}
           </p>
         </div>
 

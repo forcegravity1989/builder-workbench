@@ -16815,7 +16815,8 @@
           "showMoreAgents_one": "Show {{count}} more agent →",
           "showMoreAgents_other": "Show {{count}} more agents →",
           "agentNotOnPath": "<agent>{{agent}}</agent> isn't on your PATH yet. Orca will set it as your default and you can install it any time.",
-          "showMoreAgents": "Show {{value0}} more agents →"
+          "showMoreAgents": "Show {{value0}} more agents →",
+          "0e00a37e49": "isn't on your PATH yet. Workbench will set it as your default and you can install it any time."
         },
         "IntegrationsStep": {
           "277f30eb34": "Linear, GitLab, Bitbucket, Azure DevOps, Gitea, and Jira live in Settings > Integrations.",
@@ -16845,7 +16846,13 @@
           "5b0e29617c": "Issues and merge requests.",
           "96d7cf755a": "CodeHub sign in command",
           "98883abe0a": "CodeHub login",
-          "ed425b91ac": "Press Enter to run CodeHub CLI auth. CodeHub re-checks automatically when the command finishes."
+          "ed425b91ac": "Press Enter to run CodeHub CLI auth. CodeHub re-checks automatically when the command finishes.",
+          "c773943637": "Start a workspace from any CodeHub issue or merge request, prefilled with its title and context",
+          "6d4596cdf7": "Browse CodeHub issues and merge requests in the Tasks view without leaving Workbench",
+          "c1ee44aa7a": "GitHub works too — issues, pull requests, and CI checks via the GitHub CLI",
+          "09df324e47": "Read, comment on, and merge pull requests or merge requests without leaving Workbench",
+          "bw_setup_later": "Set up later",
+          "bw_setup_later_description": "You can connect or retry GitHub and CodeHub in Settings → Integrations."
         },
         "NotificationStep": {
           "3bede04483": "Send test notification",
@@ -16862,9 +16869,11 @@
           "4f7bce5644": "macOS will alert you when agents finish or terminals need attention.",
           "95d99b52fa": "Allow notifications for Orca",
           "4f6a1da718": "Open System Settings",
-          "90b5d2e363": "macOS is not delivering Orca notifications"
+          "90b5d2e363": "macOS is not delivering Orca notifications",
+          "72256f6d85": "Pick the alert Workbench plays after a desktop notification is delivered."
         },
         "OnboardingFlow": {
+          "1130745139": "Set up task sources",
           "1b5e182e9f": "Welcome to Orca",
           "adaa0aa627": "Go to onboarding step {{value0}}: {{value1}}",
           "a249f81538": "Orca",
@@ -16877,7 +16886,13 @@
           "198b148b3c": "Pick your default agent",
           "windowsTerminalTitle": "Set Windows terminal defaults",
           "windowsTerminalSubtitle": "Choose the DEFAULT Shell for new panes and how right-click behaves in the terminal.",
-          "stepOfTotal": "{{current}} of {{total}}"
+          "stepOfTotal": "{{current}} of {{total}}",
+          "c64d33bfb8": "Workbench onboarding",
+          "78d1d003d2": "Workbench",
+          "685d4ffbeb": "Welcome to Workbench",
+          "43b8463d5c": "Workbench works with every CLI agent. Choose the one you'll reach for most. Switch any time.",
+          "54fbfde99e": "Workbench will notify you when agents are done or need help.",
+          "9977a23fbe": "Install the CLIs you need — CodeHub for issues and merge requests, GitHub for issues and pull requests. Both are optional."
         },
         "OnboardingFooter": {
           "ba58547306": "Back",
@@ -16944,7 +16959,8 @@
           "loadingDistros": "Loading distributions",
           "windowsDefault": "Windows default",
           "rightClickBehavior": "Right-click behavior",
-          "rightClickBehaviorDescription": "Pick the terminal mouse behavior that matches your Windows muscle memory."
+          "rightClickBehaviorDescription": "Pick the terminal mouse behavior that matches your Windows muscle memory.",
+          "184e11638a": "Choose the shell Workbench opens for new Windows terminal panes."
         },
         "mac": {
           "notification": {

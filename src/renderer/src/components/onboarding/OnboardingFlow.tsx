@@ -19,11 +19,13 @@ import { OnboardingSkipConfirmationDialog } from './OnboardingSkipConfirmationDi
 import { OnboardingFooter } from './OnboardingFooter'
 import { shouldRequestOnboardingSkipConfirmation } from './onboarding-dismiss-target'
 import logo from '../../../../../resources/logo.svg'
+import workbenchLogo from '../../../../../resources/icon.png'
 import { useTranslate } from '@/i18n/use-translate'
 import { addAppKeyListener, removeAppKeyListener } from '@/lib/keyboard/app-keyboard-router'
 import { useScrollEdgeFades } from '@/lib/list-interaction/use-scroll-edge-fades'
 import { AgentSurfaceStep } from './AgentSurfaceStep'
 import { stepCopy, stepTooltipLabels } from './onboarding-step-copy'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 type OnboardingFlowProps = {
   onboarding: OnboardingState
@@ -35,6 +37,7 @@ export default function OnboardingFlow({
   onOnboardingChange
 }: OnboardingFlowProps): React.JSX.Element {
   const t = useTranslate()
+  const workbenchShell = isWorkbenchShell()
   const flow = useOnboardingFlow(onboarding, onOnboardingChange)
   const stepFades = useScrollEdgeFades<HTMLDivElement>()
   const continueShortcutModifierLabel = getScreenSubmitModifierLabel()
@@ -126,7 +129,11 @@ export default function OnboardingFlow({
         <section
           ref={flow.setLifecycleRootRef}
           role="dialog"
-          aria-label={t('auto.components.onboarding.OnboardingFlow.277ba45540', 'Orca onboarding')}
+          aria-label={
+            workbenchShell
+              ? t('auto.components.onboarding.OnboardingFlow.c64d33bfb8', 'Workbench onboarding')
+              : t('auto.components.onboarding.OnboardingFlow.277ba45540', 'Orca onboarding')
+          }
           aria-modal="true"
           data-onboarding-modal
           className={cn(
@@ -138,12 +145,18 @@ export default function OnboardingFlow({
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 text-base font-semibold tracking-tight">
                 <img
-                  src={logo}
+                  src={workbenchShell ? workbenchLogo : logo}
                   alt=""
                   aria-hidden="true"
-                  className="h-7 w-auto shrink-0 invert dark:invert-0"
+                  className={
+                    workbenchShell ? 'size-7 shrink-0' : 'h-7 w-auto shrink-0 invert dark:invert-0'
+                  }
                 />
-                <span>{t('auto.components.onboarding.OnboardingFlow.a249f81538', 'Orca')}</span>
+                <span>
+                  {workbenchShell
+                    ? t('auto.components.onboarding.OnboardingFlow.78d1d003d2', 'Workbench')
+                    : t('auto.components.onboarding.OnboardingFlow.a249f81538', 'Orca')}
+                </span>
               </div>
               <OnboardingLanguageSwitcher
                 offer={languageOffer}
@@ -198,7 +211,12 @@ export default function OnboardingFlow({
             <div className="mt-8 shrink-0">
               {stepIndex === 0 && (
                 <div className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                  {t('auto.components.onboarding.OnboardingFlow.1b5e182e9f', 'Welcome to Orca')}
+                  {workbenchShell
+                    ? t(
+                        'auto.components.onboarding.OnboardingFlow.685d4ffbeb',
+                        'Welcome to Workbench'
+                      )
+                    : t('auto.components.onboarding.OnboardingFlow.1b5e182e9f', 'Welcome to Orca')}
                 </div>
               )}
               <h1 className="text-[34px] font-semibold leading-[1.15] tracking-tight text-foreground">

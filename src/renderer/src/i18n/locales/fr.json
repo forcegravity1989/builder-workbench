@@ -15107,7 +15107,8 @@
           "showMoreAgents_other": "Afficher {{count}} agents de plus →",
           "showMoreAgents_many": "Afficher {{count}} agents de plus →",
           "agentNotOnPath": "<agent>{{agent}}</agent> n'est pas encore dans votre PATH. Orca en fera votre agent par défaut et vous pourrez l'installer à tout moment.",
-          "showMoreAgents": "Afficher {{value0}} autres agents →"
+          "showMoreAgents": "Afficher {{value0}} autres agents →",
+          "0e00a37e49": "n'est pas encore dans votre PATH. Workbench le définira par défaut et vous pourrez l'installer à tout moment."
         },
         "IntegrationsStep": {
           "277f30eb34": "Linear, GitLab, Bitbucket, Azure DevOps, Gitea et Jira se trouvent dans Paramètres > Intégrations.",
@@ -15137,7 +15138,11 @@
           "98883abe0a": "Connexion à CodeHub",
           "96d7cf755a": "Commande de connexion à CodeHub",
           "ed425b91ac": "Appuyez sur Entrée pour lancer l'authentification de la CLI CodeHub. CodeHub est revérifié automatiquement à la fin de la commande.",
-          "110d12dbb6": "L'état de codehub-cli n'est pas encore disponible dans ce runtime."
+          "110d12dbb6": "L'état de codehub-cli n'est pas encore disponible dans ce runtime.",
+          "c773943637": "Démarrez un espace de travail depuis n'importe quel issue ou demande de fusion CodeHub, prérempli avec son titre et son contexte",
+          "6d4596cdf7": "Parcourez les issues et demandes de fusion CodeHub dans la vue Tâches sans quitter Workbench",
+          "c1ee44aa7a": "GitHub fonctionne aussi — issues, demandes de tirage et vérifications CI via la CLI GitHub",
+          "09df324e47": "Lisez, commentez et fusionnez les demandes de tirage ou de fusion sans quitter Workbench"
         },
         "NotificationStep": {
           "3bede04483": "Envoyer une notification de test",
@@ -15154,9 +15159,11 @@
           "4f7bce5644": "macOS vous alertera quand un agent aura terminé ou qu'un terminal demandera votre attention.",
           "95d99b52fa": "Autoriser les notifications pour Orca",
           "4f6a1da718": "Ouvrir Réglages Système",
-          "90b5d2e363": "macOS ne délivre pas les notifications d'Orca"
+          "90b5d2e363": "macOS ne délivre pas les notifications d'Orca",
+          "72256f6d85": "Choisissez l'alerte que Workbench joue après la remise d'une notification de bureau."
         },
         "OnboardingFlow": {
+          "1130745139": "Configurer les sources de tâches",
           "1b5e182e9f": "Bienvenue dans Orca",
           "adaa0aa627": "Aller à l'étape {{value0}} de la prise en main : {{value1}}",
           "a249f81538": "Orca",
@@ -15169,7 +15176,13 @@
           "198b148b3c": "Choisissez votre agent par défaut",
           "windowsTerminalTitle": "Définir les valeurs par défaut du terminal Windows",
           "windowsTerminalSubtitle": "Choisissez le shell PAR DÉFAUT des nouveaux volets et le comportement du clic droit dans le terminal.",
-          "stepOfTotal": "{{current}} sur {{total}}"
+          "stepOfTotal": "{{current}} sur {{total}}",
+          "c64d33bfb8": "Prise en main de Workbench",
+          "78d1d003d2": "Workbench",
+          "685d4ffbeb": "Bienvenue dans Workbench",
+          "43b8463d5c": "Workbench fonctionne avec tous les agents CLI. Choisissez celui que vous utiliserez le plus. Vous pourrez le changer à tout moment.",
+          "54fbfde99e": "Workbench vous avertit lorsque les agents ont terminé ou ont besoin d'aide.",
+          "9977a23fbe": "Installez les CLI dont vous avez besoin — CodeHub pour les issues et demandes de fusion, GitHub pour les issues et demandes de tirage. Les deux sont facultatifs."
         },
         "OnboardingFooter": {
           "ba58547306": "Retour",
@@ -15236,7 +15249,8 @@
           "loadingDistros": "Chargement des distributions",
           "windowsDefault": "Défaut Windows",
           "rightClickBehavior": "Comportement du clic droit",
-          "rightClickBehaviorDescription": "Choisissez le comportement souris du terminal qui correspond à vos réflexes Windows."
+          "rightClickBehaviorDescription": "Choisissez le comportement souris du terminal qui correspond à vos réflexes Windows.",
+          "184e11638a": "Choisissez le shell que Workbench ouvre pour les nouveaux volets de terminal Windows."
         },
         "mac": {
           "notification": {
