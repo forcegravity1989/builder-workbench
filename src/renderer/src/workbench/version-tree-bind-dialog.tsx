@@ -54,6 +54,7 @@ import {
   treeBindMode,
   type BindWorkflow
 } from './version-tree-bind-mode'
+import { linkedIssueRepository, sameIssueLink } from '../../../shared/workbench/version-membership'
 import { IssueAssignmentError, writeIssueVersionAssignment } from './version-issue-assignment'
 import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'
 
@@ -232,9 +233,13 @@ export function VersionTreeBindDialog({
         if (!listed) {
           throw new Error('未在已登记项目中找到该 Issue 对应的项目')
         }
+        const pinned = item.url ? linkedIssueRepository(item.url, item.provider, item.number) : null
+        if (item.url && !pinned) {
+          throw new Error('这条关联没有指向一个 GitHub 或 CodeHub Issue，绑定没有写入。')
+        }
         const reference: BindableTaskRef = {
           provider: item.provider,
-          repository: taskRepository(listed, item.provider),
+          repository: pinned ?? taskRepository(listed, item.provider),
           number: item.number,
           goalId,
           kind: 'issue'
@@ -248,12 +253,19 @@ export function VersionTreeBindDialog({
           throw new Error(`项目 ${repo.displayName || repo.id} 解析不出任务来源`)
         }
         const snapshot = await readReference(taskDeps, ownerScope, reference)
+        const identityMatches = item.url
+          ? sameIssueLink(item.url, snapshot.url, item.provider, item.number)
+          : linkedIssueRepository(snapshot.url, item.provider, item.number) !== null
+        if (!identityMatches) {
+          throw new Error('读回的 Issue 和这条工作区关联不是同一条，绑定没有写入。')
+        }
+        const issueUrl = item.url ?? snapshot.url
         issueAssignment = {
           provider: item.provider,
           repo,
           source: taskSource,
           number: item.number,
-          url: snapshot.url,
+          url: issueUrl,
           title: snapshot.title,
           labels: snapshot.labels
         }
@@ -262,7 +274,7 @@ export function VersionTreeBindDialog({
           type: 'issue',
           number: item.number,
           title: snapshot.title,
-          url: snapshot.url,
+          url: issueUrl,
           repoId: repo.id
         }
         binding = { ...binding, goalId, taskSource }

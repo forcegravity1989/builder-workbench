@@ -11,8 +11,10 @@ import {
 } from './task-scope'
 import {
   githubIssueAssignmentTarget,
+  linkedIssueRepository,
   nextIssueVersionMembership,
-  resolveMemberGoalId
+  resolveMemberGoalId,
+  sameIssueLink
 } from './version-membership'
 
 const scope: WorkbenchTaskScope = { version: 'v0.7', references: [] }
@@ -135,5 +137,30 @@ describe('native task entry filters', () => {
     })
     expect(githubIssueAssignmentTarget('https://github.com/origin/app/issues/12', 13)).toBeNull()
     expect(githubIssueAssignmentTarget('https://github.com/origin/app/pull/12', 12)).toBeNull()
+    expect(linkedIssueRepository('https://github.com/upstream/app/issues/12', 'github', 12)).toBe(
+      'upstream/app'
+    )
+    expect(
+      linkedIssueRepository('https://github.com/upstream/app/issues/12', 'github', 13)
+    ).toBeNull()
+    expect(
+      sameIssueLink(
+        'https://github.com/upstream/app/issues/12',
+        'https://github.com/origin/app/issues/12',
+        'github',
+        12
+      )
+    ).toBe(false)
+    expect(
+      sameIssueLink(
+        'https://github.com/upstream/app/issues/12',
+        'https://github.com/upstream/app/issues/12',
+        'github',
+        12
+      )
+    ).toBe(true)
+    expect(
+      linkedIssueRepository('https://codehub-g.huawei.com/Org/Group/repo/issues/12', 'codehub', 12)
+    ).toBe('codehub-g.huawei.com/org/group/repo')
   })
 })

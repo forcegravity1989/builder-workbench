@@ -69,9 +69,6 @@ export async function writeIssueVersionAssignment(args: {
     }
     return result
   }
-  if (result.labelAdded && !args.labels) {
-    throw new IssueAssignmentError('没有读回现有标签，不能改计划标签')
-  }
   const identity = args.source.providerIdentity
   const api = createTaskPageCodeHubApi(
     args.source.provider === 'codehub' ? args.source : null,
@@ -84,9 +81,19 @@ export async function writeIssueVersionAssignment(args: {
     repoId: args.repo.id,
     iid: args.number
   }
-  if (result.labelAdded) {
+  if (result.labelAdded && next.addedLabel) {
     try {
-      await api.updateIssueLabels({ ...request, labels: next.labels })
+      await api.updateIssueLabels({ ...request, labels: [next.addedLabel], append: true })
+      const fresh = await api.viewTask({
+        repoPath: request.repoPath,
+        repoId: request.repoId,
+        iid: args.number,
+        kind: 'issue',
+        ...(args.url ? { expectedUrl: args.url } : {})
+      })
+      if (!fresh.labels?.includes(next.addedLabel)) {
+        throw new Error('计划标签没有出现在读回结果里')
+      }
     } catch (reason) {
       throw new IssueAssignmentError('计划标签没有加上，Issue 标题未改', { cause: reason })
     }

@@ -1,5 +1,5 @@
 import type { Repo } from '../repository/repo-types'
-import { parseTaskItemLink } from '../task-item-link'
+import { parseTaskItemLink, taskItemLinkIdentityKey } from '../task-item-link'
 import { workbenchVersionTaskLabel } from './task-scope'
 
 const TITLE_GOAL_PREFIX = /^【([^|｜】]+)[|｜]([^】]+)】/
@@ -31,6 +31,34 @@ export function nextIssueVersionMembership(input: {
     titleChanged: title !== input.title,
     addedLabel
   }
+}
+
+/**
+ * 已有关联的仓库身份取链接本身。GitHub 是 `host/owner/repo`，CodeHub 是 `host/项目路径`。
+ * 链接对不上这条 Issue 时返回空，调用方不得改用工作区登记仓库。
+ */
+export function linkedIssueRepository(
+  url: string,
+  provider: 'github' | 'codehub',
+  number: number
+): string | null {
+  const link = parseTaskItemLink(url)
+  if (!link || link.provider !== provider || link.kind !== 'issue' || link.number !== number) {
+    return null
+  }
+  return taskItemLinkIdentityKey(link)
+}
+
+/** 读回链接必须和原来的关联是同一条 Issue，同号的另一端仓库不算。 */
+export function sameIssueLink(
+  expectedUrl: string,
+  actualUrl: string,
+  provider: 'github' | 'codehub',
+  number: number
+): boolean {
+  const expected = linkedIssueRepository(expectedUrl, provider, number)
+  const actual = linkedIssueRepository(actualUrl, provider, number)
+  return expected !== null && expected === actual
 }
 
 /** 归版写入钉在刚读回的 Issue 链接上，避免编号更新改到另一端同号 Issue。 */

@@ -1,5 +1,6 @@
 import { branchName } from '@/lib/source-control/branches/branch-name'
-import type { Worktree, WorkspaceLinkedItem } from '../../../shared/worktree/types'
+import type { Worktree } from '../../../shared/worktree/types'
+import { getWorkspaceAttachments } from '../../../shared/workspace-attachments/workspace-attachments'
 import { validatePlanningVersion } from '../../../shared/workbench/version-document'
 import {
   versionFlowBranch,
@@ -8,12 +9,18 @@ import {
 
 export type BindWorkflow = 'plan' | 'acceptance' | 'goal' | 'issue'
 
+export type LinkedTreeIssue = {
+  provider: 'github' | 'codehub'
+  type: 'issue'
+  number: number
+  title?: string
+  url?: string
+  repoId?: string
+}
+
 export type TreeBindMode =
   | { kind: 'flow'; workflow: VersionFlowWorkflow }
-  | {
-      kind: 'linked-issue'
-      item: WorkspaceLinkedItem & { type: 'issue'; provider: 'github' | 'codehub' }
-    }
+  | { kind: 'linked-issue'; item: LinkedTreeIssue }
   | { kind: 'manual' }
 
 const FLOW_BRANCH = /^bw\/([^/]+)\/(plan|acceptance)$/
@@ -45,17 +52,25 @@ export function treeBindMode(tree: Worktree): TreeBindMode {
   if (parsed) {
     return { kind: 'flow', workflow: parsed.workflow }
   }
-  const linked = tree.linkedWorkItem
-  if (linked?.type !== 'issue') {
-    return { kind: 'manual' }
-  }
-  const provider = linked.provider
-  if (provider !== 'github' && provider !== 'codehub') {
+  const linked = getWorkspaceAttachments(tree).find(
+    (item) =>
+      (item.provider === 'github' || item.provider === 'codehub') &&
+      item.type === 'issue' &&
+      item.number > 0
+  )
+  if (!linked || (linked.provider !== 'github' && linked.provider !== 'codehub')) {
     return { kind: 'manual' }
   }
   return {
     kind: 'linked-issue',
-    item: { ...linked, type: 'issue', provider }
+    item: {
+      provider: linked.provider,
+      type: 'issue',
+      number: linked.number,
+      ...(linked.title ? { title: linked.title } : {}),
+      ...(linked.url ? { url: linked.url } : {}),
+      ...(linked.repoId ? { repoId: linked.repoId } : {})
+    }
   }
 }
 
