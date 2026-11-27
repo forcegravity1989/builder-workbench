@@ -1,4 +1,3 @@
-// Shared keychain access uses a bounded timeout for locked or unresponsive stores.
 import { execFile } from 'node:child_process'
 
 const KEYCHAIN_COMMAND_TIMEOUT_MS = 3_000
@@ -49,8 +48,7 @@ export function execSecurityCommand(args: string[]): Promise<SecurityCommandResu
       callback()
     }
 
-    // Why: Node's execFile timeout only signals the `security` process; a
-    // stuck callback would otherwise leave auth/keychain operations pending.
+    // execFile timeout signals the child; the outer timer also settles a callback that never returns.
     try {
       child = execFile(
         'security',
@@ -73,20 +71,6 @@ export function execSecurityCommand(args: string[]): Promise<SecurityCommandResu
       )
     } catch (error) {
       settle(() => reject(error))
-    }
-  })
-}
-
-export function execSecurity(
-  args: string[],
-  options?: { ignoreFailure?: boolean; ignoreNotFound?: boolean }
-): Promise<void> {
-  return execSecurityCommand(args).then(undefined, (error: unknown) => {
-    if (options?.ignoreNotFound && isKeychainNotFoundError(error)) {
-      return
-    }
-    if (!options?.ignoreFailure) {
-      throw error
     }
   })
 }
@@ -117,29 +101,4 @@ export async function readKeychainPassword(
     }
     throw error
   }
-}
-
-export async function writeKeychainPassword(
-  service: string,
-  account: string,
-  contents: string
-): Promise<void> {
-  if (process.platform !== 'darwin') {
-    return
-  }
-  await execSecurity(['add-generic-password', '-U', '-s', service, '-a', account, '-w', contents])
-}
-
-export async function deleteKeychainPassword(
-  service: string,
-  account: string,
-  options?: { failOnAccessError?: boolean }
-): Promise<void> {
-  if (process.platform !== 'darwin') {
-    return
-  }
-  await execSecurity(['delete-generic-password', '-s', service, '-a', account], {
-    ignoreNotFound: true,
-    ignoreFailure: !options?.failOnAccessError
-  })
 }

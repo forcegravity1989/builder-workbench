@@ -8,11 +8,15 @@ import { PLANNING_SECTIONS, type PlanningSectionId } from './PlanningSections'
  * section whose top passed the container top + 60px wins.
  */
 export function useJourneySpy() {
+  const context = useRef<HTMLElement>(null)
+  const goals = useRef<HTMLElement>(null)
+  const minutes = useRef<HTMLElement>(null)
+  const archive = useRef<HTMLElement>(null)
   const sectionRefs: Record<PlanningSectionId, RefObject<HTMLElement | null>> = {
-    context: useRef<HTMLElement>(null),
-    goals: useRef<HTMLElement>(null),
-    minutes: useRef<HTMLElement>(null),
-    archive: useRef<HTMLElement>(null)
+    context,
+    goals,
+    minutes,
+    archive
   }
   const [activeSection, setActiveSection] = useState<PlanningSectionId>('context')
   // Set while a navigation click is settling; user activity clears it so the

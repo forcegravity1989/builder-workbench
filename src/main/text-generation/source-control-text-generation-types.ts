@@ -1,14 +1,19 @@
-import type { spawnProcess } from '../../shared/child-process/run-process'
-import type { AgentGenerationFailureOutput } from './agent-failure-output'
+import type { GenerationArgument } from '../../shared/source-control/ai/generation/generation-argument'
+import type { ProviderChild } from '../provider-process/provider-child'
+import type { ChildProcess } from 'node:child_process'
+import type { EventEmitter } from 'node:events'
+import type { AgentSessionUnavailable } from '../../shared/agent-session/failures/agent-session-availability'
+import type { AgentGenerationFailureOutput } from './failures/agent-failure-output'
 import type {
   CommitMessageAgentCapability,
   CommitMessageModelCapability
-} from '../../shared/commit-message-agent-spec'
-import type { CommitMessagePlan } from '../../shared/commit-message-plan'
+} from '../../shared/source-control/ai/generation/commit-message-agent-spec'
+import type { CommitMessagePlan } from '../../shared/source-control/ai/generation/commit-message-plan'
+import type { TextGenerationFailureFields } from '../../shared/text-generation/text-generation-failure-copy'
 
 export type GenerateCommitMessageResult =
   | { success: true; message: string; agentLabel?: string }
-  | { success: false; error: string; canceled?: boolean }
+  | ({ success: false; canceled?: boolean } & TextGenerationFailureFields)
 
 export type DiscoverCommitMessageModelsResult =
   | {
@@ -18,7 +23,7 @@ export type DiscoverCommitMessageModelsResult =
       defaultModelId: string
       catalogOrigin: 'probe' | 'spec'
     }
-  | { success: false; error: string }
+  | { success: false; error: string; unavailable?: AgentSessionUnavailable }
 
 export type GeneratePullRequestFieldsResult<TFields> =
   | {
@@ -27,7 +32,11 @@ export type GeneratePullRequestFieldsResult<TFields> =
       agentLabel?: string
       branchChangedByPreparation?: boolean
     }
-  | { success: false; error: string; canceled?: boolean; branchChangedByPreparation?: boolean }
+  | ({
+      success: false
+      canceled?: boolean
+      branchChangedByPreparation?: boolean
+    } & TextGenerationFailureFields)
 
 export type RemoteCommitMessageExecResult = {
   stdout: string
@@ -38,10 +47,17 @@ export type RemoteCommitMessageExecResult = {
   spawnError?: string
 }
 
-export type TextGenerationOperation = 'commit-message' | 'pull-request-fields' | 'branch-name'
+export type TextGenerationOperation =
+  | 'commit-message'
+  | 'pull-request-fields'
+  | 'branch-name'
+  | 'jira-issue-summary'
+  | 'conversation-name'
+  | 'bot-suggestions'
+  | 'dictation-cleanup'
 
 export type CommitMessageGenerationTarget =
-  | { kind: 'local'; cwd: string; env?: NodeJS.ProcessEnv; wslDistro?: string }
+  | { kind: 'local'; cwd: string; env?: NodeJS.ProcessEnv; wslDistro?: string; laneId?: string }
   | {
       kind: 'remote'
       cwd: string
@@ -56,6 +72,14 @@ export type CommitMessageGenerationTarget =
 
 export type InternalTextGenerationResult =
   | { success: true; rawOutput: string; agentLabel?: string }
+  | ({
+      success: false
+      canceled?: boolean
+      failureOutput?: AgentGenerationFailureOutput
+    } & TextGenerationFailureFields)
+
+export type GenerateBranchNameResult =
+  | { success: true; slug: string; agentLabel?: string }
   | {
       success: false
       error: string
@@ -63,8 +87,8 @@ export type InternalTextGenerationResult =
       failureOutput?: AgentGenerationFailureOutput
     }
 
-export type GenerateBranchNameResult =
-  | { success: true; slug: string; agentLabel?: string }
+export type GenerateConversationNameResult =
+  | { success: true; name: string; agentLabel?: string }
   | {
       success: false
       error: string
@@ -77,17 +101,45 @@ export type LocalProcessExecution<T> = {
   processClosed: Promise<void>
 }
 
-export type SpawnedSourceControlAgentProcess = ReturnType<typeof spawnProcess>
+export type SpawnedSourceControlAgentProcess = Pick<
+  ChildProcess,
+  'pid' | 'kill' | 'stdin' | 'stdout' | 'stderr' | 'exitCode' | 'signalCode'
+> &
+  EventEmitter &
+  Pick<ProviderChild, 'leaderExited' | 'ready' | 'outcomeLost'> & {
+    /** True when the POSIX lifecycle adapter owns the agent group. */
+    readonly supervised?: boolean
+  }
 
 export type LocalGenerationTarget = Extract<CommitMessageGenerationTarget, { kind: 'local' }>
 export type RemoteGenerationTarget = Extract<CommitMessageGenerationTarget, { kind: 'remote' }>
 
-export type SpawnSourceControlAgent = (input: {
+export type SourceControlAgentSpawnInput = {
   binary: string
   args: string[]
   cwd?: string
   env?: NodeJS.ProcessEnv
   wslDistro?: string
+  // WSL applies these in the guest; native callers already merge them into env.
+  commandEnv?: Record<string, string>
+  preparation?: { script: string; args: string[] }
+  literalArgIndices?: number[]
   stdinMode: 'ignore' | 'pipe'
   useCwdForNative: boolean
-}) => SpawnedSourceControlAgentProcess
+}
+
+export type SpawnSourceControlAgent = (
+  input: SourceControlAgentSpawnInput
+) => SpawnedSourceControlAgentProcess
+
+export type LocalSourceControlPlanInput = {
+  plan: CommitMessagePlan<GenerationArgument>
+  cwd: string
+  env: NodeJS.ProcessEnv | undefined
+  operation: TextGenerationOperation
+  laneId?: string
+  wslDistro?: string
+  spawnAgent: SpawnSourceControlAgent
+  /** How long the agent may run; the source-control default when absent. */
+  timeoutMs?: number
+}

@@ -1,13 +1,14 @@
-import { getLinearOrganizationUrlKeyFromIssueUrl } from '../linear/links'
 import { isCodeHubUrl } from '../codehub'
-import type { FolderWorkspaceLinkedTask } from '../folder-workspace-types'
-import type { JiraIssue } from '../jira-types'
+import { getLinearOrganizationUrlKeyFromIssueUrl } from '../linear/links'
+import { branchRefLabel } from '../git/refs/branch-ref-label'
+import type { WorkspaceLinkedItem as FolderWorkspaceLinkedTask } from '../worktree/types'
+import type { JiraIssue } from '../jira/jira-types'
 import type { LinearIssue } from '../linear/issue-types'
 import {
   getLinkedWorkItemSuggestedName,
   getLinkedWorkItemWorkspaceName,
   type WorkspaceIntentWorkItem
-} from '../workspace-name'
+} from '../workspace/naming/workspace-name'
 import { isWorkItemLookupText } from './work-item-lookup-text'
 
 export type WorkspaceSourceProvider = FolderWorkspaceLinkedTask['provider']
@@ -90,8 +91,6 @@ export function getWorkspaceSourceProvider(item: WorkspaceSourceItemLike): Works
   if (item.jiraIdentifier || isJiraIssueUrl(item.url)) {
     return 'jira'
   }
-  // Why: CodeHub issue URLs contain '/-/issues/', which the GitLab regexes
-  // below would otherwise claim; detect the CodeHub host first.
   if (isCodeHubUrl(item.url)) {
     return 'codehub'
   }
@@ -127,8 +126,7 @@ export function buildGitLabWorkspaceSource(item: {
 export function getUsableLinearBranchName(
   branchName: string | null | undefined
 ): string | undefined {
-  // Why: only a non-blank normalized value can safely enter the exact git-ref
-  // override path; missing values must keep Orca's generated-name fallback.
+  // Only nonblank values enter exact Git-ref overrides; missing names retain generated fallback.
   return branchName?.trim() || undefined
 }
 
@@ -167,11 +165,13 @@ export function buildJiraWorkspaceSource(
 export function shouldApplyWorkspaceSourceAutoName(args: {
   currentName: string
   lastAutoName: string
+  lookupTextIsQuery?: boolean
 }): boolean {
   return (
     !args.currentName.trim() ||
     args.currentName === args.lastAutoName ||
-    isWorkItemLookupText(args.currentName)
+    // A selected source exposes a name field; its manual edits are no longer lookup queries.
+    (args.lookupTextIsQuery !== false && isWorkItemLookupText(args.currentName))
   )
 }
 
@@ -197,7 +197,7 @@ export function buildWorkspaceSourceSelection(args: {
 }): WorkspaceSourceSelection | null {
   const { linkedWorkItem, baseBranch } = args
   if (!linkedWorkItem) {
-    return baseBranch ? { kind: 'branch', label: baseBranch } : null
+    return baseBranch ? { kind: 'branch', label: branchRefLabel(baseBranch) } : null
   }
   const provider = getWorkspaceSourceProvider(linkedWorkItem)
   const kind: WorkspaceSourceSelectionKind =

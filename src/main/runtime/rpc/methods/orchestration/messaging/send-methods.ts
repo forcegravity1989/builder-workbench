@@ -1,65 +1,93 @@
-import { defineMethod } from '../../../core'
+import { defineOrchestrationMethod } from '../access/orchestration-method-access'
 import { OrchestrationError } from '../../../../orchestration/orchestration-error'
-import { isGroupAddress } from '../../../../orchestration/groups'
-import { orchestrationSkillRecoveryData } from '../../../../../../shared/orchestration-rpc-contract'
-import { SendParams, isWorkerReportOutcome, parseRemoteWorkerPayload } from '../schemas'
+import { isGroupAddress } from '../../../../orchestration/addressing/groups/group-addressing'
+import {
+  dispatchReportMailbox,
+  isDispatchReportType
+} from '../../../../orchestration/workers/reports/dispatch-report-mailbox'
+import { orchestrationSkillRecoveryData } from '../../../../../../shared/orchestration/orchestration-rpc-contract'
+import { SendParams } from './send-params'
+import { isDispatchMutationMessageType } from '../../../../../../shared/rpc-contract/orchestration/orchestration-params'
+import { assertSendParamsDeliverable } from './send-params-checks'
 import { resolveMessageRun } from '../routing'
 import {
   assertDispatchMailboxDeliverable,
   resolveBareOrchestrationRecipient,
+  resolveRunBoundDispatchRecipient,
   type SendRecipientWarning
 } from './recipient-routing'
-import {
-  readMutationReplayNudge,
-  readWorkerDoneReplayNudge,
-  stripMutationReplayNudge
-} from '../../../orchestration-mutation-executor'
-import { replayMutationNudge } from './mutation-replay-nudge'
-import { sendRemoteMessage } from './send-remote'
+import { replayAcceptedSend } from './send-replay'
+import { sendRemoteMessage } from '../../../../orchestration/legacy-remote/send-remote'
+import { withPeerMailSend } from './peer-mail-send'
+import { routeBotMail } from './bot-chat-address'
+import { prepareSessionRecipient } from './session-recipient'
+import { withDispatchPrefixHint } from './dispatch-prefix-hint'
 import { sendPointToPointMessage } from './send-point-to-point'
 import { sendGroupMessage } from './send-group'
-import { sendFederatedControlMail } from './send-control-mail'
+import { sendFederatedControlMail } from '../../../../orchestration/legacy-remote-home/send-control-mail'
+import { orchestrationCallerIdentity } from '../runs/run-scope'
+import { assertLifecycleCallerIsNotAnotherParty } from './lifecycle-caller-fence'
+import { planWorkerFollowUp, startWorkerFollowUp } from './worker-follow-up'
+import { finishedWorkerSend, refuseFinishedRemoteWorker } from './finished-worker-mail'
+import { relayedDeliveryUnknownWarning, withDeliveryHoldWarning } from './send-delivery-hold'
+import {
+  followThroughWorkerReport,
+  passHeldWorkerMail,
+  settledDispatchId
+} from './settled-worker-follow-through'
 
 export const ORCHESTRATION_SEND_METHODS = [
-  defineMethod({
+  defineOrchestrationMethod({
     name: 'orchestration.send',
+    access: {
+      kind: 'writes',
+      caller: 'from',
+      callerPane: 'senderPaneKey',
+      server: 'on',
+      targets: { to: 'party', threadId: 'message', run: 'run', payload: 'dispatch' }
+    },
+    permission: 'workspace',
     params: SendParams,
-    handler: async (
-      params,
-      {
+    replay: (params, { runtime, replayedMutationReceipt }) =>
+      replayAcceptedSend(runtime, params, replayedMutationReceipt),
+    handler: withPeerMailSend(async (params, context) => {
+      const {
         runtime,
-        orchestrationCapability,
         legacyCoordinatorRunId,
         revalidateLegacyCoordinator,
         orchestrationCompatibilityCallerAuthority,
         recordMutationReceipt,
         markWorkerDoneMutationEffectFree,
-        replayedMutationReceipt,
+        orchestrationCaller,
+        orchestrationCompatibilityEvidence,
+        orchestrationMutation,
         signal
-      }
-    ) => {
+      } = context
       const db = runtime.getOrchestrationDb()
-      const legacyReplayNudge = readWorkerDoneReplayNudge(
-        'orchestration.send',
-        params,
-        replayedMutationReceipt
-      )
-      const replayNudge =
-        readMutationReplayNudge(replayedMutationReceipt) ??
-        (legacyReplayNudge
-          ? { kind: 'messages' as const, targets: [legacyReplayNudge] }
-          : undefined)
-      if (replayNudge) {
-        replayMutationNudge(runtime, replayNudge)
-        return stripMutationReplayNudge(replayedMutationReceipt)
-      }
       const from = params.from ?? 'unknown'
       const attestedCaller =
         orchestrationCompatibilityCallerAuthority?.terminalHandle === from
           ? orchestrationCompatibilityCallerAuthority
           : undefined
       // Why: attested hook identity survives graph remount; caller params never supply lifecycle authority.
-      const senderPaneKey = attestedCaller?.paneKey ?? runtime.getTerminalPaneKey(from) ?? undefined
+      const sender = orchestrationCallerIdentity(runtime, {
+        handle: from,
+        session: orchestrationCaller,
+        paneKey: attestedCaller?.paneKey ?? runtime.getTerminalPaneKey(from)
+      })
+      const senderPaneKey = sender.paneKey ?? undefined
+      // Why: a session caller was already bound to its own identity at the dispatch entry.
+      if (isDispatchMutationMessageType(params.type) && !orchestrationCaller) {
+        assertLifecycleCallerIsNotAnotherParty(runtime, {
+          from,
+          fromPaneKey: senderPaneKey,
+          evidence: orchestrationCompatibilityEvidence
+        })
+      }
+      const processIncarnation = () =>
+        attestedCaller?.processIncarnation ??
+        runtime.getTerminalProcessIncarnation(from) ??
+        undefined
       const remoteAttachment = senderPaneKey
         ? db.findActiveRemoteAttachmentForPane(senderPaneKey)
         : undefined
@@ -71,40 +99,27 @@ export const ORCHESTRATION_SEND_METHODS = [
           from,
           senderPaneKey,
           remoteAttachment,
-          processIncarnation:
-            attestedCaller?.processIncarnation ??
-            runtime.getTerminalProcessIncarnation(from) ??
-            undefined,
-          orchestrationCapability,
+          processIncarnation: processIncarnation(),
           signal
         })
       }
 
+      refuseFinishedRemoteWorker(db, senderPaneKey, params.to)
       const runGroup =
         params.to && isGroupAddress(params.to) && !params.to.toLowerCase().startsWith('@worktree:')
       // Run groups validate their own audience; message scope cannot select a parent Dispatch.
-      const routing = resolveMessageRun(runtime, {
-        from,
-        senderPaneKey,
+      let routing = resolveMessageRun(runtime, {
+        sender,
         to: params.to,
         runId: runGroup ? undefined : params.run,
-        payload: runGroup ? undefined : params.payload
+        payload: runGroup ? undefined : params.payload,
+        type: params.type
       })
-      if (
-        params.type === 'worker_done' &&
-        !isWorkerReportOutcome(parseRemoteWorkerPayload(params.payload).outcome)
-      ) {
-        throw new OrchestrationError(
-          'invalid_argument',
-          'worker_done requires outcome=succeeded|failed for a current Dispatch.'
-        )
-      }
-      if (params.to?.startsWith('task:')) {
-        throw new OrchestrationError(
-          'invalid_argument',
-          'Task recipients are intentionally unsupported; use run:<id> or dispatch:<id>.'
-        )
-      }
+      const finished = runGroup
+        ? undefined
+        : finishedWorkerSend(db, { ...sender, processIncarnation }, routing, params)
+      ;({ params, routing } = finished ?? { params, routing })
+      assertSendParamsDeliverable(params)
 
       let to = params.to
       if (
@@ -112,7 +127,11 @@ export const ORCHESTRATION_SEND_METHODS = [
         (!to ||
           ((params.type === 'worker_done' || params.type === 'heartbeat') && routing.dispatchId))
       ) {
-        to = `run:${routing.run.id}`
+        const reporting =
+          routing.dispatchId && isDispatchReportType(params.type)
+            ? db.getDispatchContextById(routing.dispatchId)
+            : undefined
+        to = reporting ? dispatchReportMailbox(db, reporting) : `run:${routing.run.id}`
       }
       if (!to) {
         throw new OrchestrationError(
@@ -122,18 +141,40 @@ export const ORCHESTRATION_SEND_METHODS = [
         )
       }
 
+      const botRoute = await routeBotMail(context, { params, from, to, sender, routing })
+      if ('receipt' in botRoute) {
+        return botRoute.receipt
+      }
+      to = botRoute.to
+      if (botRoute.body !== undefined) {
+        params = { ...params, body: botRoute.body }
+      }
+
       const sendWarnings: SendRecipientWarning[] = []
       let messageRunId = routing.run?.id
       if (!isGroupAddress(to) && !to.startsWith('run:') && !to.startsWith('dispatch:')) {
+        const terminal = await prepareSessionRecipient(runtime, to, revalidateLegacyCoordinator)
         const recipient = resolveBareOrchestrationRecipient({
           runtime,
           db,
           handle: to,
           senderRunId: routing.run?.id,
-          explicitRunId: params.run
+          explicitRunId: params.run,
+          terminalRecipient: terminal
         })
         if (!recipient.ok) {
-          throw new OrchestrationError(recipient.code, recipient.message)
+          throw new OrchestrationError(recipient.code, withDispatchPrefixHint(db, to, recipient))
+        }
+        // A paired Orca's former worker may since have taken up local work; it is no longer its to reach.
+        if (
+          orchestrationCaller?.kind === 'peer' &&
+          recipient.runId !== orchestrationCaller.peerRun.run_id
+        ) {
+          throw new OrchestrationError(
+            'forbidden',
+            `${params.to} now works outside the Run ${orchestrationCaller.peerRun.home_label} coordinates here. No effects were applied.`,
+            { effectsApplied: false }
+          )
         }
         to = recipient.to
         messageRunId = recipient.runId
@@ -147,7 +188,7 @@ export const ORCHESTRATION_SEND_METHODS = [
         sendWarnings.length > 0 ? { ...receipt, warnings: sendWarnings } : receipt
 
       if (!isGroupAddress(to)) {
-        const addressedDispatchId = to.startsWith('dispatch:')
+        let addressedDispatchId = to.startsWith('dispatch:')
           ? to.slice('dispatch:'.length)
           : undefined
         const federatedTarget =
@@ -156,7 +197,49 @@ export const ORCHESTRATION_SEND_METHODS = [
             : undefined
         // Federated targets perform their own liveness check before relaying.
         if (addressedDispatchId && !federatedTarget) {
-          assertDispatchMailboxDeliverable(db, addressedDispatchId)
+          const plan = planWorkerFollowUp(db, addressedDispatchId, params.type ?? 'status')
+          // Only a settled worker awaits; mail to a working one stays synchronous until it is inserted.
+          const followUp =
+            plan?.kind === 'start'
+              ? await startWorkerFollowUp({
+                  ctx: {
+                    runtime,
+                    orchestrationCompatibilityEvidence,
+                    orchestrationCaller,
+                    orchestrationMutation
+                  },
+                  db,
+                  plan,
+                  from,
+                  message: params
+                })
+              : plan
+          // The mail started the worker's next turn itself, so nothing holds it; `next` stays last.
+          if (followUp?.kind === 'started') {
+            if (typeof followUp.receipt.dispatchId === 'string') {
+              passHeldWorkerMail(runtime, db, followUp.receipt.dispatchId)
+            }
+            return followUp.receipt
+          }
+          if (followUp) {
+            addressedDispatchId = followUp.dispatchId
+            to = `dispatch:${addressedDispatchId}`
+          }
+          assertDispatchMailboxDeliverable(runtime, db, addressedDispatchId)
+          const runBound = resolveRunBoundDispatchRecipient(
+            runtime,
+            db,
+            addressedDispatchId,
+            params.run
+          )
+          if (runBound) {
+            to = runBound.to
+            messageRunId = runBound.runId
+            sendWarnings.push(runBound.warning)
+          }
+        }
+        if (federatedTarget) {
+          sendWarnings.push(relayedDeliveryUnknownWarning(to))
         }
         const federatedControl = sendFederatedControlMail({
           params,
@@ -172,7 +255,9 @@ export const ORCHESTRATION_SEND_METHODS = [
         if (federatedControl !== undefined) {
           return federatedControl
         }
-        return sendPointToPointMessage({
+        // Before storing, as arrival does: a waiter the nudge resolves is gone by the time the receipt reads.
+        const takenByWaiter = runtime.hasMessageWaiterFor(to, params.type ?? 'status')
+        const sent = sendPointToPointMessage({
           params,
           runtime,
           db,
@@ -182,16 +267,22 @@ export const ORCHESTRATION_SEND_METHODS = [
           messageRunId,
           senderPaneKey,
           legacyCoordinatorRunId,
-          orchestrationCapability,
-          resolveProcessIncarnation: () =>
-            attestedCaller?.processIncarnation ??
-            runtime.getTerminalProcessIncarnation(from) ??
-            undefined,
+          resolveProcessIncarnation: processIncarnation,
           revalidateLegacyCoordinator,
           recordMutationReceipt,
           markWorkerDoneMutationEffectFree,
-          withSendWarnings
+          withSendWarnings: (sent) =>
+            finished?.receipt(withSendWarnings(sent)) ?? withSendWarnings(sent)
         })
+        followThroughWorkerReport(
+          runtime,
+          db,
+          params.type === 'worker_done' ? settledDispatchId(sent) : undefined
+        )
+        // Read only once the mail is stored: an await before it could let the worker settle and miss it.
+        return federatedTarget || params.type === 'worker_done' || params.type === 'heartbeat'
+          ? sent
+          : withDeliveryHoldWarning(sent, runtime, db, to, takenByWaiter)
       }
       return sendGroupMessage({
         params,
@@ -199,6 +290,7 @@ export const ORCHESTRATION_SEND_METHODS = [
         db,
         from,
         groupAddress: to,
+        sender,
         senderPaneKey,
         senderRunId: routing.run?.id,
         explicitRunId: params.run,
@@ -207,6 +299,6 @@ export const ORCHESTRATION_SEND_METHODS = [
         recordMutationReceipt,
         withSendWarnings
       })
-    }
+    })
   })
 ]

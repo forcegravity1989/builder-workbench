@@ -1,22 +1,21 @@
-import type { GitHubWorkItem } from '../../../../../shared/github/work-item-types'
-import type { Repo } from '../../../../../shared/repo-types'
-import {
-  type TaskSourceContext,
-  getTaskSourceRuntimeSettings
-} from '../../../../../shared/task-source-context'
+import type { GitHubWorkItem } from '../../../../../shared/github/work-items/work-item-types'
+import type { Repo } from '../../../../../shared/repository/repo-types'
+import type { TaskSourceContext } from '../../../../../shared/work-items/task-source-context'
 import React, { useMemo, useState, useCallback } from 'react'
 import { useAppStore } from '@/store'
 import { useShallow } from 'zustand/react/shallow'
-import { getSettingsForRepoRuntimeOwner } from '@/lib/repo-runtime-owner'
-import { parseGitHubIssueOrPRLink } from '@/lib/github-links'
-import { useRepoLabelsBySlug } from '@/hooks/useGitHubSlugMetadata'
+import { getGitHubRepoRoutingTarget } from '@/lib/work-items/github/github-source-runtime-context'
+import { parseGitHubIssueOrPRLink } from '../../../../../shared/github/repositories/links'
+import { useRepoLabelsBySlug } from '@/lib/work-items/github/useGitHubSlugMetadata'
 import { translate } from '@/i18n/i18n'
-import { getActiveRuntimeTarget, callRuntimeRpc } from '@/runtime/runtime-rpc-client'
-import { githubProjectHost } from '../../../../../shared/github/project-identity'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
+import { gitHubSlugApiForTarget } from '@/runtime/repository-github/github-slug-owner-api'
+import { codeHostErrorText } from '@/lib/source-control/remote/code-host-error-copy'
+import { githubProjectHost } from '../../../../../shared/github/projects/project-identity'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { LoaderCircle, ChevronDown, Check } from 'lucide-react'
-import type { TaskPageGitHubWorkItemMutationRunner } from '../../task-page-linear-jira-list-model'
+import type { TaskPageGitHubWorkItemMutationRunner } from './mutations/task-page-github-work-item-mutation-types'
 
 /** Issue-only labels cell; PR rows keep their management columns untouched. */
 export function GHLabelsCell({
@@ -30,18 +29,8 @@ export function GHLabelsCell({
   sourceContext?: TaskSourceContext | null
   workItemMutation: TaskPageGitHubWorkItemMutationRunner
 }): React.JSX.Element {
-  const repoOwnerSettings = useAppStore(
-    useShallow((s) => getSettingsForRepoRuntimeOwner(s, repo?.id ?? null))
-  )
-  const sourceSettings = useMemo(
-    () =>
-      sourceContext?.provider === 'github'
-        ? ({
-            ...repoOwnerSettings,
-            ...getTaskSourceRuntimeSettings(sourceContext)
-          } as typeof repoOwnerSettings)
-        : repoOwnerSettings,
-    [repoOwnerSettings, sourceContext]
+  const ownerTarget = useAppStore(
+    useShallow((state) => getGitHubRepoRoutingTarget(state, repo?.id ?? null, sourceContext))
   )
   const [open, setOpen] = useState(false)
   const [pendingLabel, setPendingLabel] = useState<string | null>(null)
@@ -52,7 +41,7 @@ export function GHLabelsCell({
   const metadata = useRepoLabelsBySlug(
     open ? owner : null,
     open ? repoName : null,
-    sourceSettings,
+    ownerTarget,
     parsed?.slug.host
   )
   const toggleLabel = useCallback(
@@ -94,7 +83,7 @@ export function GHLabelsCell({
               : {
                   addLabels: [label]
                 }
-            const target = getActiveRuntimeTarget(sourceSettings)
+            const target = ownerTarget
             if (owner && repoName) {
               const args = {
                 owner,
@@ -103,14 +92,10 @@ export function GHLabelsCell({
                 number: item.number,
                 updates
               }
-              const res =
-                target.kind === 'environment'
-                  ? await callRuntimeRpc<
-                      Awaited<ReturnType<typeof window.api.gh.updateIssueBySlug>>
-                    >(target, 'github.project.updateIssueBySlug', args, {
-                      timeoutMs: 30_000
-                    })
-                  : await window.api.gh.updateIssueBySlug(args)
+              const res = await gitHubSlugApiForTarget(target).updateIssueBySlug({
+                ...args,
+                wakeWslDistro: true
+              })
               if (!res.ok) {
                 throw new Error(res.error.message)
               }
@@ -144,7 +129,7 @@ export function GHLabelsCell({
                       updates
                     })
               if (res && res.ok === false) {
-                throw new Error(res.error)
+                throw new Error(codeHostErrorText(res))
               }
               return res
             }
@@ -163,7 +148,7 @@ export function GHLabelsCell({
       repo,
       repoName,
       sourceContext,
-      sourceSettings,
+      ownerTarget,
       workItemMutation
     ]
   )

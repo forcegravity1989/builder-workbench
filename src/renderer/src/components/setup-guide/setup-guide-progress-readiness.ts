@@ -1,7 +1,7 @@
-import { getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
-import type { ComputerUsePermissionStatusResult } from '../../../../shared/computer-use-permissions-types'
-import type { GlobalSettings } from '../../../../shared/global-settings-types'
-import type { Repo } from '../../../../shared/repo-types'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import type { ComputerUsePermissionStatusResult } from '../../../../shared/computer/computer-use-permissions-types'
+import type { GlobalSettings } from '../../../../shared/settings/global-settings-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 
 export type SetupScriptProbeState = {
   signature: string | null
@@ -12,7 +12,6 @@ export type SetupScriptProbeState = {
 export type SetupGuideProgressReadinessInput = {
   refreshEnabled: boolean
   settingsLoaded: boolean
-  agentCapabilitiesIncluded?: boolean
   preflightStatusChecked: boolean
   linearStatusChecked: boolean
   jiraStatusChecked: boolean
@@ -32,16 +31,16 @@ export const INITIAL_SETUP_SCRIPT_PROBE_STATE: SetupScriptProbeState = {
 
 export function getSetupScriptProbeSignature(
   settings: Pick<GlobalSettings, 'activeRuntimeEnvironmentId'> | null | undefined,
-  orderedGitRepos: readonly Pick<Repo, 'id' | 'hookSettings'>[]
+  orderedGitRepos: readonly Pick<Repo, 'id' | 'hookSettings' | 'connectionId' | 'executionHostId'>[]
 ): string | null {
   if (!settings) {
     return null
   }
-  const target = getActiveRuntimeTarget(settings)
+  // Hook probes belong to each repo’s host, so host changes invalidate readiness.
   return JSON.stringify({
-    runtime: target.kind === 'environment' ? target.environmentId : 'local',
     repos: orderedGitRepos.map((repo) => ({
       id: repo.id,
+      host: getRepoExecutionHostId(repo),
       commandSourcePolicy: repo.hookSettings?.commandSourcePolicy ?? null,
       setup: repo.hookSettings?.scripts?.setup ?? null
     }))
@@ -86,12 +85,11 @@ export function getSetupGuideProgressReady(input: SetupGuideProgressReadinessInp
     input.preflightStatusChecked &&
     input.linearStatusChecked &&
     input.jiraStatusChecked &&
+    !input.browserUseSkillDiscoveryLoading &&
+    !input.computerUseSkillDiscoveryLoading &&
+    !input.orchestrationSkillDiscoveryLoading &&
     input.setupScriptProbeReady &&
-    (input.agentCapabilitiesIncluded === false ||
-      (!input.browserUseSkillDiscoveryLoading &&
-        !input.computerUseSkillDiscoveryLoading &&
-        !input.orchestrationSkillDiscoveryLoading &&
-        (!input.computerUseSkillInstalled || input.computerUsePermissionStatusChecked)))
+    (!input.computerUseSkillInstalled || input.computerUsePermissionStatusChecked)
   )
 }
 

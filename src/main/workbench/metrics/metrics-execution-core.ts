@@ -1,24 +1,22 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile } from 'node:fs/promises'
 import { posix, win32 } from 'node:path'
-import { gitExecFileAsync } from '../../git/runner'
-import { readGitBlobAtOidPath } from '../../git/source-control/git-blob-read'
-import {
-  discardPreparedWorktree,
-  prepareWorktreeCreateCheckout
-} from '../../git/worktree-create-preparation'
-import { runWslProcess } from '../../wsl/wsl-runner'
-import { runProcess } from '../../../shared/child-process/run-process'
+import { gitExecFileAsync } from '../../git/command-runner/git-exec-file'
+import { readGitBlobAtOidPath } from '../../git/source-control/diffs/git-blob-read'
+import { discardPreparedWorktree } from '../../git/worktrees/creation/worktree-preparation-discard'
+import { prepareWorktreeCreateCheckout } from '../../git/worktrees/creation/worktree-create-preparation'
+import { runWslProcess } from '../../wsl/execution/wsl-runner'
+import { runProcess } from '@orca/process-host'
 import { withSpan } from '../../observability/tracer'
 import { collectorInterpreterLabel } from '../workbench-exec-observability'
 import { traceStderrTail } from '../workbench-trace-details'
-import { isWindowsAbsolutePathLike } from '../../../shared/cross-platform-path'
-import { toLinuxPath } from '../../../shared/wsl-paths'
+import { isWindowsAbsolutePathLike } from '../../../shared/file-access/cross-platform-path'
+import { toLinuxPath } from '../../../shared/file-access/wsl-paths'
 import {
   WORKTREE_CREATE_PREPARATION_DIRECTORY,
   createWorktreePreparationLockReason
-} from '../../../shared/worktree/create-preparation'
-import type { GitWorktreeExecOptions } from '../../git/worktree-operation-options'
+} from '../../../shared/worktree/creation/create-preparation'
+import type { GitWorktreeExecOptions } from '../../git/worktrees/worktree-operation-options'
 import { MetricCollectorError } from './collector-output'
 import { resolveTrunkBaseline } from '../trunk-baseline'
 
@@ -283,6 +281,7 @@ export async function executeMetricCollection(input: {
   const { repoPath, execOptions = {} } = input
   const pathOps = pathOpsFor(repoPath)
   const preparationId = `${process.pid}-${randomUUID()}`
+  const lockReason = createWorktreePreparationLockReason(preparationId)
   const checkoutPath = pathOps.join(
     input.checkoutRoot,
     WORKTREE_CREATE_PREPARATION_DIRECTORY,
@@ -298,7 +297,7 @@ export async function executeMetricCollection(input: {
     repoPath,
     checkoutPath,
     input.configurationCommit,
-    createWorktreePreparationLockReason(preparationId),
+    lockReason,
     execOptions
   )
   let outcome: MetricProcessOutcome
@@ -336,7 +335,7 @@ export async function executeMetricCollection(input: {
               code: mapped.code,
               signal: null,
               timedOut: mapped.timedOut,
-              outputTruncated: mapped.outputTruncated
+              outputTruncated: mapped.outputTruncated === true
             }))
           : await runProcess({
               program: input.run[0],
@@ -376,7 +375,7 @@ export async function executeMetricCollection(input: {
       { kind: 'client' }
     )
   } finally {
-    await discardPreparedWorktree(repoPath, checkoutPath, execOptions).catch(() => {
+    await discardPreparedWorktree(repoPath, checkoutPath, execOptions, lockReason).catch(() => {
       // The preparation lock reason keeps the stranded tree recognizable to the
       // native stale-preparation cleanup; the run outcome stays the primary fact.
     })

@@ -1,8 +1,9 @@
-import { assertRuntimeEnvironmentCapability, callRuntimeRpc } from '../runtime/runtime-rpc-client'
-import { routeForOwner } from '../lib/worktree-owner-route'
-import type { ExecutionHostId } from '../../../shared/execution-host'
+import { assertRuntimeEnvironmentCapability } from '../runtime/rpc/compatibility/runtime-capability-proof'
+import { callRuntimeRpc } from '../runtime/rpc/calls/runtime-rpc-call'
+import { routeForOwner } from '../lib/workspace/ownership/worktree-owner-route'
+import type { ExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { ownerSpelledHostId } from './version-binding-port'
-import { WORKBENCH_VERSION_WORKSPACE_RUNTIME_CAPABILITY } from '../../../shared/protocol-version'
+import { WORKBENCH_VERSION_WORKSPACE_RUNTIME_CAPABILITY } from '../../../shared/remote-runtime/protocol/worktree-runtime-capabilities'
 import { VersionMaterialPortError } from '../../../shared/workbench/version-material-client'
 import type { VersionMaterialResult } from '../../../shared/workbench/version-material-request'
 import type {

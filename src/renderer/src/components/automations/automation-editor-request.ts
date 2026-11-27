@@ -1,5 +1,5 @@
-import type { StableAutomationHostRef } from '../../../../shared/automation-owner-ref'
-import type { AutomationDraft } from './AutomationEditorDialog'
+import type { StableAutomationHostRef } from '../../../../shared/automations/ownership/automation-owner-ref'
+import type { AutomationDraft } from './authoring/AutomationEditorDialog'
 
 /** Opens the native editor only; no automation is saved or run by this request. */
 export type AutomationEditorRequest =

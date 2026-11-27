@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react'
-import { cn } from '@/lib/utils'
-import { SidebarGroupChevron } from '@/components/sidebar/ProjectHeaderActions'
+import { cn } from '@/lib/class-names'
+import { SidebarSectionFoldChevron } from '@/components/sidebar/sidebar-section-fold'
 
 /**
  * Workbench section header matching the native worktree section chrome.
@@ -55,7 +55,7 @@ export function WorkbenchSidebarSectionHeader({
       </span>
       <span className="min-w-0 shrink-0 truncate">{children}</span>
       <span className="flex shrink-0 items-center text-muted-foreground/60" aria-hidden>
-        <SidebarGroupChevron expanded={!collapsed} />
+        <SidebarSectionFoldChevron collapsed={collapsed} />
       </span>
       <span className="min-w-0 flex-1" />
       {action ? (

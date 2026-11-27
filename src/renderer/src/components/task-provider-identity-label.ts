@@ -1,4 +1,4 @@
-import type { TaskProviderIdentity } from '../../../shared/task-source-context'
+import type { TaskProviderIdentity } from '../../../shared/work-items/task-provider-identity'
 
 /** Human label for one captured provider identity; null when nothing identifiable was captured. */
 export function getProviderIdentityLabel(

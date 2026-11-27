@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { _resetTracerForTests, setActiveSink, type TracerSink } from '../observability/tracer'
+import { setActiveSink, type TracerSink } from '../observability/tracer'
 import { withPhaseSpan } from './workbench-phase-observability'
 
 type SpanRecord = {
@@ -31,7 +31,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  _resetTracerForTests()
+  setActiveSink(null)
 })
 
 describe('withPhaseSpan', () => {

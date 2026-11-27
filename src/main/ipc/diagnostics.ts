@@ -1,19 +1,5 @@
-// IPC surface for the error-tracking lane (telemetry-error-tracking.md
-// §User controls). Six renderer-facing channels:
-//
-//   diagnostics:getStatus            — read-only snapshot for the Privacy pane.
-//   diagnostics:collectBundle        — assemble and retain a redacted payload.
-//   diagnostics:openBundlePreview    — open the retained payload in the OS.
-//   diagnostics:discardBundlePreview — delete a retained, unuploaded payload.
-//   diagnostics:uploadBundle         — upload the main-retained payload to the
-//                                      WeLink group space (BW #553 sink).
-//   diagnostics:deleteBundle         — recycle an uploaded bundle by ticket ID.
-//
-// Same threat model as the product-telemetry IPC (`ipc/telemetry.ts`):
-// renderer can pass anything over the wire, type-narrow here. Everything
-// that touches the network or filesystem stays in main — the renderer
-// only sees the resulting status / preview / ticket-id.
-//
+// Main owns redacted payloads and upload endpoints; validate renderer requests and enforce consent here (telemetry-error-tracking.md).
+
 import { app, dialog, ipcMain, shell } from 'electron'
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { arch as osArch, platform as osPlatform, release as osRelease, tmpdir } from 'node:os'
@@ -23,6 +9,8 @@ import {
   getDiagnosticsStatus,
   type DiagnosticsStatus
 } from '../observability'
+import { translateMain } from '../i18n/main-i18n'
+import { diagnosticsBundleFailure } from '../../shared/diagnostics/bundles/diagnostics-bundle-failure-copy'
 import type { CollectedBundle } from '../observability/bundle'
 import { resolveDiagnosticOrcaChannel } from '../observability/diagnostic-upload-endpoint'
 import {
@@ -68,8 +56,7 @@ function rememberBundle(bundle: CollectedBundle): void {
     bundle,
     createdAtMs: Date.now(),
     previewFilePath,
-    // Why: diagnostics previews retain redacted payload bytes in main; the
-    // documented TTL must expire even if the renderer never makes another call.
+    // Expire retained payloads even if no further renderer call arrives.
     ttlTimer: schedulePendingBundleExpiry(bundle.bundleSubmissionId),
     previewOpened: false
   })
@@ -107,13 +94,12 @@ function getPendingBundleForUpload(bundleSubmissionId: unknown): {
   prunePendingBundles()
   const pending = pendingBundles.get(bundleSubmissionId)
   if (!pending) {
-    throw new Error('review file has expired; create a new one before sending')
+    throw diagnosticsBundleFailure('expiredBeforeSending')
   }
   if (!pending.previewOpened) {
-    throw new Error('open the review file before sending')
+    throw diagnosticsBundleFailure('previewNotOpened')
   }
-  // Why: the preview file is user-editable once opened in the OS. Upload only
-  // the redacted bytes main collected and retained before preview.
+  // Preview files are editable; upload only main's retained redacted bytes.
   return { bundle: pending.bundle, payload: pending.bundle.payload }
 }
 
@@ -127,7 +113,7 @@ function getPendingPreviewFilePath(bundleSubmissionId: unknown): string {
   prunePendingBundles()
   const pending = pendingBundles.get(bundleSubmissionId)
   if (!pending) {
-    throw new Error('review file has expired; create a new one before opening')
+    throw diagnosticsBundleFailure('expiredBeforeOpening')
   }
   return pending.previewFilePath
 }
@@ -186,14 +172,29 @@ function isTicketId(value: unknown): value is string {
 async function confirmBundleUpload(bundle: CollectedBundle): Promise<boolean> {
   const result = await dialog.showMessageBox({
     type: 'question',
-    buttons: ['Send', 'Cancel'],
+    buttons: [
+      translateMain('auto.main.ipc.diagnostics.uploadConfirm.send', 'Send'),
+      translateMain('auto.main.ipc.diagnostics.uploadConfirm.cancel', 'Cancel')
+    ],
     defaultId: 1,
     cancelId: 1,
-    title: 'Send this file to support?',
-    message: 'This uploads the redacted app diagnostics file you reviewed.',
-    detail: `Diagnostic ID: ${bundle.bundleSubmissionId}\nDiagnostic records: ${bundle.spanCount}\nSize: ${Math.round(
-      bundle.bytes / 1024
-    )} KB`
+    title: translateMain(
+      'auto.main.ipc.diagnostics.uploadConfirm.title',
+      'Send this file to support?'
+    ),
+    message: translateMain(
+      'auto.main.ipc.diagnostics.uploadConfirm.message',
+      'This uploads the redacted app diagnostics file you reviewed.'
+    ),
+    detail: translateMain(
+      'auto.main.ipc.diagnostics.uploadConfirm.detail',
+      'Diagnostic ID: {{id}}\nDiagnostic records: {{records}}\nSize: {{sizeKb}} KB',
+      {
+        id: bundle.bundleSubmissionId,
+        records: bundle.spanCount,
+        sizeKb: Math.round(bundle.bytes / 1024)
+      }
+    )
   })
   return result.response === 0
 }
@@ -205,23 +206,18 @@ export function registerDiagnosticsHandlers(): void {
 
   ipcMain.handle(
     'diagnostics:collectBundle',
-    (_event, lookbackMinutesIn: unknown): DiagnosticsBundlePreview => {
-      // Consent gate: main is the consent enforcement boundary; the
-      // renderer-side button-hide is UX, not security. A compromised or
-      // malicious renderer must not be able to assemble a bundle when the
-      // user has disabled diagnostic-bundle collection in Settings → Privacy.
+    async (_event, lookbackMinutesIn: unknown): Promise<DiagnosticsBundlePreview> => {
+      // Enforce consent in main; hiding renderer controls is insufficient.
       const status = getDiagnosticsStatus()
       if (!status.bundleEnabled) {
-        throw new Error('creating review files is disabled')
+        throw diagnosticsBundleFailure('creatingDisabled')
       }
-      // Renderer-controlled input → narrow at the boundary. The default
-      // (DEFAULT_LOOKBACK_MINUTES in bundle.ts) is fine for the common
-      // "last 30 minutes" case the Privacy pane button triggers.
+      // Validate untyped IPC input before applying the default lookback.
       const lookbackMinutes =
         typeof lookbackMinutesIn === 'number' && Number.isFinite(lookbackMinutesIn)
           ? Math.max(1, Math.min(30 * 24 * 60, Math.floor(lookbackMinutesIn)))
           : undefined
-      const bundle = collectDiagnosticBundle({
+      const bundle = await collectDiagnosticBundle({
         appVersion: app.getVersion(),
         platform: osPlatform(),
         arch: osArch(),
@@ -237,24 +233,20 @@ export function registerDiagnosticsHandlers(): void {
   ipcMain.handle(
     'diagnostics:uploadBundle',
     async (_event, bundleSubmissionId: unknown): Promise<UploadBundleIpcResult> => {
-      // Why: the renderer is in the threat model. Upload only a payload main
-      // collected and retained for preview, never renderer-supplied bytes.
+      // Accept only main-retained payload IDs, never renderer-supplied bytes.
       const pendingForConfirmation = getPendingBundleForUpload(bundleSubmissionId)
-      // Consent gate: main is the consent enforcement boundary; the
-      // renderer-side button-hide is UX, not security. Re-check here in case
-      // the user toggled the setting off between collect and upload.
+      // Recheck consent in case it changed after collection.
       if (!getDiagnosticsStatus().bundleEnabled) {
-        throw new Error('sending diagnostics is disabled')
+        throw diagnosticsBundleFailure('sendingDisabled')
       }
       const confirmed = await confirmBundleUpload(pendingForConfirmation.bundle)
       if (!confirmed) {
         return { canceled: true }
       }
-      // Why: the preview can be discarded or diagnostics can be disabled
-      // while the native confirmation dialog is open.
+      // Revalidate after the dialog: payloads can be discarded or consent revoked while it is open.
       const { bundle, payload } = getPendingBundleForUpload(bundleSubmissionId)
       if (!getDiagnosticsStatus().bundleEnabled) {
-        throw new Error('sending diagnostics is disabled')
+        throw diagnosticsBundleFailure('sendingDisabled')
       }
       const result = await submitWelinkDiagnosticsBundle(payload, bundle.bundleSubmissionId)
       const uploadedPending = pendingBundles.get(bundle.bundleSubmissionId)
@@ -269,7 +261,7 @@ export function registerDiagnosticsHandlers(): void {
     const previewFilePath = getPendingPreviewFilePath(bundleSubmissionId)
     const errorMessage = await shell.openPath(previewFilePath)
     if (errorMessage) {
-      throw new Error('could not open review file')
+      throw diagnosticsBundleFailure('previewOpenFailed')
     }
     const pending = pendingBundles.get(bundleSubmissionId as string)
     if (pending) {

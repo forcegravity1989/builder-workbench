@@ -1,5 +1,5 @@
-import { resolveEffectiveGitUpstream } from '../../shared/git-effective-upstream'
-import { parseGitRemoteFetchUrls } from '../../shared/git-remote-url-index'
+import { resolveEffectiveGitUpstream } from '../../shared/git/remotes/git-effective-upstream'
+import { parseGitRemoteFetchUrls } from '../../shared/git/remotes/git-remote-url-index'
 import { branchFullRef } from '../../shared/workbench/branch-ref'
 import { mergeFlowSources, type FlowMergeContext } from './flow-trunk-merge'
 import type { TrunkGitExec } from './trunk-baseline'

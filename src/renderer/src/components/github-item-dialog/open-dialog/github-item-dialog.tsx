@@ -1,28 +1,37 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { getTaskSourceCacheScope } from '../../../../../shared/work-items/task-source-context'
+import { GitHubWorkItemTargetContext } from '../load-item-details/github-work-item-target-context'
+import React, { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { useAllWorktrees } from '@/store/selectors'
-import { useAppStore } from '@/store'
-import { findGithubIssueWorkspaceAttachment } from '@/lib/github-work-item-workspace-attachment'
-import { activateAndRevealWorktree } from '@/lib/worktree-activation'
-import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
-import {
-  matchScopedTaskWorkspaces,
-  resolveTaskRowWorkspace
-} from '@/workbench/scoped-task-workspace'
-import { dispatchScopedWorktrees } from '@/workbench/version-workspace-choice-state'
-import { track } from '@/lib/telemetry'
+import { useAllWorktrees } from '@/store/slices/worktrees/listing/use-worktree-catalog'
+import { useAppStore } from '@/store/index'
+import { findGithubIssueWorkspaceAttachment } from '@/lib/work-items/github/github-work-item-workspace-attachment'
+import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
+import { getWorktreeAttachmentLabel } from '@/lib/workspace/display/worktree-attachment-label'
 import { translate } from '@/i18n/i18n'
-import type { GitHubWorkItem } from '../../../../../shared/github/work-item-types'
+import type { GitHubWorkItem } from '../../../../../shared/github/work-items/work-item-types'
 import type { GitHubItemDialogProps } from '../load-item-details/github-item-dialog-types'
 import { GitHubItemDialogIssueBody } from './github-item-dialog-issue-body'
 import { GitHubItemDialogIssueHeader } from './github-item-dialog-issue-header'
 import { GitHubItemDialogPRHeader } from './github-item-dialog-pr-header'
 import { GitHubItemDialogPRTabs } from './github-item-dialog-pr-tabs'
 import { GHEditSection } from '../edit-item-fields/gh-edit-section'
-import { useGitHubItemDialogDetails } from '../load-item-details/use-github-item-dialog-details'
+import { useGitHubWorkItemDetails } from '../load-item-details/use-github-work-item-details'
 import { useGitHubItemDialogLinkCopy } from './use-github-item-dialog-link-copy'
 
-export default function GitHubItemDialog({
+export default function GitHubItemDialog(props: GitHubItemDialogProps): React.JSX.Element {
+  const { workItem, sourceContext } = props
+  const key = [
+    props.repoId ?? workItem?.repoId,
+    props.repoPath,
+    workItem?.url,
+    workItem?.type,
+    workItem?.number,
+    sourceContext ? getTaskSourceCacheScope(sourceContext) : ''
+  ].join('\0')
+  return <GitHubItemDialogItem key={key} {...props} />
+}
+
+function GitHubItemDialogItem({
   workItem,
   repoPath,
   repoId,
@@ -41,84 +50,38 @@ export default function GitHubItemDialog({
   const workItemLabels = workItem?.labels
   const effectiveRepoId = repoId ?? workItem?.repoId ?? null
   const allWorktrees = useAllWorktrees()
-  // G2 (BW)：范围详情沿 TaskPageData 读取范围（详情往返已带范围），Issue 的
-  // 归属工作区按明确绑定解析；无范围时原生「首个未归档树」语义逐字不变。
-  const workbenchTaskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
-  const issueAttachedWorkspace = useMemo(() => {
-    if (workItem?.type !== 'issue') {
-      return null
-    }
-    return resolveTaskRowWorkspace({
-      scope: workbenchTaskScope,
-      worktrees: allWorktrees,
-      provider: 'github',
-      item: { repoId: effectiveRepoId, type: 'issue', number: workItem.number },
-      sourceContext: sourceContext ?? null
-    }).attached
-  }, [allWorktrees, effectiveRepoId, workItem, workbenchTaskScope, sourceContext])
+  const issueAttachedWorkspace = useMemo(
+    () =>
+      workItem?.type === 'issue'
+        ? findGithubIssueWorkspaceAttachment(
+            allWorktrees,
+            effectiveRepoId,
+            workItem.number,
+            workItem.url
+          )
+        : null,
+    [allWorktrees, effectiveRepoId, workItem]
+  )
   const issueAttachedWorkspaceLabel = issueAttachedWorkspace
     ? getWorktreeAttachmentLabel(issueAttachedWorkspace)
     : null
 
-  // Why: dialog Start entries that bypass the scoped dispatch (no attached
-  // workspace, or an explicit "start new") still open the composer — count
-  // them as composer-opened; PR rows stay silent like the task screen.
-  const handleStartWorkspaceFromDialog = useCallback(
-    (item: GitHubWorkItem): void => {
-      if (workbenchTaskScope && item.type === 'issue') {
-        track('bw_task_start', { outcome: 'composer-opened', source: 'task-dialog' })
-      }
-      onUse(item)
-    },
-    [workbenchTaskScope, onUse]
-  )
-
   const handleOpenOrUseIssueWorkspace = useCallback(
     (item: GitHubWorkItem): void => {
-      const worktrees = useAppStore.getState().allWorktrees()
-      if (workbenchTaskScope) {
-        const scoped = matchScopedTaskWorkspaces({
-          scope: workbenchTaskScope,
-          worktrees,
-          provider: 'github',
-          number: item.number,
-          sourceContext: sourceContext ?? null,
-          repoId: effectiveRepoId
-        })
-        if (scoped) {
-          const outcome = dispatchScopedWorktrees({
-            candidates: scoped.candidates,
-            choiceTitle: `#${item.number} ${item.title}`,
-            onUnavailable: () =>
-              toast.error(
-                translate(
-                  'auto.components.GitHubItemDialog.2ef631437e',
-                  'Unable to open the workspace attached to this issue.'
-                )
-              )
-          })
-          // Why: scoped dispatch is the BW start path (#687) — 'none' falls
-          // through to onUse, which opens the composer.
-          if (outcome !== 'none') {
-            track('bw_task_start', { outcome, source: 'task-dialog' })
-            return
-          }
-          track('bw_task_start', { outcome: 'composer-opened', source: 'task-dialog' })
-          onUse(item)
-          return
-        }
-      }
       const currentAttached = findGithubIssueWorkspaceAttachment(
-        worktrees,
+        useAppStore.getState().allWorktrees(),
         effectiveRepoId,
-        item.number
+        item.number,
+        item.url
       )
       if (!currentAttached) {
         onUse(item)
         return
       }
 
-      const result = activateAndRevealWorktree(currentAttached.id)
+      const result = activateAndRevealWorktree(currentAttached.id, {
+        navigationIntent: 'user-open'
+      })
       if (result === false) {
         toast.error(
           translate(
@@ -128,10 +91,17 @@ export default function GitHubItemDialog({
         )
       }
     },
-    [effectiveRepoId, onUse, sourceContext, workbenchTaskScope]
+    [effectiveRepoId, onUse]
   )
 
   const {
+    targetContext,
+    refreshTask,
+    refreshing,
+    acceptedRefresh,
+    canRefreshTask,
+    refreshUnsupported,
+    showRefreshTask,
     tab,
     setTab,
     canUseDetailsRepoContext,
@@ -141,18 +111,20 @@ export default function GitHubItemDialog({
     error,
     detailsLoaded,
     displayWorkItem,
+    addressedWorkItem,
     appendOptimisticComment,
     invalidateCurrentDetailsCache,
     handlePRFileViewedChange,
     pendingViewedPaths,
     isIssuePage
-  } = useGitHubItemDialogDetails({
+  } = useGitHubWorkItemDetails({
     workItem,
     repoPath,
     effectiveRepoId,
     sourceContext,
     initialTab,
     projectOrigin,
+    onRefreshAccepted: (item: GitHubWorkItem) => setLocalLabels(item.labels),
     onReviewRequestsChange
   })
   const { linkCopied, setLinkCopyButtonRef, handleCopyWorkItemLink } =
@@ -164,10 +136,16 @@ export default function GitHubItemDialog({
     if (resolvedWorkItemState) {
       setLocalState(resolvedWorkItemState)
     }
-    if (workItemLabels) {
-      setLocalLabels(workItemLabels)
+  }, [workItemId, resolvedWorkItemState])
+  // Chips follow the displayed item (its pending edits included), and only when its labels change.
+  const displayedLabels = displayWorkItem?.labels ?? workItemLabels
+  const syncLabels = useEffectEvent(() => {
+    if (displayedLabels) {
+      setLocalLabels(displayedLabels)
     }
-  }, [workItemId, resolvedWorkItemState, workItemLabels])
+  })
+  const displayedLabelsKey = displayedLabels?.join('\0')
+  useEffect(() => syncLabels(), [workItemId, displayedLabelsKey])
 
   // Why: a just-closed Radix overlay can leave `pointer-events: none` on <body>, killing header button clicks; poll a few frames to clear it.
   useEffect(() => {
@@ -202,7 +180,11 @@ export default function GitHubItemDialog({
     <div className="flex h-full min-h-0 flex-col">
       {isIssuePage ? (
         <GitHubItemDialogIssueHeader
-          workItem={workItem}
+          workItem={addressedWorkItem ?? workItem}
+          refreshTask={showRefreshTask ? refreshTask : undefined}
+          refreshing={refreshing}
+          canRefreshTask={canRefreshTask}
+          refreshUnsupported={refreshUnsupported}
           backLabel={backLabel}
           onClose={onClose}
           linkCopied={linkCopied}
@@ -210,7 +192,7 @@ export default function GitHubItemDialog({
           handleCopyWorkItemLink={handleCopyWorkItemLink}
           issueAttachedWorkspace={issueAttachedWorkspace}
           handleOpenOrUseIssueWorkspace={handleOpenOrUseIssueWorkspace}
-          onUse={handleStartWorkspaceFromDialog}
+          onUse={onUse}
           localState={localState}
           effectiveRepoId={effectiveRepoId}
           repoPath={repoPath}
@@ -225,14 +207,14 @@ export default function GitHubItemDialog({
           issueAttachedWorkspaceLabel={issueAttachedWorkspaceLabel}
           effectiveRepoId={effectiveRepoId}
           repoPath={repoPath}
-          onUse={handleStartWorkspaceFromDialog}
+          onUse={onUse}
           linkCopied={linkCopied}
           setLinkCopyButtonRef={setLinkCopyButtonRef}
           handleCopyWorkItemLink={handleCopyWorkItemLink}
         />
       )}
 
-      {!isIssuePage && (canUseDetailsRepoContext || projectOrigin) && (
+      {!error && !isIssuePage && (canUseDetailsRepoContext || projectOrigin) && (
         <GHEditSection
           item={workItem}
           repoPath={repoPath}
@@ -245,7 +227,7 @@ export default function GitHubItemDialog({
           onLabelsChange={setLocalLabels}
           onMutated={invalidateCurrentDetailsCache}
           assignees={details?.assignees ?? []}
-          onUse={handleStartWorkspaceFromDialog}
+          onUse={onUse}
           onOpenOrUse={handleOpenOrUseIssueWorkspace}
           attachedWorkspaceLabel={issueAttachedWorkspaceLabel}
         />
@@ -256,7 +238,8 @@ export default function GitHubItemDialog({
           <div className="px-4 py-6 text-[12px] text-destructive">{error}</div>
         ) : isIssuePage ? (
           <GitHubItemDialogIssueBody
-            workItem={workItem}
+            workItem={addressedWorkItem ?? workItem}
+            acceptedRefresh={acceptedRefresh}
             displayWorkItem={displayWorkItem}
             repoPath={repoPath}
             effectiveRepoId={effectiveRepoId}
@@ -271,7 +254,7 @@ export default function GitHubItemDialog({
             onStateChange={setLocalState}
             onLabelsChange={setLocalLabels}
             onMutated={invalidateCurrentDetailsCache}
-            onUse={handleStartWorkspaceFromDialog}
+            onUse={onUse}
             onOpenOrUse={handleOpenOrUseIssueWorkspace}
             attachedWorkspaceLabel={issueAttachedWorkspaceLabel}
             onCommentAdded={appendOptimisticComment}
@@ -280,7 +263,7 @@ export default function GitHubItemDialog({
           />
         ) : (
           <GitHubItemDialogPRTabs
-            workItem={workItem}
+            workItem={displayWorkItem ?? workItem}
             displayWorkItem={displayWorkItem}
             repoPath={repoPath}
             effectiveRepoId={effectiveRepoId}
@@ -306,12 +289,13 @@ export default function GitHubItemDialog({
   ) : null
 
   return (
-    // Why: rendered inline (not a Radix dialog), so e2e needs a stable hook to scope assertions to this detail surface.
     <div
       data-testid="github-item-detail"
       className="flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-border/50 bg-background shadow-sm"
     >
-      {content}
+      <GitHubWorkItemTargetContext.Provider value={targetContext}>
+        {content}
+      </GitHubWorkItemTargetContext.Provider>
     </div>
   )
 }

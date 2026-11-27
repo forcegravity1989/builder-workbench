@@ -1,5 +1,5 @@
 import { bwGhExecFileAsync } from './workbench-exec-observability'
-import { repositoryRateLimitGuard, noteRepositoryRateLimitSpend } from '../github/rate-limit'
+import { repositoryRateLimitGuard, noteRepositoryRateLimitSpend } from '../github/api/rate-limit'
 import { OverviewPullSchema } from '../../shared/workbench/overview-pull'
 import type { WorkflowCommentsRequest } from '../../shared/workbench/workflow-comments'
 import type { nativeWorkbenchWorkspaceHost } from './workspace-resolver'

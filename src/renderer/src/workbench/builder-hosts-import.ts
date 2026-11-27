@@ -3,8 +3,8 @@
  * 结构 =「主机名: 该主机 Orca 分享的 runtime 配对地址」清单(高保真模板同款);
  * 配对本身只走 Orca 原生 verifyAndAddFromPairingCode,BW 不建平行主机台账。
  */
-import { normalizeTypedName } from '../../../shared/typed-name-normalization'
-import { parseHostAccessLink } from '../../../shared/remote-pairing-address'
+import { normalizeTypedName } from '../../../shared/text/typed-name-normalization'
+import { parseHostAccessLink } from '../../../shared/remote-runtime/pairing/remote-pairing-address'
 
 export const BUILDER_HOSTS_TEMPLATE_FILENAME = 'builder-hosts-template.json'
 

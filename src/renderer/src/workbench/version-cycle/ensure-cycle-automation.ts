@@ -12,30 +12,30 @@ import { notifyWorkbenchError } from '../error-feedback'
 
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store'
-import { LOCAL_EXECUTION_HOST_ID, parseExecutionHostId } from '../../../../shared/execution-host'
-import type { Automation, AutomationCreateInput } from '../../../../shared/automations-types'
+import { LOCAL_EXECUTION_HOST_ID, parseExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import type { Automation, AutomationCreateInput } from '../../../../shared/automations/automation-definition'
 import type {
   AutomationAuthorityRef,
   AutomationOwnerRef,
   StableAutomationHostRef
-} from '../../../../shared/automation-owner-ref'
-import type { AutomationDestination } from '../../../../shared/automation-owner-precondition'
-import type { TuiAgent } from '../../../../shared/tui-agent'
+} from '../../../../shared/automations/ownership/automation-owner-ref'
+import type { AutomationDestination } from '../../../../shared/automations/ownership/automation-owner-precondition'
+import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import {
   buildAutomationRrule,
   nextAutomationOccurrenceAfter
-} from '../../../../shared/automation-schedule-occurrences'
+} from '../../../../shared/automations/scheduling/automation-schedule-occurrences'
 import {
   getAutomationAuthorityTarget,
   listAutomationsForTarget
-} from '@/components/automations/automation-host-client'
+} from '@/components/automations/hosts/automation-host-client'
 import {
   createAutomationForDestination,
   updateAutomationForOwner
-} from '@/components/automations/automation-scoped-list-client'
-import { automationRuntimePairingRevision } from '@/components/automations/automation-authority-identity'
-import { buildAutomationRunContextForRepo } from '@/components/automations/automation-run-context'
+} from '@/components/automations/hosts/automation-scoped-list-client'
+import { automationRuntimePairingRevision } from '@/components/automations/hosts/automation-authority-identity'
+import { buildAutomationRunContextForRepo } from '@/components/automations/authoring/automation-run-context'
 import type { CycleScope } from './ports'
 import { cycleScopeKey } from './native-cycle-workspace'
 import { buildCyclePrompt } from './cycle-prompt'

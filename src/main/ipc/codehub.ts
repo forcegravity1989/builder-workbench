@@ -1,8 +1,8 @@
 import { ipcMain } from 'electron'
 import { resolve } from 'node:path'
 import { CODEHUB_REQUEST_SCHEMAS, type CodeHubRepoArgs } from '../../shared/codehub-api'
-import type { Store } from '../persistence'
-import { getLocalProjectWorktreeGitOptions } from '../project-runtime-git-options'
+import type { Store } from '../persistence/loading-store/store'
+import { getLocalProjectWorktreeGitOptions } from '../workspaces/execution-host/project-runtime-git-options'
 import { isWorkbenchProduct } from '../startup/workbench-product'
 import { createCodeHubService } from '../codehub/service'
 

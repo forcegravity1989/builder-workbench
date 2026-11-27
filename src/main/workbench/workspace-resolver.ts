@@ -2,8 +2,8 @@ import {
   getWorktreeExecutionHostId,
   parseExecutionHostId,
   type ExecutionHostId
-} from '../../shared/execution-host'
-import type { Repo } from '../../shared/repo-types'
+} from '../../shared/execution-host/execution-host'
+import type { Repo } from '../../shared/repository/repo-types'
 import type { Worktree } from '../../shared/worktree/types'
 import { resolveRepoOwnershipEvidence } from '../ipc/worktrees/listing/worktree-host-ownership'
 import { WorkspaceScopeError } from './workspace-scope-error'

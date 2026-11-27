@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { PrioritySemaphore } from '../../../shared/priority-semaphore'
+import { PrioritySemaphore } from '../../../shared/concurrency/priority-semaphore'
 import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'

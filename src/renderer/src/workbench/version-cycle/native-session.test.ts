@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 import type { AppState } from '@/store/types'
 import type { CycleScope } from './ports'
-import { structuredAgentSessionPaneKey } from '../../../../shared/structured-agent-session-projection'
+import { structuredAgentSessionPaneKey } from '../../../../shared/agent-session/view/structured-agent-session-projection'
 const mocks = vi.hoisted(() => ({
   state: {} as AppState
 }))

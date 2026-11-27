@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { forEachWithConcurrency } from '../../../shared/map-with-concurrency'
+import { forEachWithConcurrency } from '../../../shared/concurrency/map-with-concurrency'
 import { createSnapshotCache, useSnapshotCache, type SnapshotEntry } from './snapshot-cache'
 
 export type WallCardRead<T> = {
