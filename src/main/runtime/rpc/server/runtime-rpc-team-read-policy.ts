@@ -234,6 +234,7 @@ export const AUDITED_TEAM_READ_METHODS = new Set([
   'workbench.share.remove',
   'workbench.versionBinding.set',
   'workbench.skills.prepare',
+  'workbench.support.open',
   'workbench.materials.save',
   'workbench.milestones.save',
   'workbench.milestones.submit',

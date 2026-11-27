@@ -30384,6 +30384,8 @@
     }
   },
   "guidance": {
+    "askMonica": "问 Monica",
+    "monicaOpenFailed": "未能打开 Monica",
     "feedbackOnDesktop": "请到 BW 桌面应用的「帮助」中发送反馈。",
     "skillsOnDesktop": "请在 BW 桌面应用中打开「设置 → 技能」。",
     "about": "关于 BW",
