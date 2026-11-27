@@ -1,3 +1,4 @@
+import { MONICA_DISPLAY_NAME } from '../i18n/monica-display-name'
 import { compareAppVersions, isValidAppVersion } from '../app-lifecycle/identity/app-version'
 
 export type ReleaseChannel = 'stable' | 'rc' | 'hourly' | 'daily' | 'adhoc'
@@ -43,19 +44,19 @@ function isWorkbenchUpdateIdentity(): boolean {
   return typeof WORKBENCH_SHELL !== 'undefined' && WORKBENCH_SHELL === '1'
 }
 
-const workbenchUpdateIdentity = isWorkbenchUpdateIdentity()
-export const UPDATE_PRODUCT_NAME = workbenchUpdateIdentity ? 'Workbench' : 'Orca'
+export const IS_WORKBENCH_BUILD = isWorkbenchUpdateIdentity()
+export const UPDATE_PRODUCT_NAME = IS_WORKBENCH_BUILD ? MONICA_DISPLAY_NAME : 'Orca'
 
-export const HOURLY_RELEASE_REPO = workbenchUpdateIdentity
+export const HOURLY_RELEASE_REPO = IS_WORKBENCH_BUILD
   ? WORKBENCH_RELEASE_REPO
   : 'stablyai/orca-hourly'
-export const DAILY_RELEASE_REPO = workbenchUpdateIdentity
+export const DAILY_RELEASE_REPO = IS_WORKBENCH_BUILD
   ? WORKBENCH_RELEASE_REPO
   : 'stablyai/orca-daily'
-export const ADHOC_RELEASE_REPO = workbenchUpdateIdentity
+export const ADHOC_RELEASE_REPO = IS_WORKBENCH_BUILD
   ? WORKBENCH_RELEASE_REPO
   : 'stablyai/orca-adhoc'
-export const MAIN_RELEASE_REPO = workbenchUpdateIdentity ? WORKBENCH_RELEASE_REPO : 'stablyai/orca'
+export const MAIN_RELEASE_REPO = IS_WORKBENCH_BUILD ? WORKBENCH_RELEASE_REPO : 'stablyai/orca'
 
 /** The dev channels, each published to its own repo rather than the main one. */
 const DEDICATED_REPO_CHANNELS = ['hourly', 'daily', 'adhoc'] as const

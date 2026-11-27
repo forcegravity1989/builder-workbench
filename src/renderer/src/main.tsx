@@ -22,6 +22,7 @@ import { installFocusedHostGestureWake } from './runtime/rpc/calls/focused-host-
 import { installAppKeyboardRouter } from './lib/keyboard/app-keyboard-router'
 import { shouldEnableReactGrab } from './diagnostics/react-commits/react-grab-dev-gate'
 import { isWorkbenchShell } from './workbench/is-workbench-shell'
+import { MONICA_DISPLAY_NAME } from '../../shared/i18n/monica-display-name'
 import { I18nProvider } from './i18n/I18nProvider'
 import { useTranslate } from './i18n/use-translate'
 import { getOrCreateRendererRoot } from './app-shell/startup/react-renderer-root'
@@ -68,6 +69,10 @@ if (
     void import('react-grab').then(({ init }) => init())
     void import('react-grab/styles.css')
   }
+}
+
+if (isWorkbenchShell()) {
+  document.title = MONICA_DISPLAY_NAME
 }
 
 applyWindowMaterialToDocument()

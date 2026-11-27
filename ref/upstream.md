@@ -150,6 +150,8 @@ git rev-parse 'v1.4.272^{commit}'
 
 ### 2.3 需要在同步时保留的稳定扩点
 
+- **Monica 产品显示名**。[文案键表](../src/shared/i18n/monica-product-copy.json)只登记确认用于产品自称的文案，通过 [renderer](../src/renderer/src/i18n/i18n.ts) 和[主进程](../src/main/i18n/main-i18n.ts)的产品分支加载。窗口、系统菜单、关于、更新提示从同一显示名取值。升级 Orca 时检查键是否迁移及是否出现新的品牌入口，从空配置验证欢迎和添加项目，再复验帮助、关于、更新提示及反馈目的地。CLI 与配对地址保留 orca / orca://；保留 .bw、现有 Electron 应用 ID、用户目录、安装资产和启动文件名，以及 workbench.* 宿主接口。更新仍使用现有 GitHub 发布仓库。
+
 - Windows Workbench 的首次配置在 D 盘存在时预设原生 `workspaceDir`，仅挂在 `loaded-state-parsing.ts` 的无配置、无备份分支；路径正源为 `workbench-product.ts` 的 `WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR`，原生新建项目默认解析器识别该预设并使用兄弟 `projects`，避免工作树嵌入主仓。产品行为见[项目纳入规格](../docs/05-features/project-intake/spec.md#数据归属)。上游同步保留首次加载限定，不改成启动时覆盖已有设置。
 
 每项按用户场景记录 Orca 提供的能力、BW 保留的差异、源码挂载位置和升级时的验收依据。产品规格与验证结果沿原入口查阅。
