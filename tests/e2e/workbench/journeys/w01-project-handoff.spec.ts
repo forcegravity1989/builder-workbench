@@ -1,11 +1,52 @@
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { mkdirSync, writeFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { readDirectionResult, runDirectionJourney } from '../../helpers/workbench-direction'
 import { test as baseTest, expect } from '../../helpers/workbench-app'
 import { getGoldenStubAgentLaunchEnv } from '../../helpers/golden-stub-agent'
+import { emitCodexHookStatus, readHookEndpoint } from '../../helpers/agent-hook-endpoint'
+import { ensureTerminalVisible } from '../../helpers/store'
+import { waitForActivePaneHookDescriptor } from '../../helpers/terminal'
 
-const test = baseTest.extend({ launchEnv: getGoldenStubAgentLaunchEnv() })
+const test = baseTest.extend({
+  launchEnv: async ({ launchEnv }, provide, testInfo) => {
+    const bin = testInfo.outputPath('isolated-gh')
+    mkdirSync(bin, { recursive: true })
+    const log = path.join(bin, 'calls.txt')
+    writeFileSync(log, '')
+    const stub = `#!/usr/bin/env node
+const { appendFileSync } = require('node:fs')
+const args = process.argv.slice(2)
+if (args.includes('user/starred/stablyai/orca')) {
+  appendFileSync(process.env.BW_TEST_GH_CALL_LOG, 'orca-star\\n')
+  process.exit(1)
+}
+if (args[0] === 'api' && args[1] === 'user') {
+  appendFileSync(process.env.BW_TEST_GH_CALL_LOG, 'viewer\\n')
+  console.log(JSON.stringify({ login: 'bw-e2e-viewer' }))
+  process.exit(0)
+}
+if (args[0] === '--version') {
+  console.log('gh version 2.50.0')
+  process.exit(0)
+}
+process.exit(1)
+`
+    if (process.platform === 'win32') {
+      writeFileSync(path.join(bin, 'gh.cmd'), '@echo off\r\nnode "%~dp0gh.cjs" %*\r\n')
+      writeFileSync(path.join(bin, 'gh.cjs'), stub)
+    } else {
+      writeFileSync(path.join(bin, 'gh'), stub, { mode: 0o755 })
+    }
+    const env = { ...launchEnv, ...getGoldenStubAgentLaunchEnv() }
+    const pathKey = Object.keys(env).find((key) => key.toLowerCase() === 'path') ?? 'PATH'
+    await provide({
+      ...env,
+      [pathKey]: [bin, env[pathKey] ?? ''].join(path.delimiter),
+      BW_TEST_GH_CALL_LOG: log
+    })
+  }
+})
 
 test.use({
   workbenchAppExtraEnv: {
@@ -31,6 +72,17 @@ test.describe('BW first-run project handoff', () => {
       name: /^(Add your first project|添加第一个项目)/
     })
     await expect(title).toHaveText(/How do you want to work with agents|如何.*智能体/)
+    await electronApp.evaluate(({ ipcMain }) => {
+      // Adding a second handler would throw. Check registration without invoking GitHub.
+      for (const channel of [
+        'gh:checkOrcaStarred',
+        'gh:starOrca',
+        'star-nag:onboardingCompleted'
+      ]) {
+        ipcMain.handle(channel, () => undefined)
+        ipcMain.removeHandler(channel)
+      }
+    })
     await onboarding.getByRole('radio', { name: /Terminal|终端/ }).click()
     await next.click()
     await expect(title).toHaveText(/Pick your default agent|选择默认智能体/)
@@ -67,6 +119,31 @@ test.describe('BW first-run project handoff', () => {
     await wallHelp.click()
     await expect(wallGuide.getByText('找到项目', { exact: true })).toBeVisible()
     await wallGuide.locator('[data-contextual-tour-skip]').click()
+
+    // Visit the two formerly auto-probing renderer surfaces after first-run setup.
+    const starCopy =
+      /Support Orca|Star(?: Orca)? on GitHub|支持 Orca|点击 Orca Star|在 GitHub 上 Star/i
+    await workbenchPage.evaluate(() => window.__store!.getState().setActiveView('terminal'))
+    await expect(
+      workbenchPage.getByText(/Add a project to get started|添加一个项目即可开始/i)
+    ).toBeVisible()
+    await expect(workbenchPage.getByText(starCopy)).toHaveCount(0)
+    await workbenchPage.screenshot({
+      path: testInfo.outputPath('bw-empty-workspace-without-star.png')
+    })
+    await workbenchPage.evaluate(() => {
+      const state = window.__store!.getState()
+      state.openSettingsPage()
+      state.openSettingsTarget({ pane: 'general', repoId: null })
+    })
+    const general = workbenchPage.locator('[data-settings-section="general"]')
+    await expect(general).toBeVisible()
+    await expect(general.getByText(starCopy)).toHaveCount(0)
+    await workbenchPage.screenshot({
+      path: testInfo.outputPath('bw-general-settings-without-star.png')
+    })
+    await workbenchPage.getByRole('button', { name: '项目墙', exact: true }).click()
+    await expect(wall).toBeVisible()
 
     await electronApp.evaluate(({ dialog: nativeDialog, ipcMain }, folderPath) => {
       nativeDialog.showOpenDialog = async () => ({
@@ -124,6 +201,42 @@ test.describe('BW first-run project handoff', () => {
         }, addedRepoId)
       )
       .toBe(true)
+
+    const total = await workbenchPage.evaluate(async () => {
+      const { totalAgentsSpawned } = await window.api.stats.getSummary()
+      await window.api.ui.setWithAck({
+        starNagBaselineAgents: totalAgentsSpawned,
+        starNagNextThreshold: 1,
+        starNagCompleted: false,
+        starNagDeferredUntil: null
+      })
+      return totalAgentsSpawned
+    })
+    await ensureTerminalVisible(workbenchPage)
+    const endpoint = await readHookEndpoint(electronApp)
+    const pane = await waitForActivePaneHookDescriptor(workbenchPage)
+    // Cross a saved threshold through the real stats subscription.
+    await emitCodexHookStatus(endpoint, {
+      ...pane,
+      state: 'working',
+      prompt: 'Star threshold probe'
+    })
+    await expect
+      .poll(() =>
+        workbenchPage.evaluate(async () => (await window.api.stats.getSummary()).totalAgentsSpawned)
+      )
+      .toBe(total + 1)
+
+    expect(await workbenchPage.evaluate(() => window.api.gh.viewer())).toEqual({
+      login: 'bw-e2e-viewer',
+      email: null
+    })
+    const calls = readFileSync(testInfo.outputPath('isolated-gh', 'calls.txt'), 'utf8')
+      .trim()
+      .split('\n')
+    expect(calls).toContain('viewer')
+    expect(calls).not.toContain('orca-star')
+
     mkdirSync(path.join(seededRepoPath, '.bw'), { recursive: true })
     writeFileSync(
       path.join(seededRepoPath, '.bw/project.toml'),

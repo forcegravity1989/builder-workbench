@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useOrcaProfileAuthStatusRefresh } from '@/components/orca-profiles/use-orca-profile-auth-status-refresh'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import { useIntlLocale, useTranslate, type Translate } from '@/i18n/use-translate'
@@ -38,6 +39,12 @@ export function accountStatusCopy(
     )
   }
   if (state === 'local') {
+    if (isWorkbenchShell()) {
+      return t(
+        'auto.components.settings.orcaAccount.workbenchDescription',
+        'This account is used by Orca cloud connectors on the bot host.'
+      )
+    }
     return t(
       'auto.components.settings.orcaAccount.signedOut',
       'Sign in to extend Orca with cloud features, including Artifacts and Orca Relay.'
@@ -221,43 +228,51 @@ export function OrcaAccountSettingsPane(): React.JSX.Element {
         )}
         {isOrcaCloudConsoleAvailable(authStatus) ? <OrcaConsoleRow /> : null}
 
-        <div className="space-y-4 border-t border-border/60 pt-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
-            {t('auto.components.settings.orcaAccount.benefitsTitle', 'Included with your account')}
-          </p>
-          <div className="space-y-5">
-            <div className="grid gap-5 md:grid-cols-2 md:gap-0 md:divide-x md:divide-border/60">
+        {!isWorkbenchShell() ? (
+          <div className="space-y-4 border-t border-border/60 pt-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+              {t(
+                'auto.components.settings.orcaAccount.benefitsTitle',
+                'Included with your account'
+              )}
+            </p>
+            <div className="space-y-5">
+              <div className="grid gap-5 md:grid-cols-2 md:gap-0 md:divide-x md:divide-border/60">
+                <AccountBenefit
+                  icon={Files}
+                  className="md:pr-6"
+                  title={t(
+                    'auto.components.settings.orcaAccount.artifactsTitle',
+                    'Artifact sharing'
+                  )}
+                  description={t(
+                    'auto.components.settings.orcaAccount.artifactsDescription',
+                    'Publish HTML and Markdown files, then manage every shared link from Orca.'
+                  )}
+                />
+                <AccountBenefit
+                  icon={Smartphone}
+                  className="md:pl-6"
+                  title={t('auto.components.settings.orcaAccount.relayTitle', 'Orca Relay')}
+                  description={t(
+                    'auto.components.settings.orcaAccount.relayDescription',
+                    'Connect Orca Mobile to this desktop across cellular or any Wi-Fi.'
+                  )}
+                />
+              </div>
+              {/* Put the third benefit below at full width so it cannot squeeze the existing pair. */}
               <AccountBenefit
-                icon={Files}
-                className="md:pr-6"
-                title={t('auto.components.settings.orcaAccount.artifactsTitle', 'Artifact sharing')}
+                icon={BookOpen}
+                className="border-t border-border/60 pt-5"
+                title={t('auto.components.settings.orcaAccount.skillsTitle', 'Skill sharing')}
                 description={t(
-                  'auto.components.settings.orcaAccount.artifactsDescription',
-                  'Publish HTML and Markdown files, then manage every shared link from Orca.'
-                )}
-              />
-              <AccountBenefit
-                icon={Smartphone}
-                className="md:pl-6"
-                title={t('auto.components.settings.orcaAccount.relayTitle', 'Orca Relay')}
-                description={t(
-                  'auto.components.settings.orcaAccount.relayDescription',
-                  'Connect Orca Mobile to this desktop across cellular or any Wi-Fi.'
+                  'auto.components.settings.orcaAccount.skillsDescription',
+                  'Share one skill or a whole set behind an unlisted link, and install them on any machine you use.'
                 )}
               />
             </div>
-            {/* Put the third benefit below at full width so it cannot squeeze the existing pair. */}
-            <AccountBenefit
-              icon={BookOpen}
-              className="border-t border-border/60 pt-5"
-              title={t('auto.components.settings.orcaAccount.skillsTitle', 'Skill sharing')}
-              description={t(
-                'auto.components.settings.orcaAccount.skillsDescription',
-                'Share one skill or a whole set behind an unlisted link, and install them on any machine you use.'
-              )}
-            />
           </div>
-        </div>
+        ) : null}
       </div>
 
       <OrcaProfileSignOutConfirmDialog

@@ -1,4 +1,3 @@
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useAppStore } from '@/store'
 import { SharedLinksSettingsPane } from '../bots/SharedLinksSettingsPane'
 import { SessionHistorySettingsPane } from '../session-history/SessionHistorySettingsPane'
@@ -12,7 +11,11 @@ import { OrcaAccountSettingsPane } from '../accounts/orca/OrcaAccountSettingsPan
 import { ServerOrcaAccountPane } from '../accounts/orca/ServerOrcaAccountPane'
 import { SettingsHostScopeUnavailableNotice } from '../host-scope/SettingsHostScopePicker'
 import { SettingsSetupGuidePane } from '../setup-guide/SettingsSetupGuidePane'
-import { ShareSkillsSettingsPane } from '../skills/sharing/ShareSkillsSettingsPane'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import {
+  ShareSkillsSettingsPane,
+  WorkbenchSkillsSettingsPane
+} from '../skills/sharing/ShareSkillsSettingsPane'
 import { SettingsSection } from '../section-layout/SettingsSection'
 import { translate } from '@/i18n/i18n'
 import type { Translate } from '@/i18n/use-translate'
@@ -38,10 +41,15 @@ export function renderOrcaAccountSettingsSection(
       title={t('auto.components.settings.orcaAccount.title', 'Orca Account')}
       description={
         serverName === null
-          ? t(
-              'auto.components.settings.orcaAccount.description',
-              'Share work instantly and reach your desktop from Orca Mobile wherever you are.'
-            )
+          ? isWorkbenchShell()
+            ? t(
+                'auto.components.settings.orcaAccount.workbenchDescription',
+                'This account is used by Orca cloud connectors on the bot host.'
+              )
+            : t(
+                'auto.components.settings.orcaAccount.description',
+                'Share work instantly and reach your desktop from Orca Mobile wherever you are.'
+              )
           : t(
               'components.settings.orcaAccount.server.sectionDescription',
               'The Orca account {{host}} runs as, for its bots’ Slack, GitHub, Linear and webhooks.',
@@ -254,18 +262,33 @@ export function renderShareSkillsSettingsSection(
   t: Translate = translate
 ): React.JSX.Element {
   const { navigation, view } = context
+  const workbenchShell = isWorkbenchShell()
   return (
     <SettingsSection
       id="share-skills"
-      title={t('auto.components.settings.shareSkills.ca754fefa1', 'Share skills')}
-      badge="Beta"
-      description={t(
-        'auto.components.settings.shareSkills.description',
-        'Share your skills with an unlisted link. Anyone who has it can install them.'
-      )}
+      title={
+        workbenchShell
+          ? t('auto.components.skills.SkillsPage.f43ad6edf3', 'Skills')
+          : t('auto.components.settings.shareSkills.ca754fefa1', 'Share skills')
+      }
+      badge={workbenchShell ? undefined : 'Beta'}
+      description={
+        workbenchShell
+          ? undefined
+          : t(
+              'auto.components.settings.shareSkills.description',
+              'Share your skills with an unlisted link. Anyone who has it can install them.'
+            )
+      }
       searchEntries={navigation.getSectionSearchEntries('share-skills')}
     >
-      {view.isSectionMounted('share-skills') ? <ShareSkillsSettingsPane /> : null}
+      {view.isSectionMounted('share-skills') ? (
+        workbenchShell ? (
+          <WorkbenchSkillsSettingsPane />
+        ) : (
+          <ShareSkillsSettingsPane />
+        )
+      ) : null}
     </SettingsSection>
   )
 }
@@ -274,10 +297,13 @@ export function renderSharedLinksSettingsSection(
   context: SettingsRenderContext,
   t: Translate = translate
 ): React.JSX.Element | null {
-  const { navigation, view } = context
+  const { model, navigation, view } = context
   if (!navigation.navSections.some((section) => section.id === 'shared-links')) {
     return null
   }
+  const showSharedLinks =
+    view.isSectionMounted('shared-links') &&
+    (!isWorkbenchShell() || model.activeSectionId === 'shared-links')
   return (
     <SettingsSection
       id="shared-links"
@@ -285,7 +311,7 @@ export function renderSharedLinksSettingsSection(
       description={t('settings.sharedLinks.description', "Links you've published.")}
       searchEntries={navigation.getSectionSearchEntries('shared-links')}
     >
-      {view.isSectionMounted('shared-links') ? <SharedLinksSettingsPane /> : null}
+      {showSharedLinks ? <SharedLinksSettingsPane /> : null}
     </SettingsSection>
   )
 }
