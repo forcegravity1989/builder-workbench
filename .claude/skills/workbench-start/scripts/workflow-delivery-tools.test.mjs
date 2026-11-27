@@ -78,7 +78,7 @@ test('preparation locates the common repository, checks existing registration an
   })
   assert.equal(foreign.network, 'unknown')
   assert.equal(foreign.projectRegistration, 'profile-missing')
-  assert.equal(foreign.maxConcurrentHeavyJobs, 1)
+  assert.equal(foreign.maxConcurrentHeavyJobs, null)
   const saved = readFileSync(recordPath)
   writeFileSync(
     path.join(root, '.gitignore'),
