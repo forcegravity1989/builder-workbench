@@ -1,3 +1,4 @@
+import { isWorkbenchProduct } from '../startup/workbench-product'
 import { getAppEnvironment } from '../../shared/app-lifecycle/app-environment'
 import type { MobileRelayStatus } from '../../shared/remote-runtime/relay/mobile-relay-status'
 import { installRelayHost, type RelayHost } from '../runtime/mobile-cloud-relay/relay-host-install'
@@ -25,6 +26,9 @@ export function createOrcadRelay(
     // Call after RPC starts and automations register their cleanups: cleanups run newest first, so
     // the fence comes before both.
     start: (rpc) => {
+      if (isWorkbenchProduct()) {
+        return
+      }
       const app = getAppEnvironment()
       const started = install({
         runtimeRpc: rpc,

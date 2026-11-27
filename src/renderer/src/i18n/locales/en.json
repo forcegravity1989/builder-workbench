@@ -736,6 +736,7 @@
         "launchAdministrator": "In the Windows Start menu, right-click Orca and choose Run as administrator. Approve the Windows prompt using your usual account.",
         "retainedTerminalPermissions": "If new terminals still use the previous permissions, open Manage Sessions and choose Restart daemon. This closes local terminals and their running commands.",
         "administratorDocumentation": "Read the guide",
+        "orcaAdministratorDocumentation": "Read the Orca terminal guide",
         "cancelAdministratorRestart": "Cancel",
         "closeAdministratorHelp": "Close",
         "restartingAdministrator": "Restarting…",
@@ -13897,6 +13898,7 @@
           "signIn": "Sign in to Orca",
           "title": "Orca Account",
           "description": "Share work instantly and reach your desktop from Orca Mobile wherever you are.",
+          "workbenchDescription": "This account is used by Orca cloud connectors on the bot host.",
           "searchDescription": "Sign in or out of the account used by Artifacts and Orca Relay.",
           "managed": "Your team manages some Orca settings.",
           "deviceReportNamedViewers": "Owners and admins at {{teams}} can view reports from this device.",
@@ -20331,6 +20333,7 @@
         "profiles": {
           "signout": {
             "confirm": {
+              "workbenchDescription": "Existing Orca cloud connectors on this host will stop, and their pending replies will be cleared. You can still use local projects and worktrees.",
               "title": "Sign out of Orca?",
               "description": "Artifacts and Orca Relay will be unavailable until you sign in again. Your local projects and worktrees won't be affected.",
               "cancel": "Cancel",
@@ -25803,6 +25806,8 @@
       "table": "Table"
     },
     "unsupported": {
+      "workbenchLayoutNotSupported": "BW does not support {{layout}} project views yet.",
+      "workbenchSwitchLayout": "Switch to a Table, Board, or Roadmap view to work with this project in BW.",
       "switchLayout": "Switch to a Table, Board, or Roadmap view to work with this project in Orca.",
       "description": "Orca renders table, board, and roadmap project views. This view uses a layout it cannot render yet.",
       "layoutNotSupported": "Orca doesn't support {{layout}} project views yet."
@@ -30914,6 +30919,11 @@
     "createBranchFailed": "Orca couldn't create the branch. Check this repository in a terminal, then try again."
   },
   "macosUpdateRequirement": {
+    "workbenchTitle": "BW updates now need macOS {{macos}}",
+    "workbenchDescription": "BW {{version}} requires macOS {{macos}} or later. This version keeps working, but it won’t get new updates on this Mac.",
+    "workbenchUpgradeDescription": "Your Mac can upgrade. Update macOS to get the latest BW.",
+    "workbenchWhyIntro": "BW updated its desktop runtime, including Electron, to support:",
+    "workbenchHelpAction": "Open BW documentation",
     "title": "Orca updates now need macOS {{macos}}",
     "description": "Orca {{version}} requires macOS {{macos}} or later. This version keeps working, but it won’t get new updates on this Mac.",
     "checking": "Checking whether this Mac can upgrade…",
@@ -31199,6 +31209,8 @@
     "reset": "Reset tab order"
   },
   "guidance": {
+    "feedbackOnDesktop": "To send feedback, open Help in the BW desktop app.",
+    "skillsOnDesktop": "Open Settings → Skills in the BW desktop app.",
     "about": "About BW",
     "reportCrash": "Report Crash",
     "experiences": "Try the capabilities",

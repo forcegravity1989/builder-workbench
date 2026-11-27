@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { lazyWithRetry as lazy } from '@/app-shell/startup/lazy-with-retry'
 import { AgentHibernationGate } from '../lib/agent-session/hibernation/AgentHibernationGate'
 import { AiVaultTabTitleSyncGate } from '../lib/agent-session/history/title-sync/AiVaultTabTitleSyncGate'
@@ -27,7 +28,8 @@ export function AppBackgroundServices(): React.JSX.Element {
   const dashboardPopoutEnabled = useAppStore(
     (s) => s.settings?.experimentalAgentDashboardPopout === true
   )
-  const canPublishAgentList = Boolean(window.api.agentStatus?.publishListVerdicts)
+  const canPublishAgentList =
+    !isWorkbenchShell() && Boolean(window.api.agentStatus?.publishListVerdicts)
   // The list builds on every agent update, so only a desktop with a paired phone pays for it.
   const { hasPairedDevice } = usePairedMobileDevices({ enabled: canPublishAgentList })
 
