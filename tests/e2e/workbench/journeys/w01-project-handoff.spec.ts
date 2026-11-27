@@ -125,6 +125,9 @@ test.describe('BW first-run project handoff', () => {
       workbenchPage.getByText(/Add a project to get started|添加一个项目即可开始/i)
     ).toBeVisible()
     await expect(workbenchPage.getByText(starCopy)).toHaveCount(0)
+    await workbenchPage.screenshot({
+      path: testInfo.outputPath('bw-empty-workspace-without-star.png')
+    })
     await workbenchPage.evaluate(() => {
       const state = window.__store!.getState()
       state.openSettingsPage()
@@ -133,6 +136,9 @@ test.describe('BW first-run project handoff', () => {
     const general = workbenchPage.locator('[data-settings-section="general"]')
     await expect(general).toBeVisible()
     await expect(general.getByText(starCopy)).toHaveCount(0)
+    await workbenchPage.screenshot({
+      path: testInfo.outputPath('bw-general-settings-without-star.png')
+    })
     await workbenchPage.getByRole('button', { name: '项目墙', exact: true }).click()
     await expect(wall).toBeVisible()
 
