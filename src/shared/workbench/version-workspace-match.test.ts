@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import type { Worktree } from '../worktree/types'
-import type { TaskSourceContext } from '../task-source-context'
+import type { TaskSourceContext } from '../work-items/task-source-context'
 import {
   findGoalParentSuggestion,
   findVersionFlowWorktrees,

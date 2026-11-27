@@ -1,17 +1,17 @@
+import { useCodeHubProviderSelection } from './codehub-provider-selection'
 import type { ComposerTargetState } from './composer-target-state-contract'
 import type { ComposerExternalSyncState } from './composer-external-sync-contract'
 import type { ComposerSourceState } from './composer-source-state-contract'
-import { useSourceIdentityActions } from './source-identity-actions'
-import { useAttachmentDropState } from './attachment-drop-state'
-import { useTargetChangeActions } from './target-change-actions'
-import { useProjectTargetActions } from './project-target-actions'
-import { useBranchStartPointActions } from './branch-start-point-actions'
-import { useGitHubProviderSelection } from './github-provider-selection'
-import { useCodeHubProviderSelection } from './codehub-provider-selection'
-import { useGitLabProviderSelection } from './gitlab-provider-selection'
-import { useWorkItemSourceActions } from './work-item-source-actions'
-import { useIssueSourceActions } from './issue-source-actions'
-import { useComposerNavigationActions } from './composer-navigation-actions'
+import { useSourceIdentityActions } from './linked-work-items/source-identity-actions'
+import { useComposerAttachmentDropState } from './attachments/composer-attachment-drop-state'
+import { useTargetChangeActions } from './workspace-target/target-change-actions'
+import { useProjectTargetActions } from './workspace-target/project-target-actions'
+import { useBranchStartPointActions } from './workspace-start-point/branch-start-point-actions'
+import { useGitHubProviderSelection } from './linked-work-items/github-provider-selection'
+import { useGitLabProviderSelection } from './linked-work-items/gitlab-provider-selection'
+import { useWorkItemSourceActions } from './workspace-start-point/work-item-source-actions'
+import { useIssueSourceActions } from './linked-work-items/issue-source-actions'
+import { useComposerNavigationActions } from './card-projection/composer-navigation-actions'
 
 export function useComposerSourceState(
   target: ComposerTargetState,
@@ -20,6 +20,7 @@ export function useComposerSourceState(
   const sourceIdentityActions = useSourceIdentityActions({
     applyLinkedWorkItem: external.githubSourceApplication.applyLinkedWorkItem,
     branchAutoNameRef: target.asyncComposerState.branchAutoNameRef,
+    branchIntent: target.workspaceIdentityState.branchIntent,
     branchNameOverride: target.workspaceIdentityState.branchNameOverride,
     branchNameOverridePreservesNameEdits:
       target.workspaceIdentityState.branchNameOverridePreservesNameEdits,
@@ -29,6 +30,7 @@ export function useComposerSourceState(
     name: target.sourceContextState.name,
     pushTarget: target.workspaceIdentityState.pushTarget,
     setBranchNameOverride: target.workspaceIdentityState.setBranchNameOverride,
+    setBranchIntent: target.workspaceIdentityState.setBranchIntent,
     setBranchNameOverridePreservesNameEdits:
       target.workspaceIdentityState.setBranchNameOverridePreservesNameEdits,
     setCreateError: target.asyncComposerState.setCreateError,
@@ -45,22 +47,10 @@ export function useComposerSourceState(
     setLinkedWorkItem: target.sourceContextState.setLinkedWorkItem,
     setName: target.sourceContextState.setName,
     setPushTarget: target.workspaceIdentityState.setPushTarget,
-    setReuseEligibleBranch: target.workspaceIdentityState.setReuseEligibleBranch,
     setReuseSelectedBranch: target.workspaceIdentityState.setReuseSelectedBranch,
-    smartGitHubPrStartPointSelectionRef:
-      target.asyncComposerState.smartGitHubPrStartPointSelectionRef
+    smartSourceSelectionRef: target.asyncComposerState.smartSourceSelectionRef
   })
-  const attachmentDropState = useAttachmentDropState({
-    agentPromptRef: target.asyncComposerState.agentPromptRef,
-    cancelPromptCaretFrame: target.providerRuntimeSync.cancelPromptCaretFrame,
-    connectionId: target.workspaceIdentityState.connectionId,
-    promptCaretFrameRef: target.asyncComposerState.promptCaretFrameRef,
-    promptTextareaRef: target.asyncComposerState.promptTextareaRef,
-    selectedRepoPath: target.asyncComposerState.selectedRepoPath,
-    selectedRepoSettings: target.runtimeTargetSelection.selectedRepoSettings,
-    setAgentPrompt: target.sourceContextState.setAgentPrompt,
-    setAttachmentPaths: target.sourceContextState.setAttachmentPaths
-  })
+  const attachmentDropState = useComposerAttachmentDropState(target)
   const targetChangeActions = useTargetChangeActions({
     baseBranch: target.workspaceIdentityState.baseBranch,
     branchAutoNameRef: target.asyncComposerState.branchAutoNameRef,
@@ -83,7 +73,6 @@ export function useComposerSourceState(
     setLinkedPR: target.workspaceIdentityState.setLinkedPR,
     setLinkedTaskSourceContext: target.sourceContextState.setLinkedTaskSourceContext,
     setLinkedWorkItem: target.sourceContextState.setLinkedWorkItem,
-    setParentWorktreeId: target.workspaceIdentityState.setParentWorktreeId,
     setProjectError: target.initialTargetState.setProjectError,
     setPushTarget: target.workspaceIdentityState.setPushTarget,
     setRepoId: target.sourceContextState.setRepoId,
@@ -91,12 +80,13 @@ export function useComposerSourceState(
     setReuseSelectedBranch: target.workspaceIdentityState.setReuseSelectedBranch,
     setSelectedProjectHostSetupOverrideId:
       target.initialTargetState.setSelectedProjectHostSetupOverrideId,
+    setSelectedProjectHostSetupOverrideHostId:
+      target.initialTargetState.setSelectedProjectHostSetupOverrideHostId,
     setSparseDirectories: target.asyncComposerState.setSparseDirectories,
     setSparseEnabled: target.asyncComposerState.setSparseEnabled,
     setSparseSelectedPresetId: target.asyncComposerState.setSparseSelectedPresetId,
     setStartFromResetHint: target.workspaceIdentityState.setStartFromResetHint,
-    smartGitHubPrStartPointSelectionRef:
-      target.asyncComposerState.smartGitHubPrStartPointSelectionRef
+    smartSourceSelectionRef: target.asyncComposerState.smartSourceSelectionRef
   })
   const projectTargetActions = useProjectTargetActions({
     actionableHostIds: target.composerTargetStore.actionableHostIds,
@@ -107,6 +97,7 @@ export function useComposerSourceState(
     linkedWorkItem: target.sourceContextState.linkedWorkItem,
     projectGroups: target.composerTargetStore.projectGroups,
     projectHostSetups: target.composerTargetStore.projectHostSetups,
+    projectOptions: target.runtimeTargetSelection.projectOptions,
     projects: target.composerTargetStore.projects,
     repos: target.composerTargetStore.repos,
     setBaseBranch: target.workspaceIdentityState.setBaseBranch,
@@ -126,14 +117,21 @@ export function useComposerSourceState(
     setReuseEligibleBranch: target.workspaceIdentityState.setReuseEligibleBranch,
     setReuseSelectedBranch: target.workspaceIdentityState.setReuseSelectedBranch,
     setSelectedProjectGroupId: target.initialTargetState.setSelectedProjectGroupId,
+    setSelectedProjectHostSetupOverrideHostId:
+      target.initialTargetState.setSelectedProjectHostSetupOverrideHostId,
+    setSelectedProjectHostSetupOverrideId:
+      target.initialTargetState.setSelectedProjectHostSetupOverrideId,
     setSparseDirectories: target.asyncComposerState.setSparseDirectories,
     setSparseEnabled: target.asyncComposerState.setSparseEnabled,
     setSparseSelectedPresetId: target.asyncComposerState.setSparseSelectedPresetId,
     setStartFromResetHint: target.workspaceIdentityState.setStartFromResetHint,
+    smartSourceSelectionRef: target.asyncComposerState.smartSourceSelectionRef,
     selectedWorkspaceTarget: target.runtimeTargetSelection.selectedWorkspaceTarget,
     workspaceHostScope: target.composerTargetStore.workspaceHostScope
   })
   const branchStartPointActions = useBranchStartPointActions({
+    baseBranch: target.workspaceIdentityState.baseBranch,
+    baseBranchNamesWorkspace: target.workspaceIdentityState.baseBranchNamesWorkspace,
     applyLinkedGitLabWorkItem: sourceIdentityActions.applyLinkedGitLabWorkItem,
     applyLinkedWorkItem: external.githubSourceApplication.applyLinkedWorkItem,
     branchAutoNameRef: target.asyncComposerState.branchAutoNameRef,
@@ -142,6 +140,7 @@ export function useComposerSourceState(
     lastAutoNoteRef: target.asyncComposerState.lastAutoNoteRef,
     noteRef: target.asyncComposerState.noteRef,
     setBaseBranch: target.workspaceIdentityState.setBaseBranch,
+    setBaseBranchNamesWorkspace: target.workspaceIdentityState.setBaseBranchNamesWorkspace,
     setBranchNameOverride: target.workspaceIdentityState.setBranchNameOverride,
     setBranchNameOverridePreservesNameEdits:
       target.workspaceIdentityState.setBranchNameOverridePreservesNameEdits,
@@ -157,16 +156,17 @@ export function useComposerSourceState(
     setSparseEnabled: target.asyncComposerState.setSparseEnabled,
     setSparseSelectedPresetId: target.asyncComposerState.setSparseSelectedPresetId,
     setStartFromResetHint: target.workspaceIdentityState.setStartFromResetHint,
-    smartGitHubPrStartPointSelectionRef:
-      target.asyncComposerState.smartGitHubPrStartPointSelectionRef
+    smartSourceSelectionRef: target.asyncComposerState.smartSourceSelectionRef
   })
   const githubProviderSelection = useGitHubProviderSelection({
+    baseBranchNamesWorkspace: target.workspaceIdentityState.baseBranchNamesWorkspace,
     applyLinkedWorkItem: external.githubSourceApplication.applyLinkedWorkItem,
     branchAutoNameRef: target.asyncComposerState.branchAutoNameRef,
     eligibleRepos: target.composerTargetStore.eligibleRepos,
     handleBaseBranchPrSelect: branchStartPointActions.handleBaseBranchPrSelect,
     isProjectGroupTarget: target.runtimeTargetSelection.isProjectGroupTarget,
     lastAutoNameRef: target.asyncComposerState.lastAutoNameRef,
+    linkedWorkItem: target.sourceContextState.linkedWorkItem,
     name: target.sourceContextState.name,
     selectedRepo: target.runtimeTargetSelection.selectedRepo,
     selectedRepoGitHubSourceContext: target.sourceContextState.selectedRepoGitHubSourceContext,
@@ -186,16 +186,14 @@ export function useComposerSourceState(
     setPushTarget: target.workspaceIdentityState.setPushTarget,
     setStartFromResetHint: target.workspaceIdentityState.setStartFromResetHint,
     settings: target.composerTargetStore.settings,
-    smartGitHubPrStartPointSelectionRef:
-      target.asyncComposerState.smartGitHubPrStartPointSelectionRef
+    smartSourceSelectionRef: target.asyncComposerState.smartSourceSelectionRef
   })
   const codehubProviderSelection = useCodeHubProviderSelection({
     branchAutoNameRef: target.asyncComposerState.branchAutoNameRef,
     lastAutoNameRef: target.asyncComposerState.lastAutoNameRef,
     name: target.sourceContextState.name,
     selectedRepoCodeHubSourceContext: target.sourceContextState.selectedRepoCodeHubSourceContext,
-    smartGitHubPrStartPointSelectionRef:
-      target.asyncComposerState.smartGitHubPrStartPointSelectionRef,
+    smartSourceSelectionRef: target.asyncComposerState.smartSourceSelectionRef,
     setBaseBranch: target.workspaceIdentityState.setBaseBranch,
     setBranchNameOverride: target.workspaceIdentityState.setBranchNameOverride,
     setBranchNameOverridePreservesNameEdits:
@@ -212,12 +210,14 @@ export function useComposerSourceState(
     setPushTarget: target.workspaceIdentityState.setPushTarget
   })
   const gitlabProviderSelection = useGitLabProviderSelection({
+    smartSourceSelectionRef: target.asyncComposerState.smartSourceSelectionRef,
     applyLinkedGitLabWorkItem: sourceIdentityActions.applyLinkedGitLabWorkItem,
     branchAutoNameRef: target.asyncComposerState.branchAutoNameRef,
     eligibleRepos: target.composerTargetStore.eligibleRepos,
     handleBaseBranchMrSelect: branchStartPointActions.handleBaseBranchMrSelect,
     isProjectGroupTarget: target.runtimeTargetSelection.isProjectGroupTarget,
     lastAutoNameRef: target.asyncComposerState.lastAutoNameRef,
+    linkedWorkItem: target.sourceContextState.linkedWorkItem,
     name: target.sourceContextState.name,
     selectedRepo: target.runtimeTargetSelection.selectedRepo,
     setBaseBranch: target.workspaceIdentityState.setBaseBranch,
@@ -234,16 +234,17 @@ export function useComposerSourceState(
     setLinkedWorkItem: target.sourceContextState.setLinkedWorkItem,
     setName: target.sourceContextState.setName,
     setPushTarget: target.workspaceIdentityState.setPushTarget,
-    setStartFromResetHint: target.workspaceIdentityState.setStartFromResetHint,
-    settings: target.composerTargetStore.settings
+    setStartFromResetHint: target.workspaceIdentityState.setStartFromResetHint
   })
   const workItemSourceActions = useWorkItemSourceActions({
+    setBranchIntent: target.workspaceIdentityState.setBranchIntent,
     branchAutoNameRef: target.asyncComposerState.branchAutoNameRef,
     lastAutoNameRef: target.asyncComposerState.lastAutoNameRef,
     name: target.sourceContextState.name,
     repoId: target.initialTargetState.repoId,
     reuseEligibleBranch: target.workspaceIdentityState.reuseEligibleBranch,
     setBaseBranch: target.workspaceIdentityState.setBaseBranch,
+    setBaseBranchNamesWorkspace: target.workspaceIdentityState.setBaseBranchNamesWorkspace,
     setBranchNameOverride: target.workspaceIdentityState.setBranchNameOverride,
     setBranchNameOverridePreservesNameEdits:
       target.workspaceIdentityState.setBranchNameOverridePreservesNameEdits,
@@ -254,12 +255,12 @@ export function useComposerSourceState(
     setReuseEligibleBranch: target.workspaceIdentityState.setReuseEligibleBranch,
     setReuseSelectedBranch: target.workspaceIdentityState.setReuseSelectedBranch,
     setStartFromResetHint: target.workspaceIdentityState.setStartFromResetHint,
-    smartGitHubPrStartPointSelectionRef:
-      target.asyncComposerState.smartGitHubPrStartPointSelectionRef,
+    smartSourceSelectionRef: target.asyncComposerState.smartSourceSelectionRef,
     worktreesByRepo: target.composerTargetStore.worktreesByRepo
   })
   const issueSourceActions = useIssueSourceActions({
     baseBranch: target.workspaceIdentityState.baseBranch,
+    baseBranchNamesWorkspace: target.workspaceIdentityState.baseBranchNamesWorkspace,
     branchAutoNameRef: target.asyncComposerState.branchAutoNameRef,
     isProjectGroupTarget: target.runtimeTargetSelection.isProjectGroupTarget,
     lastAutoNameRef: target.asyncComposerState.lastAutoNameRef,
@@ -285,8 +286,7 @@ export function useComposerSourceState(
     setReuseEligibleBranch: target.workspaceIdentityState.setReuseEligibleBranch,
     setReuseSelectedBranch: target.workspaceIdentityState.setReuseSelectedBranch,
     setStartFromResetHint: target.workspaceIdentityState.setStartFromResetHint,
-    smartGitHubPrStartPointSelectionRef:
-      target.asyncComposerState.smartGitHubPrStartPointSelectionRef
+    smartSourceSelectionRef: target.asyncComposerState.smartSourceSelectionRef
   })
   const composerNavigationActions = useComposerNavigationActions({
     closeModal: target.composerTargetStore.closeModal,
@@ -299,8 +299,7 @@ export function useComposerSourceState(
     setActiveRuntimeEnvironmentPreference:
       target.composerTargetStore.setActiveRuntimeEnvironmentPreference,
     smartNameJiraSourceContext: target.sourceContextState.smartNameJiraSourceContext,
-    sourceIntentBlocksCreate: target.workspaceIdentityState.sourceIntentBlocksCreate,
-    updateWorktreeMeta: target.composerTargetStore.updateWorktreeMeta
+    sourceIntentBlocksCreate: target.workspaceIdentityState.sourceIntentBlocksCreate
   })
   return {
     sourceIdentityActions,
@@ -309,8 +308,8 @@ export function useComposerSourceState(
     projectTargetActions,
     branchStartPointActions,
     githubProviderSelection,
-    codehubProviderSelection,
     gitlabProviderSelection,
+    codehubProviderSelection,
     workItemSourceActions,
     issueSourceActions,
     composerNavigationActions

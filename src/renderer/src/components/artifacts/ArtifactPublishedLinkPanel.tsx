@@ -1,37 +1,26 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, Copy, ExternalLink, Loader2, RefreshCw, Trash2 } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
+import { Check, Copy, ExternalLink, Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
+import { cn } from '@/lib/class-names'
 import { copyArtifactLink, openArtifactInBrowser } from './artifact-link-actions'
 
 export function ArtifactPublishedLinkPanel({
   shareUrl,
   publishing,
-  removing,
-  onUpdate,
-  onRemove
+  sharingEnabled,
+  onUpdate
 }: {
   shareUrl: string
   publishing: boolean
-  removing: boolean
+  sharingEnabled: boolean
   onUpdate: () => void
-  onRemove: () => void
 }): React.JSX.Element {
-  const [confirmingRemove, setConfirmingRemove] = useState(false)
+  const t = useTranslate()
   const [copied, setCopied] = useState(false)
   const copiedResetTimerRef = useRef<number | null>(null)
   const mountedRef = useRef(false)
-  const wasRemovingRef = useRef(false)
-
-  // The confirmation stays open while the removal runs so its spinner is the progress indicator.
-  // A success replaces this panel with the share button; a failure keeps it and shows a toast.
-  useEffect(() => {
-    if (wasRemovingRef.current && !removing) {
-      setConfirmingRemove(false)
-    }
-    wasRemovingRef.current = removing
-  }, [removing])
 
   const clearCopiedResetTimer = useCallback((): void => {
     if (copiedResetTimerRef.current !== null) {
@@ -65,8 +54,8 @@ export function ArtifactPublishedLinkPanel({
   }
 
   const copyLabel = copied
-    ? translate('auto.components.artifacts.copySuccess', 'Artifact link copied')
-    : translate('auto.components.artifacts.ArtifactPublishedLinkPanel.copyLink', 'Copy link')
+    ? t('auto.components.artifacts.copySuccess', 'Artifact link copied')
+    : t('auto.components.artifacts.ArtifactPublishedLinkPanel.copyLink', 'Copy link')
 
   return (
     <div ref={setPanelRef} className="space-y-3">
@@ -102,7 +91,7 @@ export function ArtifactPublishedLinkPanel({
               size="icon-xs"
               className="text-muted-foreground hover:text-foreground"
               onClick={() => openArtifactInBrowser(shareUrl)}
-              aria-label={translate(
+              aria-label={t(
                 'auto.components.artifacts.ArtifactPublishedLinkPanel.openLink',
                 'Open link'
               )}
@@ -111,80 +100,48 @@ export function ArtifactPublishedLinkPanel({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" sideOffset={4}>
-            {translate(
-              'auto.components.artifacts.ArtifactPublishedLinkPanel.openLink',
-              'Open link'
-            )}
+            {t('auto.components.artifacts.ArtifactPublishedLinkPanel.openLink', 'Open link')}
           </TooltipContent>
         </Tooltip>
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="w-full"
-        disabled={publishing || removing}
-        onClick={onUpdate}
-      >
-        {publishing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-        {publishing
-          ? translate('auto.components.artifacts.ArtifactPublishedLinkPanel.updating', 'Updating…')
-          : translate(
-              'auto.components.artifacts.ArtifactPublishedLinkPanel.update',
-              'Update shared content'
-            )}
-      </Button>
-
-      {confirmingRemove ? (
-        <div className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-2.5">
-          <p className="text-xs leading-5">
-            {translate(
-              'auto.components.artifacts.ArtifactPublishedLinkPanel.removeConfirm',
-              'Remove this link? Anyone holding it will lose access.'
-            )}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={removing}
-              onClick={onRemove}
-            >
-              {removing ? <Loader2 className="animate-spin" /> : <Trash2 />}
-              {translate(
-                'auto.components.artifacts.ArtifactPublishedLinkPanel.remove',
-                'Remove link'
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={removing}
-              onClick={() => setConfirmingRemove(false)}
-            >
-              {translate(
-                'auto.components.artifacts.ArtifactPublishedLinkPanel.cancelRemove',
-                'Cancel'
-              )}
-            </Button>
-          </div>
-        </div>
-      ) : (
+      {sharingEnabled ? (
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className="w-full text-muted-foreground hover:text-destructive"
-          disabled={publishing || removing}
-          onClick={() => setConfirmingRemove(true)}
+          className="h-auto min-h-8 w-full whitespace-normal"
+          disabled={publishing}
+          onClick={onUpdate}
         >
-          <Trash2 />
-          {translate('auto.components.artifacts.ArtifactPublishedLinkPanel.remove', 'Remove link')}
+          {/* Both labels share one grid cell, so a wrapped label cannot resize the popover mid-update. */}
+          <span className="grid justify-items-center py-1">
+            <span
+              className={cn(
+                'col-start-1 row-start-1 inline-flex items-center gap-1.5 text-left',
+                publishing && 'invisible'
+              )}
+              aria-hidden={publishing}
+            >
+              <RefreshCw />
+              {t(
+                'auto.components.artifacts.ArtifactPublishedLinkPanel.update',
+                'Update shared content'
+              )}
+            </span>
+            <span
+              className={cn(
+                'col-start-1 row-start-1 inline-flex items-center gap-1.5 text-left',
+                !publishing && 'invisible'
+              )}
+              aria-hidden={!publishing}
+            >
+              <Loader2 className={cn(publishing && 'animate-spin')} />
+              {t('auto.components.artifacts.ArtifactPublishedLinkPanel.updating', 'Updating…')}
+            </span>
+          </span>
         </Button>
-      )}
+      ) : null}
     </div>
   )
 }

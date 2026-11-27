@@ -1,9 +1,5 @@
-import {
-  isWslHookRelayConnectionId,
-  wslHookRelayConnectionId
-} from '../../../shared/wsl-hook-relay-contract'
-import { splitWorktreeIdForFilesystem, worktreeIdsEqual } from '../../../shared/worktree/id'
-import { parseWslUncPath } from '../../../shared/wsl-paths'
+import { sameAgentStatusTerminalOwner } from '../../../shared/agent-status/identity/agent-status-terminal-owner'
+import { structuralValuesEqualIgnoringUndefined } from '../../../shared/collections/structural-value-equality'
 import type { AgentHookEventPayload } from '../../../shared/agent-hook-listener/listener-event'
 import type {
   AgentHookStatusRowIdentity,
@@ -22,15 +18,14 @@ function toMutationIdentity(
   }
   return {
     paneKey: row.paneKey,
+    ...(row.providerSession ? { providerSession: row.providerSession } : {}),
+    ...(row.payload.agentType ? { agentType: row.payload.agentType } : {}),
     ...(row.worktreeId ? { worktreeId: row.worktreeId } : {}),
     ...(row.terminalHandle ? { terminalHandle: row.terminalHandle } : {})
   }
 }
 
-function semanticRowJson(row: EnrichedAgentHookEventPayload | null | undefined): string | null {
-  if (!row) {
-    return null
-  }
+function semanticRow(row: EnrichedAgentHookEventPayload): Record<string, unknown> {
   const {
     receivedAt: _receivedAt,
     evidenceObservedAt: _evidenceObservedAt,
@@ -39,19 +34,50 @@ function semanticRowJson(row: EnrichedAgentHookEventPayload | null | undefined):
     promptInteractionKey: _promptInteractionKey,
     ...semantic
   } = toAgentStatusIpcPayload(row)
-  return JSON.stringify(semantic)
+  return semantic
 }
 
-function wslDistroForWorktree(worktreeId: string | undefined): string | null {
-  const worktreePath = worktreeId
-    ? splitWorktreeIdForFilesystem(worktreeId)?.worktreePath
-    : undefined
-  return worktreePath ? (parseWslUncPath(worktreePath)?.distro ?? null) : null
+// Per-write comparison skips shared leaves and exits early without serializing large messages.
+function semanticRowsEqual(
+  before: EnrichedAgentHookEventPayload | null | undefined,
+  after: EnrichedAgentHookEventPayload | null | undefined
+): boolean {
+  if (before === after || (!before && !after)) {
+    return true
+  }
+  if (!before || !after) {
+    return false
+  }
+  return structuralValuesEqualIgnoringUndefined(semanticRow(before), semanticRow(after))
 }
 
 export abstract class AgentHookServerRowOwnership extends AgentHookServerListeners {
+  /** Set only for the direct applyNormalizedStatus call of applyRestatedStatus. */
+  protected restatingStatus = false
+
+  /** Orca's own restatement of a row (an inferred settle, a timer or poll republish) carries the
+   *  row's evidence; only the agent's own events may name or replace the pane's owner. */
+  protected applyRestatedStatus(
+    incoming: AgentHookEventPayload
+  ): EnrichedAgentHookEventPayload | undefined {
+    if (
+      incoming.payload.state === 'done' &&
+      this.terminalPaneLifecycle?.isStopping(incoming.paneKey) &&
+      this.state.lastStatusByPaneKey.get(incoming.paneKey)?.payload.state !== 'done'
+    ) {
+      return undefined
+    }
+    this.restatingStatus = true
+    try {
+      return this.applyNormalizedStatus(incoming)
+    } finally {
+      this.restatingStatus = false
+    }
+  }
+
   _resetRowOwnershipForTests(): void {
     this.paneKeyByTerminalHandle.clear()
+    this.statusQueryIndex = null
   }
 
   subscribeStatusRowMutations(listener: StatusRowMutationListener): () => void {
@@ -66,37 +92,24 @@ export abstract class AgentHookServerRowOwnership extends AgentHookServerListene
   }
 
   protected sameTerminalOwner(
-    previous: EnrichedAgentHookEventPayload,
+    previous: Pick<AgentHookEventPayload, 'connectionId' | 'worktreeId'>,
     incoming: Pick<AgentHookEventPayload, 'connectionId' | 'worktreeId'>
   ): boolean {
-    if (
-      previous.worktreeId &&
+    return sameAgentStatusTerminalOwner(previous, incoming)
+  }
+
+  protected retainedOwnerLaunchTokenHash(
+    paneKey: string,
+    incoming: Pick<AgentHookEventPayload, 'connectionId' | 'worktreeId'>
+  ): string | undefined {
+    const fence = this.restartedStatusLaunchTokenHashByPaneKey.get(paneKey)
+    const authority = this.persistedAuthorityCommitmentsByPaneKey.get(paneKey)
+    return fence?.allowRetainedOwner &&
+      authority?.worktreeId &&
       incoming.worktreeId &&
-      !worktreeIdsEqual(previous.worktreeId, incoming.worktreeId)
-    ) {
-      return false
-    }
-    if (previous.connectionId === incoming.connectionId) {
-      return true
-    }
-    const relayConnection = isWslHookRelayConnectionId(previous.connectionId)
-      ? previous.connectionId
-      : isWslHookRelayConnectionId(incoming.connectionId)
-        ? incoming.connectionId
-        : null
-    const localConnection = previous.connectionId === null || incoming.connectionId === null
-    if (!relayConnection || !localConnection || !previous.worktreeId || !incoming.worktreeId) {
-      return false
-    }
-    const previousDistro = wslDistroForWorktree(previous.worktreeId)
-    const incomingDistro = wslDistroForWorktree(incoming.worktreeId)
-    return (
-      previousDistro !== null &&
-      incomingDistro !== null &&
-      previousDistro === incomingDistro &&
-      relayConnection === wslHookRelayConnectionId(previousDistro) &&
-      worktreeIdsEqual(previous.worktreeId, incoming.worktreeId)
-    )
+      this.sameTerminalOwner(authority, incoming)
+      ? authority.launchTokenHash
+      : undefined
   }
 
   protected commitStatusRowMutation(
@@ -113,13 +126,83 @@ export abstract class AgentHookServerRowOwnership extends AgentHookServerListene
     if (after?.terminalHandle) {
       this.paneKeyByTerminalHandle.set(after.terminalHandle, after.paneKey)
     }
-    if (!emit || semanticRowJson(before) === semanticRowJson(after)) {
+    for (const key of new Set([before?.paneKey, after?.paneKey])) {
+      if (key) {
+        this.updateStatusQueryIndex(key)
+      }
+    }
+    if (!emit || semanticRowsEqual(before, after)) {
       return false
     }
-    const mutation: AgentHookStatusRowMutation = {
+    this.notifyStatusRowMutationListeners({
       before: toMutationIdentity(before),
       after: toMutationIdentity(after)
+    })
+    return true
+  }
+
+  /** A Codex question, or a wait over one, keeps its row identical across hooks, so their arrival renews its freshness.
+   *  Orca's own restatements, polls and replays are no evidence that the agent still runs. */
+  protected commitAppliedStatusRow(
+    before: EnrichedAgentHookEventPayload | null | undefined,
+    row: EnrichedAgentHookEventPayload,
+    fromAgentHook: boolean
+  ): void {
+    if (
+      this.commitStatusRowMutation(before, row) ||
+      !fromAgentHook ||
+      !row.hookEventName ||
+      row.isReplay === true ||
+      row.restoredUnconfirmed === true ||
+      row.providerSessionOnly === true ||
+      row.payload.agentType !== 'codex' ||
+      row.payload.state !== 'waiting'
+    ) {
+      return
     }
+    this.emitStatusFreshnessObservation({
+      paneKey: row.paneKey,
+      state: row.payload.state,
+      receivedAt: row.receivedAt,
+      observedInCurrentRuntime: true,
+      ...(row.worktreeId ? { worktreeId: row.worktreeId } : {}),
+      ...(row.terminalHandle ? { terminalHandle: row.terminalHandle } : {})
+    })
+  }
+
+  /** Facet-only ticks reach row/window readers, without triggering enriched transition subscribers. */
+  protected republishProgramStatusFacet(paneKey: string): void {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Main admits enriched legacy rows; the shared view declares their base event type.
+    const row = this.state.lastStatusByPaneKey.get(paneKey) as
+      | EnrichedAgentHookEventPayload
+      | undefined
+    if (!row || row.providerSessionOnly === true) {
+      return
+    }
+    this.onAgentStatus?.({ ...this.programStatusFacets.stitch(row), programStatusOnly: true })
+    const identity = toMutationIdentity(row)
+    this.notifyStatusRowMutationListeners({ before: identity, after: identity })
+  }
+
+  protected publishAgentIdentityProjection(row: EnrichedAgentHookEventPayload): void {
+    // An id is no provider event: drop the row's last hook signals so no reader re-acts on them.
+    const {
+      hookEventName: _hookEventName,
+      hasExplicitPrompt: _hasExplicitPrompt,
+      promptInteractionKey: _promptInteractionKey,
+      authorityRestartId: _authorityRestartId,
+      ...projection
+    } = row
+    this.onAgentStatus?.({
+      ...this.programStatusFacets.stitch(projection),
+      isReplay: true,
+      identityOnly: true
+    })
+    const identity = toMutationIdentity(row)
+    this.notifyStatusRowMutationListeners({ before: identity, after: identity })
+  }
+
+  private notifyStatusRowMutationListeners(mutation: AgentHookStatusRowMutation): void {
     for (const listener of this.statusRowMutationListeners) {
       try {
         listener(mutation)
@@ -127,6 +210,5 @@ export abstract class AgentHookServerRowOwnership extends AgentHookServerListene
         console.error('[agent-hooks] status-row mutation listener threw', error)
       }
     }
-    return true
   }
 }

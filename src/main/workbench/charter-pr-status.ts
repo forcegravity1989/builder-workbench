@@ -2,15 +2,15 @@ import {
   getRepoExecutionHostId,
   parseExecutionHostId,
   type ExecutionHostId
-} from '../../shared/execution-host'
-import type { Repo } from '../../shared/repo-types'
+} from '../../shared/execution-host/execution-host'
+import type { Repo } from '../../shared/repository/repo-types'
 import { isCodeHubGitRemote, parseCodeHubRemote } from '../../shared/codehub'
 import { CHARTER_BRANCH, PROJECT_TOML_REL } from '../../shared/workbench/project-charter'
 import type { CharterStatus } from '../../shared/workbench/charter'
 import { getHostedReviewForBranch } from '../source-control/hosted-review'
-import { readGitBlobAtOidPath } from '../git/source-control/git-blob-read'
-import { gitExecFileAsync } from '../git/runner'
-import { probeGitRemoteIdentity } from '../repo-git-remote-identity'
+import { readGitBlobAtOidPath } from '../git/source-control/diffs/git-blob-read'
+import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
+import { probeGitRemoteIdentity } from '../workspaces/catalog/repo-git-remote-identity'
 import { readCodeHubBranchReview } from '../codehub/mr-branch-review'
 import { runTrunkBaseline } from './trunk-baseline'
 import type { WorkbenchWorkspaceRepo } from './workspace-resolver'

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { MarkdownPreviewBody } from '@/components/editor/MarkdownPreviewBody'
+import { MarkdownPreviewBody } from '@/components/editor/markdown-preview/render-tree/MarkdownPreviewBody'
 
 describe('MarkdownPreviewBody HTML sanitize', () => {
   it('keeps GitHub README centering and picture markup', () => {

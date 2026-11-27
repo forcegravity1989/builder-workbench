@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { BrowserChromeToolbar } from '@/components/browser-pane/assemble-chrome/browser-chrome-toolbar'
+import { BrowserChromeToolbar } from '@/components/browser-pane/assemble-chrome/toolbar/browser-chrome-toolbar'
 import { bookingIssue, ignore } from './DeliveryTaskScenes'
 
 const prototypeAddress = 'http://localhost:3000/booking'
@@ -59,7 +59,6 @@ export function DeliveryBrowserDemo({ time }: { time: number }) {
             controls={{
               canGoBack: false,
               canGoForward: false,
-              loading: false,
               goBack: ignore,
               goForward: ignore,
               reload: ignore,
@@ -87,8 +86,8 @@ export function DeliveryBrowserDemo({ time }: { time: number }) {
               onToggle: ignore,
               canShowDiscoveryHint: false
             }}
-            viewSource={null}
-            openExternal={null}
+            overflowMenu={() => null}
+            closeTabOwner={{ worktreeId: 'delivery-demo', browserPageId: 'booking-demo' }}
           />
           {loaded && (
             <div className="grid gap-2 bg-muted/30 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">

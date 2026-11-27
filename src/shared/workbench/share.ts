@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ARTIFACT_MAX_CONTENT_BYTES } from '../artifacts'
+import { ARTIFACT_MAX_CONTENT_BYTES } from '../artifacts/artifacts'
 
 /**
  * The service's per-share cap (`BW_SHARE_MAX_BYTES`). Aliased from the artifact contract so there is

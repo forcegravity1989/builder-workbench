@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest'
-import type { Automation } from '../../../../shared/automations-types'
-import type { ProjectHostSetup } from '../../../../shared/project-types'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Automation } from '../../../../shared/automations/automation-definition'
+import type { ProjectHostSetup } from '../../../../shared/project/project-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import type { CycleScope } from './ports'
 
 const test = vi.hoisted(() => ({
@@ -9,9 +9,8 @@ const test = vi.hoisted(() => ({
   rpc: vi.fn()
 }))
 vi.mock('@/store', () => ({ useAppStore: { getState: () => test.state } }))
-vi.mock('@/runtime/runtime-rpc-client', () => ({
-  callRuntimeRpc: test.rpc,
-  getRuntimeEnvironmentStatus: vi.fn()
+vi.mock('@/runtime/rpc/calls/runtime-rpc-call', () => ({
+  callRuntimeRpc: test.rpc
 }))
 vi.mock('./cycle-prompt', () => ({ buildCyclePrompt: vi.fn(async () => 'CYCLE-PROMPT') }))
 import { cycleAutomationCreationKey, ensureCycleAutomation } from './ensure-cycle-automation'

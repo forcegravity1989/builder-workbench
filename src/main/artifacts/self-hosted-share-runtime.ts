@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { getAppEnvironment } from '../../shared/app-environment'
+import { getAppEnvironment } from '../../shared/app-lifecycle/app-environment'
 import { createShareService, type ShareService } from './self-hosted-share-service'
 
 let service: ShareService | null = null

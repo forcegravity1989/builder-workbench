@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'nod
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { afterAll, beforeAll, expect, it } from 'vitest'
-import { _resetTracerForTests, setActiveSink, type TracerSink } from '../../observability/tracer'
+import { setActiveSink, type TracerSink } from '../../observability/tracer'
 import {
   METRICS_MAINTENANCE_BRANCH,
   catchUpMetricsMaintenance,
@@ -243,7 +243,7 @@ it('reports a failing collector exit without inventing a reading', async () => {
     env: {},
     timeoutMs: 60_000
   })
-  _resetTracerForTests()
+  setActiveSink(null)
   expect(outcome.code).toBe(3)
   expect(outcome.stderr).toContain('collector exploded')
   expect(outcome.stderr).toContain(secret)
@@ -271,7 +271,7 @@ it('kills a hung collector at its timeout and still cleans the checkout up', asy
     env: {},
     timeoutMs: 1_500
   })
-  _resetTracerForTests()
+  setActiveSink(null)
   expect(outcome.timedOut).toBe(true)
   const collector = collectorSpan(records)
   expect(collector?.exit._tag).toBe('Failure')

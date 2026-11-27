@@ -1,4 +1,4 @@
-import type { TuiAgent } from '../../../../shared/tui-agent'
+import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import type { CycleScope } from './ports'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
 import { buildCyclePrompt } from './cycle-prompt'
@@ -15,6 +15,6 @@ export async function startCycleSession(
   const prompt = await buildCyclePrompt(scope, worktreeId, version)
   assertCurrentCycleWorkspace(scope, worktreeId)
   revealPlanChat()
-  await openWorkflowDraft(agent, worktreeId, prompt)
+  await openWorkflowDraft(agent, worktreeId, scope.hostId, prompt)
   assertCurrentCycleWorkspace(scope, worktreeId)
 }

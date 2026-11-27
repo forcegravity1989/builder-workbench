@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { readCursorAuthSession } from './cursor-auth'
+import { readCursorAuthSession } from './providers/cursor/cursor-auth'
 import { readKeychainPassword } from '../macos-keychain/generic-password'
-import { readCursorDesktopProfile } from './cursor-desktop-state-db'
+import { readCursorDesktopProfile } from '../foreign-sqlite-readers/foreign-sqlite-reader-spawn'
 
 const { files } = vi.hoisted(() => ({ files: new Map<string, string>() }))
 vi.mock('node:fs', () => ({
@@ -9,7 +9,9 @@ vi.mock('node:fs', () => ({
   readFileSync: (path: string) => files.get(path)
 }))
 vi.mock('../macos-keychain/generic-password', () => ({ readKeychainPassword: vi.fn() }))
-vi.mock('./cursor-desktop-state-db', () => ({ readCursorDesktopProfile: vi.fn() }))
+vi.mock('../foreign-sqlite-readers/foreign-sqlite-reader-spawn', () => ({
+  readCursorDesktopProfile: vi.fn()
+}))
 
 const originalPlatform = process.platform
 const options = {
@@ -26,7 +28,7 @@ beforeEach(() => {
   Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true })
   files.clear()
   vi.mocked(readKeychainPassword).mockReset().mockResolvedValue(null)
-  vi.mocked(readCursorDesktopProfile).mockReset().mockReturnValue({ status: 'missing' })
+  vi.mocked(readCursorDesktopProfile).mockReset().mockResolvedValue({ status: 'missing' })
 })
 afterEach(() => {
   Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true })
@@ -37,18 +39,25 @@ describe('Cursor credential ownership', () => {
     files.set(options.cliAuthPath, JSON.stringify({ accessToken: jwt('cli') }))
     vi.mocked(readKeychainPassword).mockResolvedValue(jwt('keychain'))
     expect(await readCursorAuthSession(options)).toMatchObject({
-      status: 'ok', session: { source: 'keychain', token: { subject: 'keychain' } }
+      status: 'ok',
+      session: { source: 'keychain', token: { subject: 'keychain' } }
     })
     expect(readCursorDesktopProfile).not.toHaveBeenCalled()
 
     vi.mocked(readKeychainPassword).mockResolvedValue(jwt('keychain', 1))
     files.set(options.cliAuthPath, JSON.stringify({ accessToken: jwt('cli', 1) }))
-    vi.mocked(readCursorDesktopProfile).mockReturnValue({
+    vi.mocked(readCursorDesktopProfile).mockResolvedValue({
       status: 'ok',
-      profile: { accessToken: jwt('ide'), email: 'ide@example.test', membershipType: 'pro', subscriptionStatus: 'active' }
+      profile: {
+        accessToken: jwt('ide'),
+        email: 'ide@example.test',
+        membershipType: 'pro',
+        subscriptionStatus: 'active'
+      }
     })
     expect(await readCursorAuthSession(options)).toMatchObject({
-      status: 'ok', session: { source: 'desktop', email: 'ide@example.test', token: { subject: 'ide' } }
+      status: 'ok',
+      session: { source: 'desktop', email: 'ide@example.test', token: { subject: 'ide' } }
     })
   })
 
@@ -56,7 +65,8 @@ describe('Cursor credential ownership', () => {
     vi.mocked(readKeychainPassword).mockRejectedValue(new Error('/private/user/keychain denied'))
     files.set(options.cliAuthPath, JSON.stringify({ accessToken: jwt('cli') }))
     expect(await readCursorAuthSession(options)).toMatchObject({
-      status: 'ok', session: { source: 'cli', token: { subject: 'cli' } }
+      status: 'ok',
+      session: { source: 'cli', token: { subject: 'cli' } }
     })
 
     vi.mocked(readKeychainPassword).mockClear()

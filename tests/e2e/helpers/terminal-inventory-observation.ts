@@ -1,4 +1,4 @@
-import type { RuntimeTerminalListResult } from '../../../src/shared/runtime-types'
+import type { RuntimeTerminalListResult } from '../../../src/shared/terminal/runtime/runtime-terminal-contracts'
 
 export async function readFreshTerminalInventory(
   read: () => Promise<RuntimeTerminalListResult>

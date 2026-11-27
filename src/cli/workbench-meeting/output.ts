@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import type { RuntimeFileReadChunkResult, RuntimeWorktreeRecord } from '../../shared/runtime-types'
-import type { SshConnectionState } from '../../shared/ssh-types'
-import { isRuntimePathAbsolute, relativePathInsideRoot } from '../../shared/cross-platform-path'
-import { parseExecutionHostId } from '../../shared/execution-host'
-import { isWslUncPath, parseWslUncPath, toWindowsWslPath } from '../../shared/wsl-paths'
-import type { HandlerContext } from '../dispatch'
-import { RuntimeClientError } from '../runtime/types'
+import type { RuntimeFileReadChunkResult } from '../../shared/file-content/runtime-file-read'
+import type { RuntimeWorktreeRecord } from '../../shared/worktree/catalog/runtime-worktree-contracts'
+import type { SshConnectionState } from '../../shared/remote-runtime/ssh/ssh-types'
+import { isRuntimePathAbsolute, relativePathInsideRoot } from '../../shared/file-access/cross-platform-path'
+import { parseExecutionHostId } from '../../shared/execution-host/execution-host'
+import { isWslUncPath, parseWslUncPath, toWindowsWslPath } from '../../shared/file-access/wsl-paths'
+import type { HandlerContext } from '../dispatch/dispatch'
+import { RuntimeClientError } from '../runtime/connection/types'
 
 /** Native file RPC keeps SSH/WSL output on the selected workspace's host. */
 export async function meetingOutputTarget(ctx: HandlerContext, worktree: string, output: string) {

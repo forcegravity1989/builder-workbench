@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, ChevronDown, LoaderCircle } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { toast } from 'sonner'
-import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
+import type { CodeHubTaskRow } from '../../use-task-page-codehub-loading'
 
 /**
  * 任务列表行的标签单元格。CLI `issue update --labels` 是整组替换语义，
@@ -16,7 +16,7 @@ export function CodeHubLabelsCell({
   item,
   onChanged
 }: {
-  item: CodeHubTaskItem
+  item: CodeHubTaskRow
   onChanged: () => void
 }): React.JSX.Element {
   const [open, setOpen] = useState(false)
@@ -25,7 +25,7 @@ export function CodeHubLabelsCell({
   const [error, setError] = useState<string | null>(null)
   const [pendingLabel, setPendingLabel] = useState<string | null>(null)
   const labels = useMemo(() => item.labels ?? [], [item.labels])
-  const { host, project } = item
+  const { host, project, sourceContext } = item
   // 候选名单在 popover 打开时拉取（重开重拉），新建标签下次打开可见。
   useEffect(() => {
     if (!open || !item.repoPath) {
@@ -34,7 +34,7 @@ export function CodeHubLabelsCell({
     let stale = false
     setLoading(true)
     setError(null)
-    createTaskPageCodeHubApi(null, { host, project })
+    createTaskPageCodeHubApi(sourceContext, { host, project })
       .listLabels({ repoPath: item.repoPath, repoId: item.repoId })
       .then((names) => {
         if (!stale) {
@@ -55,7 +55,7 @@ export function CodeHubLabelsCell({
     return () => {
       stale = true
     }
-  }, [open, item.repoPath, item.repoId, host, project])
+  }, [open, item.repoPath, item.repoId, host, project, sourceContext])
 
   const toggleLabel = useCallback(
     async (label: string): Promise<void> => {
@@ -68,7 +68,7 @@ export function CodeHubLabelsCell({
         : [...labels, label]
       setPendingLabel(label)
       try {
-        await createTaskPageCodeHubApi(null, { host, project }).updateIssueLabels({
+        await createTaskPageCodeHubApi(sourceContext, { host, project }).updateIssueLabels({
           repoPath: item.repoPath,
           repoId: item.repoId,
           iid: item.iid,
@@ -82,7 +82,7 @@ export function CodeHubLabelsCell({
         setPendingLabel(null)
       }
     },
-    [item.iid, item.repoId, item.repoPath, host, project, labels, onChanged, pendingLabel]
+    [item.iid, item.repoId, item.repoPath, host, project, sourceContext, labels, onChanged, pendingLabel]
   )
 
   const triggerContent =

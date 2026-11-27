@@ -13,12 +13,12 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { MetadataActionIcon } from '@/components/sidebar/WorktreeCardMetadataControls'
+import { MetadataActionIcon } from '@/components/sidebar/workspace-card/metadata/WorktreeCardMetadataControls'
 import {
   MetadataStatusBadge,
   ReviewStateBadge,
   ReviewChecksBadge
-} from '@/components/sidebar/WorktreeCardMetadataStatusBadges'
+} from '@/components/sidebar/workspace-card/metadata/WorktreeCardMetadataStatusBadges'
 import type { ReviewIncomingNote, ReviewOutgoingNote } from './model'
 import { deriveOutgoingStatus } from './model'
 

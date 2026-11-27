@@ -1,21 +1,19 @@
 import { readdir } from 'node:fs/promises'
-import { parseExecutionHostId } from '../../shared/execution-host'
-import { runWithGitWorktreeOperationLock } from '../../shared/git-worktree-operation-lock'
-import { stripCredentialsFromMessage } from '../../shared/git-remote-error'
+import { parseExecutionHostId } from '../../shared/execution-host/execution-host'
+import { runWithGitWorktreeOperationLock } from '../../shared/git/worktrees/git-worktree-operation-lock'
+import { stripCredentialsFromMessage } from '../../shared/git/remotes/git-remote-error'
 import type { MetricScope } from '../../shared/workbench/metrics'
 import type { TrunkUpdateResult } from '../../shared/workbench/trunk-update'
-import { extractExecError } from '../git/exec-error'
-import { gitOptionsForWorktree, gitReadOptionsForWorktree } from '../git/git-runtime-options'
+import { extractExecError } from '../git/command-runner/process-capture/exec-error'
+import { gitOptionsForWorktree, gitReadOptionsForWorktree } from '../git/command-runner/git-runtime-options'
 import {
   postponeRepoRefMaintenance,
   withRepoRefMaintenancePaused
-} from '../git/local-repo-ref-maintenance'
-import { gitExecFileAsync } from '../git/runner'
-import {
-  detectConflictOperation,
-  resolveGitDir,
-  runWithGitReadCacheInvalidation
-} from '../git/status'
+} from '../git/refs/maintenance/local-repo-ref-maintenance'
+import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
+import { detectConflictOperation } from '../git/source-control/mutations/git-conflict-operation'
+import { resolveGitDir } from '../git/source-control/resolve-git-dir'
+import { runWithGitReadCacheInvalidation } from '../git/source-control/git-read-cache-invalidation'
 import {
   prepareFlowUpdate,
   readBranchSignatureOption,

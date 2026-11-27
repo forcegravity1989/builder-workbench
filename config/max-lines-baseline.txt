@@ -1,12 +1,8 @@
 # Files/globs currently allowed to exceed the oxlint `max-lines` budget.
 # This is a RATCHET: the list may only SHRINK. Do NOT add entries to get CI green —
-# remove redundant code or split at clear responsibility boundaries; avoid mechanical extraction.
-# Budgets: .oxlintrc.json. Guidance: AGENTS.md → "构建、运行与验证".
+# split the oversized file instead.
 # Regenerate/prune: pnpm check:max-lines-ratchet --prune   (removes stale entries only)
-inline src/main/ipc/worktree-remote.ts
-inline src/main/ssh/ssh-channel-multiplexer.ts
-inline src/main/ssh/ssh-connection.ts
-inline src/main/ssh/ssh-relay-deploy.ts
-inline src/main/ssh/ssh-relay-session.ts
-inline src/relay/pty-handler.ts
-inline src/renderer/src/components/terminal-pane/remote-runtime-pty-transport.ts
+inline src/main/ipc/worktrees/worktree-remote.ts
+inline src/main/ssh/protocol/ssh-channel-multiplexer.ts
+inline src/main/ssh/connection/ssh-connection.ts
+inline src/renderer/src/components/terminal-pane/pty-transport/remote-runtime/remote-runtime-pty-transport.ts

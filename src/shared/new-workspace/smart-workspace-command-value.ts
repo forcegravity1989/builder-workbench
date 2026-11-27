@@ -2,8 +2,8 @@ export type SmartWorkspaceCommandRowKind =
   | 'use-name'
   | 'create-branch'
   | 'github'
-  | 'codehub'
   | 'gitlab'
+  | 'codehub'
   | 'branch'
   | 'linear'
   | 'jira'
@@ -14,7 +14,7 @@ export type SmartWorkspaceCommandRow = {
   value: string
 }
 
-export type SmartWorkspaceSourceIntent = 'github' | 'gitlab' | 'codehub' | 'linear' | 'jira' | null
+export type SmartWorkspaceSourceIntent = 'github' | 'gitlab' | 'linear' | 'jira' | null
 
 export function resolveSmartWorkspaceCommandValue({
   currentValue,
@@ -31,8 +31,7 @@ export function resolveSmartWorkspaceCommandValue({
     return currentValue
   }
 
-  // Why: freeze the arm while the live input is ahead of debounced search so the
-  // highlight does not thrash to use-name / empty / first-row on every keystroke.
+  // Keep selection stable while live text leads debounced results, avoiding highlight changes on each keystroke.
   if (isQueryStale) {
     const typedTextRow = rows.find((row) => row.kind === 'use-name' || row.kind === 'create-branch')
     if (typedTextRow) {
@@ -45,11 +44,6 @@ export function resolveSmartWorkspaceCommandValue({
     const githubRow = rows.find((row) => row.kind === 'github')
     if (githubRow) {
       return githubRow.value
-    }
-  } else if (sourceIntent === 'codehub') {
-    const codehubRow = rows.find((row) => row.kind === 'codehub')
-    if (codehubRow) {
-      return codehubRow.value
     }
   } else if (sourceIntent === 'gitlab') {
     const gitlabRow = rows.find((row) => row.kind === 'gitlab')

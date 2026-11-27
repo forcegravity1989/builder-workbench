@@ -2,6 +2,7 @@ import { UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getRelativePathInsideRoot } from '@/lib/path'
 import { useAppStore } from '@/store'
+import { getKnownExecutionHostIdForWorktree } from '@/lib/workspace/ownership/worktree-runtime-owner'
 import { isWorkbenchShell } from '../is-workbench-shell'
 import { prototypeReviewPageFor } from './prototype-review-target'
 import { openPrototypeReviewSendDialog } from './send-dialog-store'
@@ -17,6 +18,9 @@ export function PrototypeReviewInviteButton({
   // Why: a reviewer can only open a file inside the shared worktree, so an invite for any other file
   // would fail on their side with no way for the owner to see why.
   const insideWorktree = useAppStore((state) => {
+    if (getKnownExecutionHostIdForWorktree(state, worktreeId) !== 'local') {
+      return false
+    }
     const root = state.getKnownWorktreeById(worktreeId)?.path
     return root ? getRelativePathInsideRoot(filePath, root) !== null : true
   })

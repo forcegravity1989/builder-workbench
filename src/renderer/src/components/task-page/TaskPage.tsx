@@ -1,51 +1,88 @@
 import React from 'react'
-import { useTaskPageStoreBindings } from '../use-task-page-store-bindings'
-import { useTaskPageRepoSelection } from '../use-task-page-repo-selection'
-import { useTaskPageRuntimeHosts } from '../use-task-page-runtime-hosts'
-import { useTaskPageSourceAvailability } from '../use-task-page-source-availability'
-import { useTaskPageProviderState } from '../use-task-page-provider-state'
-import { useTaskPageGitHubListState } from '../use-task-page-github-list-state'
-import { useTaskPageGitHubDetail } from '../use-task-page-github-detail'
-import { useTaskPageGitHubCacheReconciliation } from '../use-task-page-github-cache-reconciliation'
-import { useTaskPageGitHubIssueDraft } from '../use-task-page-github-issue-draft'
-import { useTaskPageDetailRouting } from '../use-task-page-detail-routing'
-import { useTaskPageLinearViewState } from '../use-task-page-linear-view-state'
-import { useTaskPageJiraListState } from '../use-task-page-jira-list-state'
-import { useTaskPageResumeRestoration } from '../use-task-page-resume-restoration'
-import { useTaskPageProviderMetadata } from '../use-task-page-provider-metadata'
-import { useTaskPageGitLabLoading } from '../use-task-page-gitlab-loading'
-import { useTaskPageCodeHubLoading } from '../use-task-page-codehub-loading'
-import { useTaskPageLinearListSelection } from '../use-task-page-linear-list-selection'
-import { useTaskPageLinearListProjection } from '../use-task-page-linear-list-projection'
-import { useTaskPageLinearBoard } from '../use-task-page-linear-board'
-import { useTaskPageJiraListProjection } from '../use-task-page-jira-list-projection'
-import { useTaskPageLinearCreationState } from '../use-task-page-linear-creation-state'
-import { useTaskPageGitHubMutationState } from '../use-task-page-github-mutation-state'
-import { useTaskPageJiraCreationState } from '../use-task-page-jira-creation-state'
-import { useTaskPageJiraCreationMetadata } from '../use-task-page-jira-creation-metadata'
-import { useTaskPageWorkbenchScope } from '../use-task-page-workbench-scope'
-import { useTaskPageGitHubListProjection } from '../use-task-page-github-list-projection'
-import { useTaskPageGitHubSearchPagination } from '../use-task-page-github-search-pagination'
-import { useTaskPageGitHubLandingRefresh } from '../use-task-page-github-landing-refresh'
-import { useTaskPageGitHubQuietRefresh } from '../use-task-page-github-quiet-refresh'
-import { useTaskPageSearchActions } from '../use-task-page-search-actions'
-import { useTaskPageWorkspaceActions } from '../use-task-page-workspace-actions'
-import { useTaskPageGitHubIssueCreation } from '../use-task-page-github-issue-creation'
-import { useTaskPageLinearProjectCreation } from '../use-task-page-linear-project-creation'
-import { useTaskPageLinearIssueCreation } from '../use-task-page-linear-issue-creation'
-import { useTaskPageJiraIssueCreation } from '../use-task-page-jira-issue-creation'
-import { useTaskPageGlobalEffects } from '../use-task-page-global-effects'
-import { useTaskPageLinearListEffects } from '../use-task-page-linear-list-effects'
-import { useTaskPageLinearInOrcaEffects } from '../use-task-page-linear-in-orca-effects'
-import { useTaskPageLinearCollectionEffects } from '../use-task-page-linear-collection-effects'
-import { useTaskPageJiraListEffects } from '../use-task-page-jira-list-effects'
-import { useTaskPageComposerActions } from '../use-task-page-composer-actions'
+import { isCodeHubGitRemote } from '../../../../shared/codehub'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { CodeHubTaskPage } from './codehub/CodeHubTaskPage'
+import { useTaskPageStoreBindings } from './use-task-page-store-bindings'
+import {
+  useTaskPageRepoSelection,
+  type TaskPageRepoSelectionModel
+} from './use-task-page-repo-selection'
+import { useTaskPageRuntimeHosts } from './use-task-page-runtime-hosts'
+import { useTaskPageSourceAvailability } from './use-task-page-source-availability'
+import { useTaskPageProviderState } from './use-task-page-provider-state'
+import { useTaskPageGitHubListState } from './github/listing/use-task-page-github-list-state'
+import { useTaskPageGitHubDetail } from './github/use-task-page-github-detail'
+import { useTaskPageGitHubCacheReconciliation } from './github/cache/use-task-page-github-cache-reconciliation'
+import { useTaskPageGitHubIssueDraft } from './github/issue-creation/use-task-page-github-issue-draft'
+import { useTaskPageDetailRouting } from './use-task-page-detail-routing'
+import { useTaskPageLinearViewState } from './linear/use-task-page-linear-view-state'
+import { useTaskPageJiraListState } from './jira/use-task-page-jira-list-state'
+import { useTaskPageResumeRestoration } from './use-task-page-resume-restoration'
+import { useTaskPageProviderMetadata } from './use-task-page-provider-metadata'
+import { useTaskPageGitLabLoading } from './gitlab/use-task-page-gitlab-loading'
+import { useTaskPageLinearListSelection } from './linear/issues/use-task-page-linear-list-selection'
+import { useTaskPageLinearListProjection } from './linear/issues/use-task-page-linear-list-projection'
+import { useTaskPageLinearBoard } from './linear/issues/use-task-page-linear-board'
+import { useTaskPageJiraListProjection } from './jira/listing/use-task-page-jira-list-projection'
+import { useTaskPageLinearCreationState } from './linear/creation/use-task-page-linear-creation-state'
+import { useTaskPageGitHubMutationState } from './github/mutations/use-task-page-github-mutation-state'
+import { useTaskPageJiraCreationState } from './jira/creation/use-task-page-jira-creation-state'
+import { useTaskPageJiraCreationMetadata } from './jira/creation/use-task-page-jira-creation-metadata'
+import { useTaskPageGitHubWorkbenchScope } from './github/listing/use-task-page-github-workbench-scope'
+import { useTaskPageGitHubListProjection } from './github/listing/use-task-page-github-list-projection'
+import { useTaskPageGitHubSearchPagination } from './github/listing/use-task-page-github-search-pagination'
+import { useTaskPageGitHubLandingRefresh } from './github/refresh/use-task-page-github-landing-refresh'
+import { useTaskPageGitHubQuietRefresh } from './github/refresh/use-task-page-github-quiet-refresh'
+import { useTaskPageSearchActions } from './use-task-page-search-actions'
+import { useTaskPageWorkspaceActions } from './use-task-page-workspace-actions'
+import { useTaskPageGitHubIssueCreation } from './github/issue-creation/use-task-page-github-issue-creation'
+import { useTaskPageLinearProjectCreation } from './linear/creation/use-task-page-linear-project-creation'
+import { useTaskPageLinearIssueCreation } from './linear/creation/use-task-page-linear-issue-creation'
+import { useTaskPageJiraIssueCreation } from './jira/creation/use-task-page-jira-issue-creation'
+import { useTaskPageJiraSummaryGeneration } from './jira/creation/use-task-page-jira-summary-generation'
+import { useTaskPageGlobalEffects } from './use-task-page-global-effects'
+import { useTaskPageLinearListEffects } from './linear/issues/use-task-page-linear-list-effects'
+import { useTaskPageLinearInOrcaEffects } from './linear/issues/use-task-page-linear-in-orca-effects'
+import { useTaskPageLinearCollectionEffects } from './linear/projects/use-task-page-linear-collection-effects'
+import { useTaskPageJiraListEffects } from './jira/listing/use-task-page-jira-list-effects'
+import { useTaskPageComposerActions } from './use-task-page-composer-actions'
 import { TaskPageSurface } from './Surface'
 
 export default function TaskPage(): React.JSX.Element {
-  const stage1 = useTaskPageStoreBindings()
-  const stage2 = useTaskPageRepoSelection(stage1)
-  const stage3 = useTaskPageRuntimeHosts(stage2)
+  const selection = useTaskPageRepoSelection(useTaskPageStoreBindings())
+  const {
+    pageData,
+    selectedRepos,
+    preflightStatus,
+    preflightStatusCurrent,
+    preflightDescribesDesktop
+  } = selection
+  const explicitCodeHub = pageData.taskSource === 'codehub' || !!pageData.openCodeHubTask
+  const implicitCodeHub =
+    !pageData.taskSource &&
+    !pageData.workbenchTaskScope &&
+    !pageData.openGitHubWorkItem &&
+    !pageData.openGitLabWorkItem &&
+    !pageData.openLinearIssue &&
+    !pageData.openJiraIssue &&
+    preflightStatusCurrent &&
+    preflightDescribesDesktop &&
+    preflightStatus?.codehub?.installed === true &&
+    selectedRepos.length > 0 &&
+    selectedRepos.every((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))
+  return isWorkbenchShell() && (explicitCodeHub || implicitCodeHub) ? (
+    <CodeHubTaskPage selection={selection} />
+  ) : (
+    <NativeTaskPage selection={selection} />
+  )
+}
+
+function NativeTaskPage({
+  selection
+}: {
+  selection: TaskPageRepoSelectionModel
+}): React.JSX.Element {
+  const stage3 = useTaskPageRuntimeHosts(selection)
   const stage4 = useTaskPageSourceAvailability(stage3)
   const stage5 = useTaskPageProviderState(stage4)
   const stage6 = useTaskPageGitHubListState(stage5)
@@ -58,8 +95,7 @@ export default function TaskPage(): React.JSX.Element {
   const stage13 = useTaskPageResumeRestoration(stage12)
   const stage14 = useTaskPageProviderMetadata(stage13)
   const stage15 = useTaskPageGitLabLoading(stage14)
-  const stage15b = useTaskPageCodeHubLoading(stage15)
-  const stage16 = useTaskPageLinearListSelection(stage15b)
+  const stage16 = useTaskPageLinearListSelection(stage15)
   const stage17 = useTaskPageLinearListProjection(stage16)
   const stage18 = useTaskPageLinearBoard(stage17)
   const stage19 = useTaskPageJiraListProjection(stage18)
@@ -67,8 +103,8 @@ export default function TaskPage(): React.JSX.Element {
   const stage21 = useTaskPageGitHubMutationState(stage20)
   const stage22 = useTaskPageJiraCreationState(stage21)
   const stage23 = useTaskPageJiraCreationMetadata(stage22)
-  const stage23b = useTaskPageWorkbenchScope(stage23)
-  const stage24 = useTaskPageGitHubListProjection(stage23b)
+  const workbenchScope = useTaskPageGitHubWorkbenchScope(stage23)
+  const stage24 = useTaskPageGitHubListProjection(workbenchScope)
   const stage25 = useTaskPageGitHubSearchPagination(stage24)
   const stage26 = useTaskPageGitHubLandingRefresh(stage25)
   const stage27 = useTaskPageGitHubQuietRefresh(stage26)
@@ -78,11 +114,12 @@ export default function TaskPage(): React.JSX.Element {
   const stage31 = useTaskPageLinearProjectCreation(stage30)
   const stage32 = useTaskPageLinearIssueCreation(stage31)
   const stage33 = useTaskPageJiraIssueCreation(stage32)
-  const stage34 = useTaskPageGlobalEffects(stage33)
-  const stage35 = useTaskPageLinearListEffects(stage34)
-  const stage36 = useTaskPageLinearInOrcaEffects(stage35)
-  const stage37 = useTaskPageLinearCollectionEffects(stage36)
-  const stage38 = useTaskPageJiraListEffects(stage37)
-  const stage39 = useTaskPageComposerActions(stage38)
-  return <TaskPageSurface model={stage39} />
+  const stage34 = useTaskPageJiraSummaryGeneration(stage33)
+  const stage35 = useTaskPageGlobalEffects(stage34)
+  const stage36 = useTaskPageLinearListEffects(stage35)
+  const stage37 = useTaskPageLinearInOrcaEffects(stage36)
+  const stage38 = useTaskPageLinearCollectionEffects(stage37)
+  const stage39 = useTaskPageJiraListEffects(stage38)
+  const stage40 = useTaskPageComposerActions(stage39)
+  return <TaskPageSurface model={stage40} />
 }

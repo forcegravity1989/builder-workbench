@@ -1,10 +1,15 @@
 import { join } from 'node:path'
-import { existsSync } from 'node:fs'
+import { existsSync, lstatSync } from 'node:fs'
 import { realpath, readdir, stat } from 'node:fs/promises'
-import { getOrcaManagedCodexHomePath, getSystemCodexHomePath } from '../codex/codex-home-paths'
-import { getCodexAccountHomeSessionDirectories } from '../codex/codex-account-home-discovery'
-import { getLegacyCopiedCodexSessionBridgeScanPreference } from '../codex/codex-session-bridge'
-import { normalizeFsPath } from '../usage/usage-path-comparison'
+import {
+  getOrcaManagedCodexHomePath,
+  getSystemCodexHomePath
+} from '../codex/configuration/homes/codex-home-paths'
+import { getCodexAccountHomeSessionDirectories } from '../codex/history/rollouts/codex-account-home-discovery'
+import { listGuestCodexAccountHomes } from '../codex-accounts/managed-homes/guest-codex-account-homes'
+import { getLegacyCopiedCodexSessionBridgeScanPreference } from '../codex/history/bridges/codex-session-bridge'
+import { normalizeFsPath } from '../usage/worktree-attribution/usage-path-comparison'
+import { isDefinitiveAbsence } from '../../shared/errors/definitive-filesystem-absence'
 
 const YIELD_EVERY_DISCOVERY_ENTRIES = 100
 
@@ -25,7 +30,12 @@ async function walkJsonlFiles(
   dirPath: string,
   progress: { entriesVisited: number } = { entriesVisited: 0 }
 ): Promise<string[]> {
-  const entries = await readdir(dirPath, { withFileTypes: true })
+  const entries = await readdir(dirPath, { withFileTypes: true }).catch((error: unknown) => {
+    if (isDefinitiveAbsence(error)) {
+      return []
+    }
+    throw error
+  })
   const files: string[] = []
 
   for (const entry of entries) {
@@ -47,28 +57,35 @@ async function walkJsonlFiles(
 }
 
 function appendDiscoveredFiles(target: string[], source: readonly string[]): void {
-  // Why: large session directories can exceed V8's argument limit if child
-  // file arrays are spread into push().
+  // Spreading large directory listings into push() can exceed V8's argument limit.
   for (const filePath of source) {
     target.push(filePath)
   }
 }
 
 export function getCodexSessionsDirectory(): string {
-  // Why: Orca-launched Codex processes receive an Orca-owned CODEX_HOME, so
-  // callers that need the primary runtime path should not consult ambient
-  // shell CODEX_HOME.
+  // The primary runtime uses an Orca-owned home regardless of ambient CODEX_HOME.
   return join(getOrcaManagedCodexHomePath(), 'sessions')
 }
 
+function ownedSessionsDirectory(home: string): string[] {
+  const sessionsPath = join(home, 'sessions')
+  try {
+    // Why: a redirected sessions root could make usage scan unrelated, unbounded trees.
+    return lstatSync(sessionsPath).isDirectory() ? [sessionsPath] : []
+  } catch {
+    return []
+  }
+}
+
 export function getCodexSessionDirectories(): string[] {
-  // Why: sessions now live in three lanes — the shared runtime mirror, the real
-  // ~/.codex, and per-account self-contained homes; missing any lane silently
-  // undercounts usage for multi-account users.
+  // Include runtime, system and account homes to avoid undercounting multi-account usage.
   return [
     getCodexSessionsDirectory(),
     join(getSystemCodexHomePath(), 'sessions'),
-    ...getCodexAccountHomeSessionDirectories()
+    ...getCodexAccountHomeSessionDirectories(),
+    // Homes a paired desktop's chosen Codex accounts run in on this host.
+    ...listGuestCodexAccountHomes().flatMap(ownedSessionsDirectory)
   ].filter((dirPath, index, allDirPaths) => allDirPaths.indexOf(dirPath) === index)
 }
 
@@ -79,11 +96,7 @@ function hasLegacyCopiedSessionBridgeMarkers(): boolean {
 export async function listCodexSessionFiles(): Promise<string[]> {
   const files: string[] = []
   for (const dirPath of getCodexSessionDirectories()) {
-    try {
-      appendDiscoveredFiles(files, await walkJsonlFiles(dirPath))
-    } catch {
-      // Missing or unreadable history in one home should not hide the other.
-    }
+    appendDiscoveredFiles(files, await walkJsonlFiles(dirPath))
   }
   return dedupeCodexSessionFileAliases(files, hasLegacyCopiedSessionBridgeMarkers())
 }
@@ -138,8 +151,9 @@ async function getCodexSessionFileAliasKey(filePath: string): Promise<string> {
 
 async function getPhysicalFileAliasKey(filePath: string): Promise<string> {
   try {
-    const fileStat = await stat(filePath)
-    if (fileStat.ino !== 0) {
+    // Windows file IDs can exceed the precision of JavaScript numbers.
+    const fileStat = await stat(filePath, { bigint: true })
+    if (fileStat.ino !== 0n) {
       return `${fileStat.dev}:${fileStat.ino}`
     }
   } catch {}

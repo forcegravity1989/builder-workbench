@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
-import type { Repo } from '../../../shared/repo-types'
-import { projectHostSetupProjectionFromRepos } from '../../../shared/project-host-setup-projection'
+import type { Repo } from '../../../shared/repository/repo-types'
+import { projectHostSetupProjectionFromRepos } from '../../../shared/project/host-setup/project-host-setup-projection'
 import { resolveProjectSource } from './project-source-resolution'
 import type { Worktree } from '../../../shared/worktree/types'
 import {

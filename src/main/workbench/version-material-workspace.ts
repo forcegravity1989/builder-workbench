@@ -28,7 +28,7 @@ import {
 import { resolveGitDir } from '../git/source-control/resolve-git-dir'
 import { resolveGitCommonDir } from '../git/source-control/resolve-git-common-dir'
 import { WorkspaceScopeError } from './workspace-scope-error'
-import { resolveWorktreeHostPath } from '../../shared/git-metadata-path'
+import { resolveWorktreeHostPath } from '../../shared/git/metadata/git-metadata-path'
 import { createVersionDocumentStore } from './version-document-store'
 import { isMissingFile, resolveVersionPlanningRoot } from './version-document-path'
 import {

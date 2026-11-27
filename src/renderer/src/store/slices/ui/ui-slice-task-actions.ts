@@ -1,14 +1,13 @@
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type { UISlice, UISliceGet, UISliceSet } from './ui-slice-contract'
-import { findPrevLiveNonTaskStackHistoryIndex } from '../worktree-nav-history'
-import { hasFeatureInteraction } from '../../../../../shared/feature-interactions'
+import { findPrevLiveNonTaskStackHistoryIndex } from './workspace-navigation-history'
+import { hasFeatureInteraction } from '../../../../../shared/feature-education/interactions/feature-interactions'
 import {
   normalizeVisibleTaskProviders,
   restoreAvailableDefaultTaskProvider,
   resolveVisibleTaskProvider
-} from '../../../../../shared/task-providers'
-import { PER_REPO_FETCH_LIMIT } from '../../../../../shared/work-items'
-import { isGitRepoKind } from '../../../../../shared/repo-kind'
+} from '../../../../../shared/work-items/task-providers'
+import { PER_REPO_FETCH_LIMIT } from '../../../../../shared/work-items/work-item-pagination'
+import { isGitRepoKind } from '../../../../../shared/repository/repo-kind'
 import { presetToQuery } from './ui-slice-hydration-sanitizers'
 
 const LINEAR_TASK_PREFETCH_LIMIT = 36
@@ -24,6 +23,7 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
     previousViewBeforeSkills: 'terminal',
     pendingSkillShareId: null,
     pendingSkillsSharedView: false,
+    previousViewBeforeMobile: 'terminal',
     previousViewBeforeArtifacts: 'terminal',
     setActiveView: (view) => set({ activeView: view }),
     taskPageData: {},
@@ -59,19 +59,22 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
       }
       // Why: record a Tasks visit in shared back/forward history; all task-source variants collapse to one deduped 'tasks' entry.
       const detailEntry = data.openCodeHubTask
-        ? ({
-            kind: 'task-detail',
-            source: 'codehub',
+        ? {
+            kind: 'task-detail' as const,
+            source: 'codehub' as const,
             task: data.openCodeHubTask,
-            sourceContext: data.openCodeHubSourceContext
-          } as const)
+            sourceContext: data.openCodeHubSourceContext,
+            workbenchTaskScope: data.workbenchTaskScope
+          }
         : data.openGitHubWorkItem
           ? ({
               kind: 'task-detail',
               source: 'github',
               workItem: data.openGitHubWorkItem,
               sourceContext: data.openGitHubSourceContext,
-              initialTab: data.openGitHubInitialTab
+              initialTab: data.openGitHubInitialTab,
+              workbenchTaskScope: data.workbenchTaskScope,
+              scopeRepoId: data.workbenchTaskScope ? data.preselectedRepoId : undefined
             } as const)
           : data.openGitLabWorkItem
             ? ({
@@ -99,8 +102,6 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
       const currentIsTaskStack =
         currentEntry === 'tasks' ||
         (typeof currentEntry === 'object' && currentEntry.kind === 'task-detail')
-      // Why: with returnToPreviousView the detail is opened from another screen;
-      // inserting the 'tasks' sentinel would make Back land on the Tasks list instead of the actual origin.
       if (!detailEntry || (!currentIsTaskStack && !options.returnToPreviousView)) {
         get().recordViewVisit('tasks')
       }
@@ -113,7 +114,10 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
           state.activeView === 'tasks' ? state.previousViewBeforeTasks : state.activeView,
         taskPageData: data
       }))
-      // Why: prefetch the work-item list during first render so the page's effect hits a warm/in-flight SWR cache (~300–800ms win).
+      if (data.taskSource === 'codehub' || data.openCodeHubTask) {
+        return
+      }
+      // Warm work-item SWR cache during first render so the page effect joins it (~300–800ms saved).
       const state = get()
       const preferredVisibleTaskProviders = normalizeVisibleTaskProviders(
         state.settings?.visibleTaskProviders
@@ -130,15 +134,11 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
         data.taskSource ?? state.settings?.defaultTaskSource,
         visibleTaskProviders
       )
+      if (resolvedSource === 'github' && data.workbenchTaskScope) {
+        return
+      }
       const resolvedMode = state.taskResumeState?.githubMode ?? 'items'
-      // Why: a BW workbench scope materializes its own reference-driven list; the
-      // unscoped query prefetch would warm a cache the scoped view never reads.
-      if (
-        !isWorkbenchShell() &&
-        resolvedSource === 'github' &&
-        resolvedMode === 'items' &&
-        !data.workbenchTaskScope
-      ) {
+      if (resolvedSource === 'github' && resolvedMode === 'items') {
         const eligibleRepos = state.repos.filter((repo) => isGitRepoKind(repo) && repo.path)
         const selectedRepos = (() => {
           const preferred = data.preselectedRepoId
@@ -206,7 +206,7 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
     setGithubTaskDrawerWorkItem: (item) => set({ githubTaskDrawerWorkItem: item }),
     closeTaskPage: () =>
       set((state) => {
-        // Why: if parked on a 'tasks' entry, rewind the history index so Back/Forward aren't no-ops; keep 0 if it's the only entry.
+        // Leaving Tasks must rewind its parked history entry or Back/Forward does nothing; retain index zero if alone.
         const currentEntry = state.worktreeNavHistory[state.worktreeNavHistoryIndex]
         let nextHistoryIndex = state.worktreeNavHistoryIndex
         if (

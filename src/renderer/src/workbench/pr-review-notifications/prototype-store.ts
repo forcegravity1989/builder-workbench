@@ -28,6 +28,7 @@ import {
   readPrototypeReviewSender
 } from './prototype-transport'
 import type { PrototypeReviewSendResult } from './prototype-transport'
+
 let state: PrototypeReviewState = EMPTY_PROTOTYPE_REVIEW_STATE
 let storageError: string | null = null
 try {

@@ -1,7 +1,7 @@
 import { ErrorDetails } from '../error-feedback'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Download, Plus } from 'lucide-react'
-import { track } from '@/lib/telemetry'
+import { track } from '@/diagnostics/telemetry/telemetry'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
 import type {
   PackageLatest,

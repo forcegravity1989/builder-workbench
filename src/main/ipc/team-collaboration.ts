@@ -10,8 +10,8 @@ import {
   loadTeamIdentity,
   rememberTeamIdentity
 } from '../workbench/team-collaboration/team-identity'
-import { markRuntimeEnvironmentManuallyDisconnected } from './runtime-environment-manual-disconnect'
-import { invalidateRuntimeEnvironmentTransport } from './runtime-environments'
+import { markRuntimeEnvironmentManuallyDisconnected } from './runtime-environments/connectivity/runtime-environment-manual-disconnect'
+import { invalidateRuntimeEnvironmentTransport } from './runtime-environments/runtime-environments'
 
 const NUMERIC_ID = /^\d{1,32}$/
 const TEXT_ID = /^.{1,256}$/u
