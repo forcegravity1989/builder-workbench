@@ -33,6 +33,7 @@ export function SkillsFilterToolbar({
   totalCount,
   resultCount,
   linkCount,
+  sharingEnabled = true,
   loading,
   onViewChange,
   onFiltersChange,
@@ -45,6 +46,7 @@ export function SkillsFilterToolbar({
   totalCount: number
   resultCount: number
   linkCount: number
+  sharingEnabled?: boolean
   loading: boolean
   onViewChange: (next: SkillsPageView) => void
   onFiltersChange: (next: SkillsFilterState) => void
@@ -123,25 +125,27 @@ export function SkillsFilterToolbar({
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {/* Match chip pill shapes; the divider separates view selection from filters. */}
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            spacing={1}
-            value={view}
-            onValueChange={(value) => onViewChange((value || 'skills') as SkillsPageView)}
-            aria-label={t('auto.components.skills.SkillsPage.viewSwitch', 'Show')}
-          >
-            <ToggleGroupItem value="skills" className="rounded-full px-2.5 text-xs">
-              {t('auto.components.skills.SkillsPage.f43ad6edf3', 'Skills')}
-            </ToggleGroupItem>
-            <ToggleGroupItem value="shared" className="rounded-full px-2.5 text-xs">
-              {t('auto.components.skills.SkillsPage.sharedLinks', 'Shared links')}
-            </ToggleGroupItem>
-          </ToggleGroup>
+          {sharingEnabled ? (
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              spacing={1}
+              value={view}
+              onValueChange={(value) => onViewChange((value || 'skills') as SkillsPageView)}
+              aria-label={t('auto.components.skills.SkillsPage.viewSwitch', 'Show')}
+            >
+              <ToggleGroupItem value="skills" className="rounded-full px-2.5 text-xs">
+                {t('auto.components.skills.SkillsPage.f43ad6edf3', 'Skills')}
+              </ToggleGroupItem>
+              <ToggleGroupItem value="shared" className="rounded-full px-2.5 text-xs">
+                {t('auto.components.skills.SkillsPage.sharedLinks', 'Shared links')}
+              </ToggleGroupItem>
+            </ToggleGroup>
+          ) : null}
           {sharedView ? null : (
             <>
-              <div className="h-4 w-px shrink-0 bg-border" aria-hidden />
+              {sharingEnabled ? <div className="h-4 w-px shrink-0 bg-border" aria-hidden /> : null}
               <ToggleGroup
                 type="single"
                 variant="outline"

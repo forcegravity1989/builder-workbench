@@ -227,7 +227,7 @@ export abstract class OrcaRuntimeWithStateFields extends OrcaRuntimeWithBots {
       () => this.notifyReposChanged(),
       {
         artifacts: () => this.artifacts.hasService(),
-        skills: () => this.skillCommands.hasSkillCloudService()
+        skills: () => this.skillCommands.hasSkillPublishingService()
       },
       () => this.authoritativeWindowId === HEADLESS_RUNTIME_WINDOW_ID
     )

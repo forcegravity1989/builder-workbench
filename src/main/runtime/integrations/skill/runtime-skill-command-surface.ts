@@ -1,6 +1,7 @@
 import '../../../../shared/git/admission/git-admission-state'
 import '../../../crash-reporting/process-exits/main-process-lifecycle-identity'
 import { join } from 'node:path'
+import { isWorkbenchProduct } from '../../../startup/workbench-product'
 import {
   assertAgentSkillSharingAllowed,
   isAgentSkillSharingEnabled
@@ -14,7 +15,10 @@ import {
   type AgentSkillShareRequest
 } from '../../../../shared/skills/sharing/agent-skill-sharing-contract'
 import type { DiscoveredSkill } from '../../../../shared/skills/discovery/skills'
-import { SharingUnavailableOnHostError } from '../../../../shared/remote-runtime/host-status/sharing-unavailable-on-host'
+import {
+  SharingUnavailableOnHostError,
+  WORKBENCH_PUBLISHING_UNAVAILABLE_MESSAGE
+} from '../../../../shared/remote-runtime/host-status/sharing-unavailable-on-host'
 import { SKILL_SHARE_NAME_TAKEN_ERROR } from '../../../../shared/skills/sharing/skill-sharing-contract'
 import { selectDiscoveredSkills } from '../../../skills/sharing/agent-skill-selection'
 import { SkillSharePreparationService } from '../../../skills/sharing/skill-share-preparation'
@@ -43,13 +47,19 @@ export class RuntimeSkillCommands
   setSkillCloudService(service: SkillCloudService): void {
     this.skillCloudService = service
   }
-  hasSkillCloudService(): boolean {
-    return this.skillCloudService !== null
+  hasSkillPublishingService(): boolean {
+    return !isWorkbenchProduct() && this.skillCloudService !== null
   }
   assertAgentSkillSharingAllowed(): void {
     // A host with no sharing service must not blame the device setting it cannot change.
-    this.requireCloud()
+    this.requirePublishing()
     assertAgentSkillSharingAllowed(() => isAgentSkillSharingEnabled(this.host.getSettings()))
+  }
+  private requirePublishing(): SkillCloudService {
+    if (isWorkbenchProduct()) {
+      throw new SharingUnavailableOnHostError(WORKBENCH_PUBLISHING_UNAVAILABLE_MESSAGE, [])
+    }
+    return this.requireCloud()
   }
   private requireCloud(): SkillCloudService {
     if (!this.skillCloudService) {
@@ -159,20 +169,20 @@ export class RuntimeSkillCommands
   }
 
   publishSkillPackage(request: SkillCloudPublishRequest) {
-    return this.requireCloud().publish(request)
+    return this.requirePublishing().publish(request)
   }
 
   publishSkillPackageVersion(request: SkillCloudPublishRequest) {
-    return this.requireCloud().publishVersion(request)
+    return this.requirePublishing().publishVersion(request)
   }
   findOwnedSkillPackageId(name: string, options: SkillCloudOptions) {
-    return this.requireCloud().findOwnedPackageId(name, options)
+    return this.requirePublishing().findOwnedPackageId(name, options)
   }
   createSkillPackageShare(
     packageId: string,
     request: SkillCloudOptions & { pinnedVersionId?: string; idempotencyKey?: string }
   ) {
-    return this.requireCloud().createShare(packageId, request)
+    return this.requirePublishing().createShare(packageId, request)
   }
   resolveSkillShare(shareId: string, options: SkillCloudOptions) {
     return this.requireCloud().resolveShare(shareId, options)
