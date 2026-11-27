@@ -16,7 +16,7 @@ export async function deliverMaintenanceResult(
   }
   const params = { ...caller, item: String(pending.item) }
   const {
-    result: { item }
+    result: { item, events }
   } = await client.call<BotItemShowView>('bots.items.show', params)
   const worker = item.links.find(
     (link) =>
@@ -58,6 +58,17 @@ export async function deliverMaintenanceResult(
     }
     pr = { url: result.pr.url, state: result.pr.state, checks: result.pr.checksStatus }
   }
-  await client.call('bots.items.link', { ...params, refs: [pr.url] })
+  const url = pr.url
+  if (item.links.some((link) => link.kind === 'pr' && link.pr?.shown && link.pr.url === url)) {
+    return pr
+  }
+  if (item.status === 'done' || item.status === 'canceled') {
+    const text = `修复 PR：${url}`
+    if (!events.some((event) => event.kind === 'commented' && event.data.text === text)) {
+      await client.call('bots.items.comment', { ...params, text })
+    }
+  } else {
+    await client.call('bots.items.link', { ...params, refs: [url] })
+  }
   return pr
 }
