@@ -25,6 +25,9 @@ export async function deliverMaintenanceResult(
   )
   const cached = worker?.kind === 'dispatch' && worker.pr?.shown ? worker.pr : undefined
   let pr: { url: string; state: string; checks: string | null } | undefined = cached
+  if (!pr && item.status === 'canceled') {
+    return 'canceled' as const
+  }
   if (!pr) {
     const { result: show } = await client.call<WorkerShowResult>('orchestration.workerShow', {
       dispatch: pending.dispatchId

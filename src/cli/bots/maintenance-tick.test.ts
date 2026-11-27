@@ -99,8 +99,8 @@ it('recovers a lost worker receipt and holds a second labeled issue until the fi
     await tick()
     expect(starts).toEqual([issues[0].url])
     expect(refs).toContain('dispatch:worker-1')
-    workerState = 'completed'
-    outcome = 'succeeded'
+    workerState = 'failed'
+    outcome = 'failed'
     await tick()
     hasPR = true
     await tick()

@@ -64,7 +64,9 @@ const tick: CommandHandler = async (ctx) => {
         try {
           const landed = await deliverMaintenanceResult(ctx, repoId, caller, pending)
           if (landed) {
-            reports.push({ issue: pending.url, pr: landed })
+            if (landed !== 'canceled') {
+              reports.push({ issue: pending.url, pr: landed })
+            }
             queue.reports = queue.reports.filter((entry) => entry.url !== pending.url)
             await save()
           }
@@ -162,9 +164,7 @@ const tick: CommandHandler = async (ctx) => {
           }
         }
         active.dispatchId = dispatch
-        if (outcome === 'succeeded' || worker.pr?.shown) {
-          queue.reports.push(active)
-        }
+        queue.reports.push(active)
         queue.handled.push(active.url)
         delete queue.active
         await save()
