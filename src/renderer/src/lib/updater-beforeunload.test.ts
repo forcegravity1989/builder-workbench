@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  isDiscardingUnsavedSessionForUpdate,
   isIntentionalAppRestartInProgress,
   isUpdaterQuitAndInstallInProgress,
   registerUpdaterBeforeUnloadBypass
@@ -8,6 +9,7 @@ import {
   ORCA_APP_RESTART_ABORTED_EVENT,
   ORCA_APP_RESTART_STARTED_EVENT,
   ORCA_UPDATER_QUIT_AND_INSTALL_ABORTED_EVENT,
+  ORCA_UPDATER_QUIT_AND_INSTALL_DISCARD_UNSAVED_EVENT,
   ORCA_UPDATER_QUIT_AND_INSTALL_STARTED_EVENT
 } from '../../../shared/updater-renderer-events'
 import { ORCA_RENDERER_SHUTDOWN_CHECKPOINT_ABORTED_EVENT } from '../../../shared/renderer-shutdown-events'
@@ -64,6 +66,20 @@ describe('registerUpdaterBeforeUnloadBypass', () => {
     window.dispatchEvent(new Event(ORCA_RENDERER_SHUTDOWN_CHECKPOINT_ABORTED_EVENT))
 
     expect(isIntentionalAppRestartInProgress()).toBe(false)
+    cleanup()
+  })
+
+  it('arms the discard latch and clears it when the install aborts', () => {
+    const cleanup = registerUpdaterBeforeUnloadBypass()
+
+    window.dispatchEvent(new Event(ORCA_UPDATER_QUIT_AND_INSTALL_DISCARD_UNSAVED_EVENT))
+    expect(isDiscardingUnsavedSessionForUpdate()).toBe(true)
+    expect(isIntentionalAppRestartInProgress()).toBe(true)
+
+    window.dispatchEvent(new Event(ORCA_UPDATER_QUIT_AND_INSTALL_ABORTED_EVENT))
+    expect(isDiscardingUnsavedSessionForUpdate()).toBe(false)
+    expect(isIntentionalAppRestartInProgress()).toBe(false)
+
     cleanup()
   })
 
