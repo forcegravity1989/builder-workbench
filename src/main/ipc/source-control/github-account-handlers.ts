@@ -1,9 +1,13 @@
 import { ipcMain } from 'electron'
+import { isWorkbenchProduct } from '../../startup/workbench-product'
 import { appStarSourceSchema } from '../../../shared/github/repositories/gh-star-source'
 import { resolveGhAccountRequiredHost } from '../../github/accounts/account-binding-required-host'
 import { diagnoseGhAuth } from '../../github/accounts/auth-diagnose'
 import { checkOrcaStarred, starOrca } from '../../github/client/fetch/orca-star'
-import { getAuthenticatedViewer, getRepoAuthenticatedViewer } from '../../github/client/fetch/authenticated-viewer'
+import {
+  getAuthenticatedViewer,
+  getRepoAuthenticatedViewer
+} from '../../github/client/fetch/authenticated-viewer'
 import { getRepoRoutingConnectionId } from '../../../shared/execution-host/execution-host'
 import {
   listGhAccountBindingInventory,
@@ -13,7 +17,11 @@ import { getRateLimit } from '../../github/api/rate-limit'
 import type { Store } from '../../persistence/loading-store/store'
 import { getCohortAtEmit } from '../../telemetry/cohort-classifier'
 import { track } from '../../telemetry/client'
-import { assertRegisteredGitHubRepo, getGitHubLocalGitOptionArgs, type GitHubRepoScopedArgs } from './github-repo-routing'
+import {
+  assertRegisteredGitHubRepo,
+  getGitHubLocalGitOptionArgs,
+  type GitHubRepoScopedArgs
+} from './github-repo-routing'
 
 export function registerGitHubAccountHandlers(store: Store): void {
   ipcMain.handle('gh:viewer', () => getAuthenticatedViewer())
@@ -26,18 +34,20 @@ export function registerGitHubAccountHandlers(store: Store): void {
       ...getGitHubLocalGitOptionArgs(store, repo)
     )
   })
-  ipcMain.handle('gh:checkOrcaStarred', () => checkOrcaStarred())
-  ipcMain.handle('gh:starOrca', async (_event, source: unknown) => {
-    const sourceParse = appStarSourceSchema.safeParse(source)
-    const starred = await starOrca()
-    if (starred && sourceParse.success) {
-      track('app_starred_orca', {
-        source: sourceParse.data,
-        ...getCohortAtEmit()
-      })
-    }
-    return starred
-  })
+  if (!isWorkbenchProduct()) {
+    ipcMain.handle('gh:checkOrcaStarred', () => checkOrcaStarred())
+    ipcMain.handle('gh:starOrca', async (_event, source: unknown) => {
+      const sourceParse = appStarSourceSchema.safeParse(source)
+      const starred = await starOrca()
+      if (starred && sourceParse.success) {
+        track('app_starred_orca', {
+          source: sourceParse.data,
+          ...getCohortAtEmit()
+        })
+      }
+      return starred
+    })
+  }
 
   ipcMain.handle('gh:rateLimit', (_event, args?: { force?: boolean }) =>
     getRateLimit(args?.force ? { force: true } : undefined)

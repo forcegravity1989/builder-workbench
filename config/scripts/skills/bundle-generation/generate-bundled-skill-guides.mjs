@@ -14,6 +14,7 @@ const SCRIPT_DIR = import.meta.dirname
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '../../..', '..')
 
 const CANONICAL_GUIDE_NAMES = [
+  'bw',
   'orca-computer-use',
   'jira-tickets',
   'linear-tickets',
@@ -29,6 +30,7 @@ const CANONICAL_GUIDE_NAMES = [
 
 // Aliases preserve renamed discovery stubs; append ledger entries, never remove them.
 const GUIDE_ALIASES = {
+  bw: [],
   'orca-computer-use': skillRenames['orca-computer-use'],
   'jira-tickets': [],
   'linear-tickets': [],
@@ -57,6 +59,8 @@ const STUB_TOPICS = [
   'orca-plugin-authoring',
   'orchestration'
 ]
+
+const CLI_ONLY_TOPICS = new Set(['bw'])
 
 function normalizeMarkdown(markdown) {
   return markdown.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
@@ -183,6 +187,30 @@ function serializeEmbeddedModule(guides) {
 }
 
 async function readGuideReferences(repoRoot, guideName) {
+  if (guideName === 'bw') {
+    const journeys = [
+      'project-direction',
+      'version-planning',
+      'issue-delivery',
+      'version-acceptance'
+    ]
+    return Promise.all(
+      journeys.map(async (name) => {
+        const source = path.join(repoRoot, 'docs', '03-guide', name, 'README.md')
+        const body = normalizeMarkdown(await readFile(source, 'utf8'))
+        const markdown = body
+          .replace(/^>.*(?:\n|$)/gm, '')
+          .replace(/!?\[([^\]]+)\]\((?!https?:)([^)]+)\)/g, (_, label, relative) => {
+            const target = new URL(
+              relative,
+              `https://github.com/forcegravity1989/builder-workbench/blob/main/docs/03-guide/${name}/README.md`
+            )
+            return `[${label}](${target.href})`
+          })
+        return { name, markdown: markdown.trim() }
+      })
+    )
+  }
   const referenceRoot = path.join(repoRoot, 'skill-guides', guideName, 'references')
   let entries
   try {
@@ -299,6 +327,9 @@ async function buildArtifacts(repoRoot = REPO_ROOT) {
       aliases,
       references
     })
+    if (CLI_ONLY_TOPICS.has(name)) {
+      continue
+    }
     const stubPath = path.join(repoRoot, 'skill-stubs', `${name}.md`)
     const content = stubTopics.has(name)
       ? composeStubProjection(

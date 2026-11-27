@@ -118,7 +118,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
 
   return (
     <aside
-      aria-label="Workbench 导航"
+      aria-label="Monica 导航"
       className="scrollbar-sleek flex min-h-0 flex-1 flex-col items-center overflow-y-auto border-r border-worktree-sidebar-border bg-worktree-sidebar py-2.5"
       style={{ width: WORKBENCH_RAIL_WIDTH }}
       data-workbench-rail
@@ -134,7 +134,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
         <LayoutGrid className="size-4" strokeWidth={2} />
       </button>
       <nav
-        aria-label="Workbench 导航"
+        aria-label="Monica 导航"
         className="flex w-full flex-col items-center gap-1 border-t border-worktree-sidebar-border pt-2"
       >
         {entries.slice(0, 2).map((entry) => (

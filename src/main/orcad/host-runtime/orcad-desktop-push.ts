@@ -1,3 +1,4 @@
+import { isWorkbenchProduct } from '../../startup/workbench-product'
 import process from 'node:process'
 import { getAppEnvironment } from '../../../shared/app-lifecycle/app-environment'
 import { DesktopPushService } from '../../runtime/push/desktop-push-service'
@@ -10,6 +11,9 @@ export function startOrcadDesktopPushService(
   runtime: OrcaRuntimeService,
   runtimeRpc: OrcaRuntimeRpcServer
 ): void {
+  if (isWorkbenchProduct()) {
+    return
+  }
   const pushService = DesktopPushService.create({
     runtime,
     runtimeRpc,

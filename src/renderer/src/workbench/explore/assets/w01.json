@@ -1,0 +1,46 @@
+{
+  "chapters": [
+    {
+      "index": 0,
+      "start": 0
+    },
+    {
+      "index": 1,
+      "start": 6.334
+    },
+    {
+      "index": 2,
+      "start": 53.293
+    },
+    {
+      "index": 3,
+      "start": 75.058
+    }
+  ],
+  "duration": 108.28,
+  "skip": [
+    {
+      "from": 16.009,
+      "to": 26.735
+    },
+    {
+      "from": 30.035,
+      "to": 49.050000000000004
+    },
+    {
+      "from": 60.644,
+      "to": 63.87700000000001
+    },
+    {
+      "from": 80.668,
+      "to": 106.063
+    }
+  ],
+  "size": {
+    "width": 1540,
+    "height": 818
+  },
+  "sourceCommit": "ed4c889f7edafc945003d04cd07bfbf8c1f04bab",
+  "recordedAt": "2026-11-27T07:59:00.446Z",
+  "trimStart": 0
+}
