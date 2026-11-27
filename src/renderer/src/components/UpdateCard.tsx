@@ -133,6 +133,12 @@ export function UpdateCard(): React.JSX.Element | null {
       setInstallError(String((error as Error)?.message ?? error))
     })
   }
+  const handleForceInstall = (): void => {
+    setInstallError(null)
+    void window.api.updater.quitAndInstall({ discardUnsavedSession: true }).catch((error) => {
+      setInstallError(String((error as Error)?.message ?? error))
+    })
+  }
   const handleEnableHttp1Compatibility = (): void => {
     if (compatibilityRelaunching) {
       return
@@ -160,7 +166,8 @@ export function UpdateCard(): React.JSX.Element | null {
     onEnableHttp1Compatibility: handleEnableHttp1Compatibility,
     onRetryDownload: handleUpdate,
     onRecheck: () => void window.api.updater.check({ includePrerelease: false }),
-    onInstallRetry: handleInstallRetry
+    onInstallRetry: handleInstallRetry,
+    onForceInstall: handleForceInstall
   })
   const linuxPackageRecovery =
     status.state === 'error' && status.recovery?.kind === 'linux-package-install'

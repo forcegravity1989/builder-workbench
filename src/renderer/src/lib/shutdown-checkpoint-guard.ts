@@ -55,9 +55,13 @@ export function createShutdownCheckpointGuard(
 }
 
 export function createShutdownCheckpointBeforeUnloadHandler(
-  guard: ShutdownCheckpointGuard
+  guard: ShutdownCheckpointGuard,
+  shouldBypass?: () => boolean
 ): (event: Event) => void {
   return (event): void => {
+    if (shouldBypass?.()) {
+      return
+    }
     if (!guard.persistOnce()) {
       event.currentTarget?.dispatchEvent(new Event(ORCA_RENDERER_SHUTDOWN_CHECKPOINT_FAILED_EVENT))
       event.preventDefault()
