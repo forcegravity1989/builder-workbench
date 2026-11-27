@@ -13,6 +13,7 @@ const SCRIPT_DIR = import.meta.dirname
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..')
 
 const CANONICAL_GUIDE_NAMES = [
+  'bw',
   'computer-use',
   'linear-tickets',
   'orca-cli',
@@ -26,6 +27,7 @@ const CANONICAL_GUIDE_NAMES = [
 // Why: old discovery stubs can outlive a rename indefinitely, so aliases are
 // a compatibility ledger: add entries for renames, but never remove them.
 const GUIDE_ALIASES = {
+  bw: [],
   'computer-use': [],
   'linear-tickets': [],
   'orca-cli': [],
@@ -51,6 +53,8 @@ const STUB_TOPICS = [
   'orca-per-workspace-env',
   'orchestration'
 ]
+
+const CLI_ONLY_TOPICS = new Set(['bw'])
 
 function normalizeMarkdown(markdown) {
   return markdown.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
@@ -326,6 +330,9 @@ async function buildArtifacts(repoRoot = REPO_ROOT) {
         markdown: referenceMarkdown
       }))
     })
+    if (CLI_ONLY_TOPICS.has(name)) {
+      continue
+    }
     const stubPath = path.join(repoRoot, 'skill-stubs', `${name}.md`)
     const content = stubTopics.has(name)
       ? composeStubProjection(

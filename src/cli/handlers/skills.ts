@@ -210,10 +210,11 @@ function formatSkillSelectionHelp(verb: SkillMutationVerb, skillNames: string[])
 function createSkillMutationHandler(verb: SkillMutationVerb): CommandHandler {
   return async ({ flags, json }) => {
     const guides = await loadCanonicalGuides()
-    const skillNames = resolveSelectedSkillNames(flags, guides)
+    const installableGuides = guides.filter((guide) => guide.name !== 'bw')
+    const skillNames = resolveSelectedSkillNames(flags, installableGuides)
 
     if (skillNames.length === 0) {
-      const names = guides.map((guide) => guide.name)
+      const names = installableGuides.map((guide) => guide.name)
       writeStdoutLine(
         json
           ? JSON.stringify({ availableSkills: names }, null, 2)

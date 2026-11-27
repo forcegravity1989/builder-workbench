@@ -23,6 +23,8 @@ Use `orca` when Orca's running editor/runtime is the source of truth. Use plain 
 
 Prefer `--json` for agent-driven calls. If the CLI is missing, say so explicitly instead of inspecting source files first.
 
+In BW, run `ORCA skills get bw` for guidance about the BW project wall, version planning or acceptance, and BW feedback or crash reporting.
+
 ## Full Handoffs
 
 A full handoff transfers ownership to another agent or worktree, then the original agent stops. Treat requests phrased as "hand off", "handoff", "handover", "give this to another agent", "give this to another worktree", "another agent", or "another worktree" as full handoffs unless the user explicitly asks to supervise, monitor, wait for results, track completion, coordinate a DAG, use decision gates, or manage ask/reply.
