@@ -180,7 +180,8 @@ export function useTaskPageGitHubListState(model: TaskPageProviderStateModel) {
   ])
 
   // Why: the dialog's "Use" button routes through the same direct-launch flow as the row-level "Use" CTA so behavior is consistent regardless of entry point.
-  return Object.assign(model, {
+  // The parent owns the raw selection key. Downstream stages use the derived key only for this collection.
+  return Object.assign({}, model, {
     selectedReposKey,
     taskSearchInput,
     setTaskSearchInput,
