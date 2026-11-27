@@ -203,6 +203,8 @@ test.describe('BW first-run project handoff', () => {
       .toBe(true)
 
     const total = await workbenchPage.evaluate(async () => {
+      // This probe does not cover the persistent Codex migration notice.
+      window.__store?.getState().markCodexTerminalServerIsolationNoticeSeen()
       const { totalAgentsSpawned } = await window.api.stats.getSummary()
       await window.api.ui.setWithAck({
         starNagBaselineAgents: totalAgentsSpawned,
