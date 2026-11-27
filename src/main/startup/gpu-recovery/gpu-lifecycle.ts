@@ -1,3 +1,4 @@
+import { MONICA_DISPLAY_NAME } from '../../../shared/i18n/monica-display-name'
 import { app, type BrowserWindow } from 'electron'
 import { relaunchApp } from '../quit/app-relaunch'
 import { destroySystemTray } from '../../tray/system-tray'
@@ -43,7 +44,7 @@ export function createGpuCrashDiagnosticsRecorder(): GpuCrashDiagnosticsRecorder
 export function updateGpuAccelerationAboutPanel(): void {
   app.setAboutPanelOptions(
     createGpuAccelerationAboutPanelOptions({
-      appName: isWorkbenchProduct() ? 'BW' : app.name,
+      appName: isWorkbenchProduct() ? MONICA_DISPLAY_NAME : app.name,
       appVersion: app.getVersion(),
       platform: process.platform,
       gpuFallbackActive: state.gpuFallbackActiveThisLaunch,
