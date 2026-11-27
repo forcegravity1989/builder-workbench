@@ -4,52 +4,205 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>__BW_FILE_NAME__ · 分享</title>
+    <!--
+      Share viewer. The content stays in an opaque iframe (/s/:id/content) and element picking runs
+      through the injected bridge (src/bridge.js, postMessage only). Annotations live beside the
+      content and are written to /api/shares/:id/annotations.
+
+      Visual spec: the Workbench warm skin tokens (src/renderer/src/workbench/workbench-tokens.css,
+      claude theme) are inlined below — the share server's CSP only allows inline styles, so no
+      external stylesheet or font file. The annotation popover follows the Orca element-annotation
+      dialog (element text title, monospace selector, large terracotta-bordered textarea, 取消 /
+      添加, Ctrl+Enter). No intent segments and no author field: annotations are anonymous and the
+      list shows text + time + target only.
+    -->
     <style>
-      * {
+      *,
+      *::before,
+      *::after {
         box-sizing: border-box;
       }
       html,
       body {
         height: 100%;
       }
+
+      /* ── Workbench warm-skin tokens (claude theme, light) ── */
+      :root {
+        color-scheme: light;
+        --background: #faf9f5;
+        --foreground: #1f1e1d;
+        --card: #fefdfa;
+        --muted-foreground: #75716a;
+        --accent: #fef0eb;
+        --accent-foreground: #1f1e1d;
+        --secondary: #f0eee6;
+        --input: #ebe7e1;
+        --ring: #d97757;
+        --primary: #d97757;
+        --primary-foreground: #ffffff;
+        --border: #ebe7e1;
+        --sidebar: #f0eee6;
+        --destructive: #c15f4d;
+        --destructive-background: #ffe4df;
+        --warning-background: #feecce;
+        --warning-text: #774a03;
+        --radius-md: 8px;
+        --radius-lg: 10px;
+        --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        --font-sans:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+          'Noto Sans SC', sans-serif;
+      }
+      /* ── Workbench warm-skin tokens (claude theme, dark) ── */
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --background: #0a0a0a;
+          --foreground: #fafafa;
+          --card: #171717;
+          --muted-foreground: #a1a1a1;
+          --accent: color-mix(in srgb, #d97757 16%, transparent);
+          --accent-foreground: #fafafa;
+          --secondary: #262626;
+          --input: oklch(26.9% 0 0);
+          --ring: #d97757;
+          --primary: #d97757;
+          --primary-foreground: #ffffff;
+          --border: rgba(255, 255, 255, 0.07);
+          --sidebar: #262626;
+          --destructive: #ff6568;
+          --destructive-background: rgba(255, 101, 104, 0.1);
+          --warning-background: oklch(27.9% 0.077 45.635);
+          --warning-text: oklch(87.9% 0.169 91.605);
+        }
+      }
+
+      [hidden] {
+        display: none !important;
+      }
       body {
         margin: 0;
         display: flex;
         flex-direction: column;
-        font:
-          14px/1.5 -apple-system,
-          'Segoe UI',
-          'Microsoft YaHei',
-          sans-serif;
-        color: #1f2937;
-        background: #f3f4f6;
+        background: var(--background);
+        color: var(--foreground);
+        font-family: var(--font-sans);
+        font-size: 13px;
+        line-height: 1.5;
       }
-      .viewer-head {
-        display: flex;
-        align-items: baseline;
-        gap: 12px;
-        padding: 10px 16px;
-        background: #fff;
-        border-bottom: 1px solid #e5e7eb;
+
+      /* ── Controls: primitives.css Button (size sm, 32px) ── */
+      .vw-btn {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 12px;
+        border: 1px solid transparent;
+        border-radius: var(--radius-md);
+        background: transparent;
+        color: var(--foreground);
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 20px;
+        font-weight: 500;
+        white-space: nowrap;
+        outline: none;
+        cursor: pointer;
+        transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .vw-btn:disabled {
+        pointer-events: none;
+        opacity: 0.5;
+      }
+      .vw-btn:focus-visible {
+        border-color: var(--ring);
+        box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent);
+      }
+      .vw-btn svg {
         flex: none;
       }
+      .vw-btn-primary {
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .vw-btn-primary:hover {
+        background: color-mix(in oklab, var(--primary) 88%, transparent);
+      }
+      .vw-btn-ghost:hover {
+        background: var(--accent);
+        color: var(--accent-foreground);
+      }
+
+      /* ── Badges: target tags use warning (they echo the sandbox amber highlight) ── */
+      .vw-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        width: fit-content;
+        max-width: 100%;
+        flex-shrink: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        border: 1px solid transparent;
+        border-radius: 9999px;
+        padding: 2px 8px;
+        font-size: 12px;
+        line-height: 16px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .vw-tag-target {
+        background: var(--warning-background);
+        color: var(--warning-text);
+      }
+      .vw-tag-stale {
+        background: var(--destructive-background);
+        color: var(--destructive);
+      }
+
+      /* ── Viewer skeleton ── */
+      .viewer {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .viewer-head {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--sidebar);
+      }
       .viewer-head .file-name {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
+        color: var(--foreground);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .viewer-head .shared-at {
         font-size: 12px;
-        color: #6b7280;
+        color: var(--muted-foreground);
+        white-space: nowrap;
       }
       .viewer-body {
-        flex: 1;
         display: flex;
+        flex: 1;
         min-height: 0;
       }
       .viewer-content {
         flex: 1;
         min-width: 0;
-        background: #fff;
+        position: relative;
+        background: var(--background);
       }
       .viewer-content iframe {
         width: 100%;
@@ -57,272 +210,396 @@
         border: 0;
         display: block;
       }
+      .selecting .viewer-content {
+        cursor: crosshair;
+      }
+
+      /* ── Selection-mode hint (add-note enters selection immediately) ── */
+      .select-hint {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 30;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        border: 1px solid var(--border);
+        border-radius: 9999px;
+        background: var(--card);
+        color: var(--foreground);
+        font-size: 12px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      .select-hint .esc {
+        padding: 0 6px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--secondary);
+        color: var(--muted-foreground);
+        font-size: 11px;
+        line-height: 18px;
+      }
+
+      /* ── Annotation popover: the Orca element-annotation dialog (g3-annot-pop).
+            Element text title + monospace selector + large terracotta-bordered textarea +
+            取消 / 添加 (Ctrl+Enter). Anchored beside the picked element by the bridge rect. ── */
+      .anno-popover {
+        position: absolute;
+        z-index: 40;
+        width: min(340px, calc(100% - 32px));
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--card);
+        color: var(--foreground);
+        box-shadow:
+          0 16px 40px rgb(0 0 0 / 0.18),
+          0 1px 2px rgb(0 0 0 / 0.06);
+      }
+      @media (prefers-color-scheme: dark) {
+        .anno-popover {
+          box-shadow:
+            0 24px 64px rgb(0 0 0 / 0.55),
+            inset 0 1px 0 rgb(255 255 255 / 0.06);
+        }
+      }
+      .anno-popover header {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .anno-popover header .pop-icon {
+        flex: none;
+        margin-top: 2px;
+        color: var(--muted-foreground);
+      }
+      .anno-popover header .pop-titles {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .anno-popover header strong {
+        font-size: 14px;
+        line-height: 20px;
+        font-weight: 600;
+        color: var(--foreground);
+        overflow-wrap: anywhere;
+      }
+      .anno-popover header code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 16px;
+        color: var(--muted-foreground);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .anno-popover header .pop-close {
+        flex: none;
+        height: 24px;
+        width: 24px;
+        padding: 0;
+        border: 1px solid transparent;
+        border-radius: var(--radius-md);
+        background: none;
+        color: var(--muted-foreground);
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .anno-popover header .pop-close:hover {
+        background: var(--accent);
+        color: var(--foreground);
+      }
+      .anno-popover header .pop-close:focus-visible {
+        border-color: var(--ring);
+        box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent);
+      }
+      /* Always-on terracotta border, like the Orca annotation box; focused on open. */
+      .anno-popover textarea {
+        width: 100%;
+        min-height: 104px;
+        padding: 10px 12px;
+        border: 2px solid color-mix(in oklab, var(--ring) 65%, transparent);
+        border-radius: var(--radius-lg);
+        background: var(--background);
+        color: var(--foreground);
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.6;
+        resize: vertical;
+        outline: none;
+        transition: border-color 150ms;
+      }
+      .anno-popover textarea:hover,
+      .anno-popover textarea:focus-visible {
+        border-color: var(--ring);
+      }
+      .anno-popover textarea::placeholder {
+        color: color-mix(in oklab, var(--muted-foreground) 70%, transparent);
+      }
+      .anno-popover .form-error {
+        font-size: 12px;
+        color: var(--destructive);
+      }
+      .anno-popover footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .anno-popover footer .kbd {
+        display: inline-flex;
+        align-items: center;
+        gap: 1px;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: rgb(255 255 255 / 0.22);
+        color: inherit;
+        font-size: 10px;
+        font-family: var(--font-mono);
+        line-height: 14px;
+      }
+
+      /* ── Annotation panel ── */
       .anno-panel {
         width: 340px;
         flex: none;
         display: flex;
         flex-direction: column;
-        border-left: 1px solid #e5e7eb;
-        background: #fff;
+        border-left: 1px solid var(--border);
+        background: var(--sidebar);
+        min-height: 0;
       }
       .anno-head {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 10px 14px;
-        border-bottom: 1px solid #e5e7eb;
+        gap: 8px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
         flex: none;
       }
       .anno-head h2 {
         margin: 0;
+        flex: 1;
         font-size: 14px;
+        font-weight: 600;
       }
       .anno-head .count {
         font-size: 12px;
-        color: #6b7280;
+        font-weight: 400;
+        color: var(--muted-foreground);
       }
       .anno-list {
         flex: 1;
         overflow-y: auto;
-        padding: 8px 14px;
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 0;
+      }
+      .annotation-empty {
+        margin: 24px 0;
+        text-align: center;
+        font-size: 12px;
+        color: var(--muted-foreground);
       }
       .annotation-item {
-        padding: 8px 10px;
-        margin-bottom: 8px;
-        border: 1px solid #e5e7eb;
-        border-radius: 6px;
-        background: #f9fafb;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--card);
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
         cursor: pointer;
+        transition: border-color 120ms ease;
       }
-      .annotation-item.mine {
-        border-color: #93c5fd;
-        background: #eff6ff;
+      .annotation-item:hover {
+        border-color: color-mix(in oklab, var(--muted-foreground) 45%, transparent);
       }
-      .annotation-item .meta {
+      .annotation-item:focus-visible {
+        border-color: var(--ring);
+        box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent);
+      }
+      .annotation-item .row {
         display: flex;
         align-items: center;
         gap: 6px;
         font-size: 12px;
-        color: #6b7280;
-      }
-      .annotation-item .author {
-        font-weight: 600;
-        color: #374151;
+        min-width: 0;
       }
       .annotation-item .time {
+        color: var(--muted-foreground);
+        font-size: 11px;
+      }
+      .annotation-item .delete {
         margin-left: auto;
+        height: 22px;
+        width: 22px;
+        padding: 0;
+        border: 1px solid transparent;
+        border-radius: var(--radius-md);
+        background: none;
+        color: var(--muted-foreground);
+        font-size: 14px;
+        line-height: 1;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
-      .annotation-item .target-tag {
-        display: inline-block;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        padding: 1px 6px;
-        border-radius: 4px;
-        background: #fef3c7;
-        color: #92400e;
-        font-size: 12px;
+      .annotation-item .delete:hover {
+        background: var(--destructive-background);
+        color: var(--destructive);
       }
-      .annotation-item .stale-tag {
-        display: inline-block;
-        padding: 1px 6px;
-        border-radius: 4px;
-        background: #fee2e2;
-        color: #991b1b;
-        font-size: 12px;
+      .annotation-item .delete:focus-visible {
+        border-color: var(--ring);
+        box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent);
       }
       .annotation-item .text {
-        margin: 4px 0 0;
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--foreground);
         white-space: pre-wrap;
         word-break: break-word;
       }
-      .annotation-item .delete {
-        margin-top: 4px;
-        font-size: 12px;
-        color: #2563eb;
-        background: none;
-        border: none;
-        padding: 0;
-        cursor: pointer;
+      /* Own annotations (this browser holds the delete token): terracotta left rail. */
+      .annotation-item.mine {
+        border-left: 2px solid var(--primary);
       }
-      .annotation-empty {
-        padding: 24px 8px;
-        text-align: center;
-        color: #9ca3af;
-      }
-      .anno-form {
-        border-top: 1px solid #e5e7eb;
-        padding: 10px 14px;
-        flex: none;
-        display: none;
-      }
-      .anno-form.visible {
-        display: block;
-      }
-      .anno-form .row {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 6px;
-      }
-      .anno-form input[type='text'] {
-        flex: 1;
-        padding: 5px 8px;
-        border: 1px solid #d1d5db;
-        border-radius: 4px;
-        font-size: 13px;
-      }
-      .anno-form textarea {
-        width: 100%;
-        padding: 6px 8px;
-        border: 1px solid #d1d5db;
-        border-radius: 4px;
-        font-size: 13px;
-        resize: vertical;
-        min-height: 56px;
-      }
-      .anno-form .target-line {
-        font-size: 12px;
-        color: #6b7280;
-        margin: 6px 0;
-      }
-      .anno-form .target-line .picked {
-        color: #92400e;
-        background: #fef3c7;
-        border-radius: 4px;
-        padding: 1px 6px;
-      }
-      .anno-form .actions {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        margin-top: 8px;
-      }
-      .anno-form button {
-        padding: 5px 12px;
-        border-radius: 4px;
-        font-size: 13px;
-        cursor: pointer;
-        border: 1px solid transparent;
-      }
-      .anno-form .submit {
-        background: #2563eb;
-        color: #fff;
-      }
-      .anno-form .submit:disabled {
-        background: #93c5fd;
-        cursor: not-allowed;
-      }
-      .anno-form .cancel,
-      .anno-form .pick {
-        background: #fff;
-        color: #374151;
-        border-color: #d1d5db;
-      }
-      .anno-form .pick.active {
-        background: #fef3c7;
-        border-color: #f59e0b;
-        color: #92400e;
-      }
-      .anno-form .pick:disabled {
-        color: #9ca3af;
-        cursor: not-allowed;
+      .annotation-item.mine:hover,
+      .annotation-item.mine:focus-visible {
+        border-left-color: var(--primary);
       }
       .list-status {
-        padding: 0 14px;
+        padding: 0 16px;
         font-size: 12px;
-        color: #b91c1c;
-      }
-      .form-error {
-        color: #b91c1c;
-        font-size: 12px;
-        margin-top: 6px;
-        min-height: 16px;
-      }
-      .anno-toolbar {
-        padding: 10px 14px;
-        border-top: 1px solid #e5e7eb;
+        color: var(--destructive);
         flex: none;
       }
-      .anno-toolbar button {
-        width: 100%;
-        padding: 7px 0;
-        background: #2563eb;
-        color: #fff;
-        border: none;
-        border-radius: 4px;
-        font-size: 13px;
-        cursor: pointer;
-      }
-      .anno-toolbar button:disabled {
-        background: #93c5fd;
-        cursor: not-allowed;
-      }
-      .anno-toolbar .hint {
+      .bridge-hint {
+        padding: 10px 16px;
+        border-top: 1px solid var(--border);
         font-size: 12px;
-        color: #9ca3af;
+        color: var(--muted-foreground);
         text-align: center;
-        margin-top: 6px;
+        flex: none;
+      }
+      .bridge-hint:empty {
+        display: none;
       }
       .list-error {
         padding: 16px;
         text-align: center;
-        color: #b91c1c;
+        color: var(--destructive);
         font-size: 13px;
       }
       .list-error button {
         margin-top: 8px;
-        padding: 4px 12px;
-        border-radius: 4px;
-        border: 1px solid #d1d5db;
-        background: #fff;
+        height: 28px;
+        padding: 0 12px;
+        border: 1px solid var(--input);
+        border-radius: var(--radius-md);
+        background: var(--card);
+        color: var(--foreground);
+        font-family: inherit;
+        font-size: 12px;
         cursor: pointer;
       }
     </style>
   </head>
   <body>
-    <div class="viewer-head">
-      <span class="file-name" id="file-name">__BW_FILE_NAME__</span>
-      <span class="shared-at" id="shared-at">分享于 __BW_CREATED_AT__</span>
-    </div>
-    <div class="viewer-body">
-      <div class="viewer-content">
-        <iframe id="content-frame" title="分享内容"></iframe>
+    <div class="viewer" id="viewer">
+      <header class="viewer-head">
+        <span class="file-name" id="file-name">__BW_FILE_NAME__</span>
+        <span class="shared-at" id="shared-at">分享于 __BW_CREATED_AT__</span>
+      </header>
+      <div class="viewer-body">
+        <div class="viewer-content" id="viewer-content">
+          <iframe id="content-frame" title="分享内容"></iframe>
+          <div class="select-hint" id="select-hint" hidden>
+            点击要批注的元素 <span class="esc">Esc</span> 取消；点击空白处写页面级批注
+          </div>
+          <form class="anno-popover" id="anno-form" hidden role="dialog" aria-label="添加批注">
+            <header>
+              <svg
+                class="pop-icon"
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                <path d="M12 7v6" />
+                <path d="M9 10h6" />
+              </svg>
+              <div class="pop-titles">
+                <strong id="pop-title">整页批注</strong>
+                <code id="target-line" hidden></code>
+              </div>
+              <button class="pop-close" id="pop-close-btn" type="button" aria-label="关闭批注小窗">
+                ×
+              </button>
+            </header>
+            <textarea
+              id="text-input"
+              placeholder="描述你想在这里提出的批注……"
+              maxlength="2000"
+            ></textarea>
+            <div class="form-error" id="form-error" hidden></div>
+            <footer>
+              <button class="vw-btn vw-btn-ghost" id="cancel-btn" type="button">取消</button>
+              <button class="vw-btn vw-btn-primary" id="submit-btn" type="submit" disabled>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                添加
+                <span class="kbd">Ctrl↵</span>
+              </button>
+            </footer>
+          </form>
+        </div>
+        <aside class="anno-panel" aria-label="批注">
+          <div class="anno-head">
+            <h2>批注 <span class="count" id="anno-count"></span></h2>
+            <button class="vw-btn vw-btn-primary" id="add-btn" type="button" disabled>
+              添加批注
+            </button>
+          </div>
+          <div class="anno-list" id="anno-list"></div>
+          <div class="list-status" id="list-status"></div>
+          <div class="bridge-hint" id="bridge-hint"></div>
+        </aside>
       </div>
-      <aside class="anno-panel">
-        <div class="anno-head">
-          <h2>批注</h2>
-          <span class="count" id="anno-count"></span>
-        </div>
-        <div class="anno-list" id="anno-list"></div>
-        <div class="list-status" id="list-status"></div>
-        <form class="anno-form" id="anno-form">
-          <div class="row">
-            <input
-              type="text"
-              id="author-input"
-              placeholder="你的名字（留空则匿名）"
-              maxlength="50"
-            />
-          </div>
-          <textarea
-            id="text-input"
-            placeholder="批注内容（2000 字以内）"
-            maxlength="2000"
-          ></textarea>
-          <div class="target-line" id="target-line">未选择元素，将作为页面级批注</div>
-          <div class="actions">
-            <button type="button" class="pick" id="pick-btn" disabled>选择元素</button>
-            <button type="submit" class="submit" id="submit-btn">提交</button>
-            <button type="button" class="cancel" id="cancel-btn">取消</button>
-          </div>
-          <div class="form-error" id="form-error"></div>
-        </form>
-        <div class="anno-toolbar">
-          <button type="button" id="add-btn">添加批注</button>
-          <div class="hint" id="bridge-hint"></div>
-        </div>
-      </aside>
     </div>
     <script>
       ;(function () {
@@ -330,28 +607,36 @@
 
         var shareId = (location.pathname.match(/^\/s\/([A-Za-z0-9_-]{22})/) || [])[1]
         var frame = document.getElementById('content-frame')
+        var contentEl = document.getElementById('viewer-content')
+        var viewerEl = document.getElementById('viewer')
+        var selectHint = document.getElementById('select-hint')
         var listEl = document.getElementById('anno-list')
         var countEl = document.getElementById('anno-count')
         var formEl = document.getElementById('anno-form')
         var formErrorEl = document.getElementById('form-error')
-        var authorInput = document.getElementById('author-input')
+        var popTitle = document.getElementById('pop-title')
+        var popSelector = document.getElementById('target-line')
         var textInput = document.getElementById('text-input')
-        var targetLine = document.getElementById('target-line')
-        var pickBtn = document.getElementById('pick-btn')
         var submitBtn = document.getElementById('submit-btn')
         var addBtn = document.getElementById('add-btn')
         var bridgeHint = document.getElementById('bridge-hint')
         var listStatusEl = document.getElementById('list-status')
 
         var API = '/api/shares/' + shareId + '/annotations'
-        var AUTHOR_KEY = 'bw-anno-author'
         var TOKENS_PREFIX = 'bw-anno-tokens:' + shareId + ':'
         var POLL_MS = 30_000
+        var POP_GAP = 8
+        var POP_MARGIN = 16
 
         var annotations = []
         var myTokens = readTokens()
         var picking = false
+        var submitting = false
         var pickedTarget = null
+        // Bumped whenever the dialog opens or closes. A submit remembers its value so a response
+        // that arrives after the user cancelled (and maybe opened a new draft) cannot close the
+        // new dialog or wipe its text.
+        var popSeq = 0
         var bridgeReady = false
         var staleIds = new Set()
         var listStatusTimer = null
@@ -368,19 +653,19 @@
           switch (data.type) {
             case 'bw-anno-ready':
               bridgeReady = true
-              pickBtn.disabled = false
+              addBtn.disabled = false
               bridgeHint.textContent = ''
               probeTargets()
               break
             case 'bw-anno-select':
               // Ignore a selection that arrives after the form was cancelled: the bridge may still
-              // have a click in flight when stop-select lands, and it must not repopulate the form.
+              // have a click in flight when stop-select lands, and it must not reopen the popover.
               if (!picking) {
                 break
               }
               picking = false
-              pickedTarget = { selector: data.selector, text: data.text, rect: data.rect }
               renderPicking()
+              openSelected(data)
               break
             case 'bw-anno-cancel':
               stopPicking()
@@ -431,8 +716,9 @@
 
         setTimeout(function () {
           if (!bridgeReady) {
-            // The shared document's own CSP (e.g. script-src 'none') can block the bridge. Page-level
-            // annotations keep working; element picking is honestly reported as unavailable.
+            // The shared document's own CSP (e.g. script-src 'none') can block the bridge.
+            // Page-level annotations still work, so the popover opens without picking.
+            addBtn.disabled = false
             bridgeHint.textContent = '该内容不支持元素级批注，可添加页面级批注'
           }
         }, 2500)
@@ -463,9 +749,11 @@
 
         // ---- element picking ----------------------------------------------------------------
 
+        // 「添加批注」enters selection mode directly; there is no separate pick button. A click on
+        // blank content arrives as the body selector and becomes a page-level annotation.
         function startPicking() {
           if (!bridgeReady) {
-            showFormError('内容尚未加载完成，暂不能选择元素；可直接提交页面级批注')
+            openPopover(null, null, null)
             return
           }
           picking = true
@@ -480,37 +768,137 @@
           postToFrame({ type: 'bw-anno-stop-select' })
         }
 
-        // Esc must cancel picking when focus sits in this document (e.g. right after clicking the
-        // pick button); the bridge only sees keys while the iframe itself holds focus.
+        // Esc must cancel picking when focus sits in this document (e.g. right after clicking
+        // 「添加批注」); the bridge only sees keys while the iframe itself holds focus.
         document.addEventListener('keydown', function (event) {
-          if (event.key === 'Escape' && picking) {
+          if (event.key !== 'Escape') {
+            return
+          }
+          if (picking) {
             stopPicking()
+          } else if (!formEl.hidden) {
+            closePopover()
           }
         })
 
         function renderPicking() {
-          pickBtn.classList.toggle('active', picking)
-          pickBtn.textContent = picking ? '点击内容中的元素…' : '选择元素'
-          if (pickedTarget) {
-            targetLine.innerHTML = ''
-            var picked = document.createElement('span')
-            picked.className = 'picked'
-            picked.textContent = '已选：' + (pickedTarget.text || pickedTarget.selector)
-            targetLine.appendChild(picked)
-          } else {
-            targetLine.textContent = picking
-              ? '请点击分享内容中的元素（Esc 取消）'
-              : '未选择元素，将作为页面级批注'
+          viewerEl.classList.toggle('selecting', picking)
+          selectHint.hidden = !picking
+        }
+
+        function openSelected(data) {
+          var rect = data && data.rect && typeof data.rect === 'object' ? data.rect : null
+          var isPageLevel =
+            !data || !data.selector || data.selector === 'body' || data.selector === 'html'
+          if (isPageLevel) {
+            pickedTarget = null
+            // A blank-area click still makes the bridge highlight <body>; drop that outline since
+            // a page-level annotation has no target to point at.
+            postToFrame({ type: 'bw-anno-clear' })
+            openPopover(null, null, null)
+            return
           }
+          pickedTarget = {
+            selector: data.selector,
+            text: typeof data.text === 'string' ? data.text : '',
+            rect: rect
+              ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+              : { x: 0, y: 0, width: 0, height: 0 }
+          }
+          var anchorX = rect && typeof rect.x === 'number' ? rect.x : null
+          var anchorY =
+            rect && typeof rect.y === 'number' && typeof rect.height === 'number'
+              ? rect.y + rect.height
+              : null
+          openPopover(pickedTarget, anchorX, anchorY)
+        }
+
+        // ---- popover ------------------------------------------------------------------------
+
+        // Positions the dialog beside the picked element (below it, flipped above when there is
+        // no room) inside the content column — the same rule as the Orca AnnotationPopover.
+        // Anchors are content-local: the iframe fills this column at 0,0, so the bridge rect
+        // (iframe viewport coordinates) maps straight onto the popover's absolute offsets.
+        function positionPopover(anchorX, anchorY) {
+          var contentRect = contentEl.getBoundingClientRect()
+          var popWidth = formEl.offsetWidth || 340
+          var popHeight = formEl.offsetHeight || 220
+          var left = anchorX === null ? (contentRect.width - popWidth) / 2 : anchorX
+          left = Math.min(
+            Math.max(left, POP_MARGIN),
+            Math.max(contentRect.width - popWidth - POP_MARGIN, POP_MARGIN)
+          )
+          var top
+          if (anchorY === null) {
+            top = POP_MARGIN + 56
+          } else {
+            top = anchorY + POP_GAP
+            if (top + popHeight > contentRect.height - POP_MARGIN) {
+              top = Math.max(anchorY - popHeight - POP_MARGIN, POP_MARGIN)
+            }
+          }
+          formEl.style.left = left + 'px'
+          formEl.style.top = top + 'px'
+        }
+
+        function openPopover(target, anchorX, anchorY) {
+          popSeq += 1
+          // A request still in flight belongs to the previous draft; the new draft is separable.
+          submitting = false
+          formEl.hidden = false
+          showFormError('')
+          textInput.value = ''
+          updateSubmitState()
+          if (target) {
+            popTitle.textContent = elementTitle(target.text, target.selector)
+            popSelector.textContent = target.selector
+            popSelector.hidden = false
+          } else {
+            popTitle.textContent = '整页批注'
+            popSelector.textContent = ''
+            popSelector.hidden = true
+          }
+          positionPopover(anchorX, anchorY)
+          textInput.focus()
+        }
+
+        // Element text is the dialog title; the selector is the monospace subtitle. Keep the
+        // title short — the bridge caps it at 200 chars, which would not fit the header.
+        function elementTitle(text, selector) {
+          var trimmed = (text || '').trim().replace(/\s+/g, ' ')
+          if (trimmed) {
+            return trimmed.slice(0, 60)
+          }
+          return selector || '元素'
+        }
+
+        function closePopover() {
+          popSeq += 1
+          formEl.hidden = true
+          pickedTarget = null
+          textInput.value = ''
+          showFormError('')
+          updateSubmitState()
+          // The bridge highlighted the picked element; clear it now that the dialog is gone.
+          postToFrame({ type: 'bw-anno-clear' })
+        }
+
+        function updateSubmitState() {
+          // Typing during an in-flight submit must not light up a button whose click is ignored.
+          submitBtn.disabled = submitting || !textInput.value.trim()
         }
 
         // ---- form ---------------------------------------------------------------------------
 
         addBtn.addEventListener('click', function () {
-          formEl.classList.add('visible')
-          addBtn.disabled = true
-          authorInput.value = localStorage.getItem(AUTHOR_KEY) || ''
-          textInput.focus()
+          if (picking) {
+            stopPicking()
+            return
+          }
+          if (bridgeReady && !formEl.hidden) {
+            closePopover()
+          }
+          startPicking()
         })
 
         formEl.addEventListener('submit', function (event) {
@@ -518,39 +906,48 @@
           submitAnnotation()
         })
 
-        pickBtn.addEventListener('click', function () {
+        document.getElementById('cancel-btn').addEventListener('click', function () {
+          // Mid-selection → leave selection; popover open → close it (same as Esc).
           if (picking) {
             stopPicking()
           } else {
-            startPicking()
+            closePopover()
           }
         })
 
-        document.getElementById('cancel-btn').addEventListener('click', function () {
-          closeForm()
+        document.getElementById('pop-close-btn').addEventListener('click', closePopover)
+
+        textInput.addEventListener('input', updateSubmitState)
+
+        // Orca's annotation box submits on Ctrl/Cmd+Enter.
+        textInput.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+            event.preventDefault()
+            submitAnnotation()
+          }
         })
 
-        function closeForm() {
-          formEl.classList.remove('visible')
-          addBtn.disabled = false
-          submitBtn.disabled = false
-          textInput.value = ''
-          pickedTarget = null
-          // Tell the bridge to leave selection mode too; otherwise its capture-phase click handler
-          // keeps swallowing the first normal click in the content after the form is cancelled.
-          stopPicking()
-          showFormError('')
-        }
-
         function submitAnnotation() {
-          var author = authorInput.value.trim()
+          // Ctrl+Enter bypasses the disabled submit button, so guard the request itself against
+          // a second press while the first is in flight.
+          if (submitting) {
+            return
+          }
           var text = textInput.value.trim()
           if (!text) {
             showFormError('批注内容不能为空')
             return
           }
+          if (text.length > 2000) {
+            showFormError('批注文字过长（上限 2000 字）')
+            return
+          }
+          submitting = true
           submitBtn.disabled = true
-          var body = { author: author, text: text }
+          var seq = popSeq
+          // Author stays out of the request: annotations are anonymous, and the list shows no
+          // author. The store keeps its own placeholder.
+          var body = { text: text }
           if (pickedTarget) {
             body.target = pickedTarget
           }
@@ -564,13 +961,17 @@
                 return response.json().then(function (data) {
                   myTokens[data.annotation.id] = data.deleteToken
                   saveToken(data.annotation.id, data.deleteToken)
-                  try {
-                    localStorage.setItem(AUTHOR_KEY, author)
-                  } catch {
-                    // Same quota story as saveToken: the author name is a convenience only.
+                  if (seq !== popSeq) {
+                    // The user already cancelled and may be writing a new draft; leave that alone.
+                    refresh()
+                    return
                   }
-                  closeForm()
-                  refresh()
+                  submitting = false
+                  closePopover()
+                  refresh().then(function () {
+                    // Newest annotations sit at the bottom; keep the just-submitted one in view.
+                    listEl.scrollTop = listEl.scrollHeight
+                  })
                 })
               }
               return response.json().then(function (data) {
@@ -578,7 +979,11 @@
               })
             })
             .catch(function (error) {
-              submitBtn.disabled = false
+              if (seq !== popSeq) {
+                return // Belongs to a draft the user already cancelled; nothing to show.
+              }
+              submitting = false
+              updateSubmitState()
               showFormError(errorText(error))
             })
         }
@@ -605,6 +1010,7 @@
 
         function showFormError(message) {
           formErrorEl.textContent = message
+          formErrorEl.hidden = !message
         }
 
         // ---- list ---------------------------------------------------------------------------
@@ -637,13 +1043,15 @@
             })
         }
 
+        // Text first, then a row with the target tag, time and (for own annotations) delete —
+        // no author line: annotations are anonymous and the list never shows one.
         function renderList() {
           listEl.innerHTML = ''
-          countEl.textContent = annotations.length ? annotations.length + ' 条' : ''
+          countEl.textContent = annotations.length ? String(annotations.length) : ''
           if (!annotations.length) {
             var empty = document.createElement('div')
             empty.className = 'annotation-empty'
-            empty.textContent = '还没有批注，点击下方按钮添加'
+            empty.textContent = '还没有批注。点击「添加批注」写下意见。'
             listEl.appendChild(empty)
             return
           }
@@ -651,49 +1059,63 @@
             var item = document.createElement('div')
             item.className = 'annotation-item' + (myTokens[annotation.id] ? ' mine' : '')
 
-            var meta = document.createElement('div')
-            meta.className = 'meta'
-            var author = document.createElement('span')
-            author.className = 'author'
-            author.textContent = annotation.author
-            var time = document.createElement('span')
-            time.className = 'time'
-            time.textContent = formatTime(annotation.createdAt)
-            meta.appendChild(author)
-            meta.appendChild(time)
-            item.appendChild(meta)
-
-            if (annotation.target) {
-              var tag = document.createElement('span')
-              tag.className = staleIds.has(annotation.id) ? 'stale-tag' : 'target-tag'
-              tag.textContent = staleIds.has(annotation.id)
-                ? '元素已变化'
-                : annotation.target.text || annotation.target.selector
-              item.appendChild(tag)
-            }
-
             var text = document.createElement('p')
             text.className = 'text'
             text.textContent = annotation.text
             item.appendChild(text)
 
+            var row = document.createElement('div')
+            row.className = 'row'
+            if (annotation.target) {
+              var stale = staleIds.has(annotation.id)
+              var tag = document.createElement('span')
+              tag.className = 'vw-tag ' + (stale ? 'vw-tag-stale' : 'vw-tag-target')
+              tag.textContent = stale
+                ? '元素已变化'
+                : annotation.target.text || annotation.target.selector
+              row.appendChild(tag)
+            }
+            var time = document.createElement('span')
+            time.className = 'time'
+            time.textContent = formatTime(annotation.createdAt)
+            row.appendChild(time)
+
             if (myTokens[annotation.id]) {
               var del = document.createElement('button')
               del.type = 'button'
               del.className = 'delete'
-              del.textContent = '删除'
+              del.title = '删除我的批注'
+              del.setAttribute('aria-label', '删除我的批注')
+              del.textContent = '×'
               del.addEventListener('click', function (event) {
                 event.stopPropagation()
                 deleteAnnotation(annotation.id)
               })
-              item.appendChild(del)
+              row.appendChild(del)
             }
+            item.appendChild(row)
 
-            item.addEventListener('click', function () {
-              if (annotation.target) {
-                postToFrame({ type: 'bw-anno-highlight', id: annotation.id, selector: annotation.target.selector })
+            // Only annotations with a target can jump to an element; page-level ones stay inert
+            // and out of the tab order instead of being focusable but dead.
+            if (annotation.target) {
+              var highlight = function () {
+                postToFrame({
+                  type: 'bw-anno-highlight',
+                  id: annotation.id,
+                  selector: annotation.target.selector
+                })
               }
-            })
+              item.tabIndex = 0
+              item.setAttribute('role', 'button')
+              item.setAttribute('aria-label', '在内容中定位该批注')
+              item.addEventListener('click', highlight)
+              item.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  highlight()
+                }
+              })
+            }
             listEl.appendChild(item)
           })
         }

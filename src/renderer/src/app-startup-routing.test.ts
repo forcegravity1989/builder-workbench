@@ -587,12 +587,12 @@ describe('renderer startup runtime routing', () => {
   })
 
   it('checkpoints activeView and all session snapshots through one beforeunload handler (#9002)', () => {
-    const source = readSource(SESSION_PERSISTENCE_PATH)
+    const source = readSource(SESSION_PERSISTENCE_PATH).replace(/\r\n/g, '\n')
     const checkpointStart = source.indexOf(
       'const shutdownCheckpointPersist = createShutdownCheckpointPersist({'
     )
     const checkpointEnd = source.indexOf(
-      'const persistBeforeUnload = createShutdownCheckpointBeforeUnloadHandler(shutdownCheckpoint)',
+      'const persistBeforeUnload = createShutdownCheckpointBeforeUnloadHandler(',
       checkpointStart
     )
     expect(checkpointStart).toBeGreaterThanOrEqual(0)
@@ -628,6 +628,7 @@ describe('renderer startup runtime routing', () => {
     expect(source).toContain(
       'window.addEventListener(ORCA_RENDERER_UNLOAD_PREVENTED_EVENT, shutdownCheckpoint.abandonAttempt)'
     )
+    expect(source).toContain('isDiscardingUnsavedSessionForUpdate')
     expect(source).toContain("window.addEventListener('beforeunload', persistBeforeUnload)")
     expect(source.match(/window\.addEventListener\('beforeunload'/g) ?? []).toHaveLength(1)
     expect(source).not.toContain('window.api.ui.setSync')

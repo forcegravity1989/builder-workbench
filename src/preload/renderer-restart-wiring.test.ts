@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ORCA_RENDERER_UNLOAD_PREVENTED_EVENT } from '../shared/renderer-shutdown-events'
 import {
   ORCA_APP_RESTART_ABORTED_EVENT,
+  ORCA_UPDATER_QUIT_AND_INSTALL_DISCARD_UNSAVED_EVENT,
   ORCA_UPDATER_QUIT_AND_INSTALL_STARTED_EVENT
 } from '../shared/updater-renderer-events'
 import {
@@ -76,5 +77,33 @@ describe('renderer restart wiring', () => {
 
     expect(invoke).not.toHaveBeenCalled()
     expect(relay.markPrepared).not.toHaveBeenCalled()
+  })
+
+  it('installs without the shutdown checkpoint when unsaved session state is discarded', async () => {
+    const eventTarget = new EventTarget()
+    const calls: string[] = []
+    eventTarget.addEventListener(ORCA_UPDATER_QUIT_AND_INSTALL_DISCARD_UNSAVED_EVENT, () => {
+      calls.push('discard')
+    })
+    eventTarget.addEventListener('beforeunload', () => {
+      calls.push('beforeunload')
+    })
+    const relay = {
+      markPrepared: () => calls.push('marked'),
+      abort: () => calls.push('aborted')
+    }
+    const invoke = vi.fn(async () => {
+      calls.push('invoked')
+    })
+    const awaitCheckpoint = vi.fn(async () => {
+      calls.push('checkpoint')
+    })
+
+    await prepareAndInvokeUpdaterInstall(eventTarget, relay, invoke, awaitCheckpoint, {
+      discardUnsavedSession: true
+    })
+
+    expect(calls).toEqual(['discard', 'marked', 'invoked'])
+    expect(awaitCheckpoint).not.toHaveBeenCalled()
   })
 })
