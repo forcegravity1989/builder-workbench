@@ -36,7 +36,7 @@
 
 配对协作以 Orca 共享地址为入口，材料由工作树所属的本机或配对宿主读写。旧直连 SSH 项目的材料通道与尚未上线的旧团队只读邀请无需迁移。Orca 原生普通 SSH 工作区仍沿上游入口。
 
-BW 主干的团队主机同步、成员只读访问、权限调整和访问日志沿现有实现接入新版宿主接口。团队身份由带团队访问标记的链接传递，共享设置继续挂载 BW 原组件。
+BW 主干的团队主机同步、成员只读访问、权限调整和访问日志沿现有实现接入新版宿主接口。团队身份由带团队访问标记的链接传递。升级旧配置时，[团队主机同步](../src/main/workbench/team-collaboration/team-host-sync.ts)须按目录中的团队链接补齐自动登记主机缺失的访问类型；即使地址和令牌相同，也要让已有连接以成员身份重新认证。手工配对沿原入口，共享设置继续挂载 BW 原组件。
 
 Agent Dashboard 随新版采用原生会话看板。旧独立窗口地图的右键启动入口随新版移除，Agent 从所属工作区启动。
 
@@ -154,7 +154,7 @@ git rev-parse 'v1.4.272^{commit}'
 
 每项按用户场景记录 Orca 提供的能力、BW 保留的差异、源码挂载位置和升级时的验收依据。产品规格与验证结果沿原入口查阅。
 
-- **桌面窗口与重复入口**。BW 标题栏用原色 20px 图标，浅色主题下也保留其原色。Windows 三点应用菜单收起原生帮助子菜单，桌面左下帮助提供「关于 BW」和「报告崩溃」。主机状态入口在 BW 左侧导航，底部状态栏只在其他壳显示同一入口。升级时核对[标题栏](../src/renderer/src/app-shell/chrome/TitlebarLeftControls.tsx)、[桌面帮助](../src/renderer/src/components/sidebar/chrome/help-menu-controller.tsx)和[底部状态栏](../src/renderer/src/components/status-bar/StatusBarSurface.tsx)的实际显示位置。
+- **桌面窗口与重复入口**。BW 标题栏用原色 20px 图标，浅色主题下也保留其原色。Windows 三点应用菜单收起原生帮助子菜单，桌面左下帮助提供「关于 BW」和「报告崩溃」。[关于弹窗](../src/main/startup/gpu-recovery/gpu-lifecycle.ts)沿用 BW 产品名，版本显示安装包实际写入的 BW 版本。主机状态入口在 BW 左侧导航，底部状态栏只在其他壳显示同一入口。升级时核对[标题栏](../src/renderer/src/app-shell/chrome/TitlebarLeftControls.tsx)、[桌面帮助](../src/renderer/src/components/sidebar/chrome/help-menu-controller.tsx)和[底部状态栏](../src/renderer/src/components/status-bar/StatusBarSurface.tsx)的实际显示位置。
 
 - **升级时选择本机配置**。同一配置的 JSON 与 SQLite 出现分歧时，BW 的[恢复弹窗](../src/main/persistence/profile-state/startup/profile-state-startup-recovery-dialog.ts)默认选中保存时间较新的副本。时间相同或任一时间未知时不标推荐，默认退出。用户仍可选任一副本，归档和恢复沿原生流程。
 - **共享主机手动断开**。桌面和 Web 保留用户的断开选择，重启或刷新后仍暂停自动重连。用户主动点连接或重新配对后才解除暂停。升级时核对当前连接状态和保存的重连偏好，Web 侧沿[设置接口](../src/renderer/src/web/preload-api/runtime/web-runtime-environments-api.ts)和[启动恢复](../src/renderer/src/web/web-preload-api.ts)检查。

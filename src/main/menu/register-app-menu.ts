@@ -130,7 +130,9 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
   const macAppMenu: Electron.MenuItemConstructorOptions = {
     label: options.appMenuLabel ?? app.name,
     submenu: [
-      labeledAppMenuRole('about', 'menu.about', 'About Orca'),
+      isWorkbenchProduct()
+        ? labeledAppMenuRole('about', 'guidance.about', 'About BW')
+        : labeledAppMenuRole('about', 'menu.about', 'About Orca'),
       checkForUpdatesItem,
       settingsItem,
       { type: 'separator' },

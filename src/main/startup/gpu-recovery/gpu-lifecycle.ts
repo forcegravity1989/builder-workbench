@@ -24,6 +24,7 @@ import {
   waitForInstallDirAclVerdict
 } from '../windows-install-permissions/windows-install-dir-acl-recovery'
 import { mainProcessState as state, gpuFallbackEnvironment } from '../main-process-state'
+import { isWorkbenchProduct } from '../workbench-product'
 import { createGpuAccelerationAboutPanelOptions } from '../../menu/gpu-acceleration-about-panel'
 
 export function createGpuCrashDiagnosticsRecorder(): GpuCrashDiagnosticsRecorder | null {
@@ -42,7 +43,7 @@ export function createGpuCrashDiagnosticsRecorder(): GpuCrashDiagnosticsRecorder
 export function updateGpuAccelerationAboutPanel(): void {
   app.setAboutPanelOptions(
     createGpuAccelerationAboutPanelOptions({
-      appName: app.name,
+      appName: isWorkbenchProduct() ? 'BW' : app.name,
       appVersion: app.getVersion(),
       platform: process.platform,
       gpuFallbackActive: state.gpuFallbackActiveThisLaunch,

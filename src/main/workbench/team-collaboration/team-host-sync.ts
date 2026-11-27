@@ -118,9 +118,13 @@ async function syncTeamHostsOnce(
         continue
       }
       const endpoint = existing.endpoints[0]
+      const needsTeamAccessMode =
+        existing.accessMode === undefined && offer.accessMode === 'team-read'
       if (
         !managed.has(existing.id) ||
-        (endpoint?.deviceToken === offer.deviceToken && endpoint?.endpoint === offer.endpoint)
+        (endpoint?.deviceToken === offer.deviceToken &&
+          endpoint?.endpoint === offer.endpoint &&
+          !needsTeamAccessMode)
       ) {
         continue
       }
