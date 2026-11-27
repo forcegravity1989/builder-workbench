@@ -2,7 +2,7 @@ import { expect, it, vi } from 'vitest'
 import { RpcDispatcher } from '../dispatcher'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 import { CODEHUB_METHODS } from './codehub'
-import { MOBILE_RPC_METHOD_ALLOWLIST } from '../../runtime-rpc/runtime-rpc-mobile-method-allowlist'
+import { MOBILE_RPC_METHOD_ALLOWLIST } from '../server/runtime-rpc-mobile-method-allowlist'
 
 it('routes paired/web CodeHub reads and writes through the native dispatcher', async () => {
   const codehub = {

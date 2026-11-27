@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { Repo } from './repo-types'
+import { deriveGitRemoteIdentity } from './git/remotes/git-remote-identity'
+import type { Repo } from './repository/repo-types'
 import { findTaskItemLinkRepo, parseTaskItemLink, taskItemLinkIdentityKey } from './task-item-link'
 
 function registeredRepo(id: string, remoteUrl: string, overrides: Partial<Repo> = {}): Repo {
@@ -110,13 +111,15 @@ describe('parseTaskItemLink', () => {
   })
 
   it('显式链接可匹配已登记 fork 的 origin 和 upstream', () => {
+    const gitRemoteIdentity = deriveGitRemoteIdentity(
+      [
+        'origin\thttps://token@github.com/fork/project.git (fetch)',
+        'upstream\thttps://github.com/upstream/project.git (fetch)'
+      ].join('\n')
+    )
+    expect(gitRemoteIdentity?.originUrl).toBe('https://github.com/fork/project.git')
     const repo = registeredRepo('fork', 'https://github.com/upstream/project.git', {
-      gitRemoteIdentity: {
-        canonicalKey: 'github.com/upstream/project',
-        remoteName: 'upstream',
-        remoteUrl: 'https://github.com/upstream/project.git',
-        originUrl: 'https://github.com/fork/project.git'
-      },
+      gitRemoteIdentity,
       issueSourcePreference: 'upstream'
     })
     expect(

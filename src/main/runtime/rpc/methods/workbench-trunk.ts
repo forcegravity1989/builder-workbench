@@ -6,6 +6,7 @@ import { createTrunkUpdateService } from '../../../workbench/trunk-update-runtim
 export const WORKBENCH_TRUNK_METHODS = [
   defineWorkbenchMethod({
     name: 'workbench.trunk.update',
+    permission: 'workspace',
     params: TrunkUpdateSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() =>

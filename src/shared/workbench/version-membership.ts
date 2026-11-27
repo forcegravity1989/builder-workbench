@@ -1,4 +1,4 @@
-import type { Repo } from '../repo-types'
+import type { Repo } from '../repository/repo-types'
 import { parseTaskItemLink } from '../task-item-link'
 import { workbenchVersionTaskLabel } from './task-scope'
 

@@ -1,11 +1,14 @@
 import React, { Suspense, useLayoutEffect, useMemo, useState } from 'react'
 import { MarkdownPreview, RichMarkdownEditor } from '@/components/editor/editor-lazy-views'
-import { RichMarkdownErrorBoundary } from '@/components/editor/RichMarkdownErrorBoundary'
-import { getCachedMarkdownRichModeEligibility } from '@/components/editor/markdown-rich-mode-eligibility-cache'
-import { getMarkdownRenderMode } from '@/components/editor/markdown-render-mode'
-import { extractFrontMatter, prependFrontMatter } from '@/components/editor/markdown-frontmatter'
-import { RICH_MARKDOWN_MAX_SIZE_BYTES } from '../../../shared/constants'
-import { formatBytes } from '@/components/status-bar/workspace-space-format'
+import { RichMarkdownErrorBoundary } from '@/components/editor/rich-markdown/instance/RichMarkdownErrorBoundary'
+import { getCachedMarkdownRichModeEligibility } from '@/components/editor/markdown/render-mode/markdown-rich-mode-eligibility-cache'
+import { getMarkdownRenderMode } from '@/components/editor/markdown/render-mode/markdown-render-mode'
+import {
+  extractFrontMatter,
+  prependFrontMatter
+} from '@/components/editor/markdown/source-scanning/markdown-frontmatter'
+import { RICH_MARKDOWN_MAX_SIZE_BYTES } from '../../../shared/editor/markdown/rich-markdown-size-limit'
+import { formatBytes } from '../../../shared/text/format-bytes'
 import type { KbDoc, KbNote, KbNoteKind } from './knowledge-demo-data'
 import { kbDocById, kbGroupByKey } from './knowledge-doc-registry'
 import { KnowledgeDocEditorRail } from './KnowledgeDocEditorRail'

@@ -21,9 +21,9 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { getRepoTaskSourceContext } from '@/components/task-page-source-context'
+import { getRepoTaskSourceContext } from './task-source-context'
 import { parseCodeHubRemote } from '../../../shared/codehub'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { Worktree, WorkspaceLinkedItem } from '../../../shared/worktree/types'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
 import type { CycleTaskReference } from './version-cycle/ports'
@@ -33,7 +33,7 @@ import {
   type WorkbenchVersionBinding
 } from '../../../shared/workbench/version-binding'
 import { versionFlowBranch } from '../../../shared/workbench/version-workspace-prepare'
-import { branchName } from '@/lib/git-utils'
+import { branchName } from '@/lib/source-control/branches/branch-name'
 import { nativeVersionBindingPort } from './version-binding-port'
 import { nativeTaskPortDeps } from './native-task-port'
 import { readReference, resolveReferenceRepo } from './task-port'
@@ -55,7 +55,7 @@ import {
   type BindWorkflow
 } from './version-tree-bind-mode'
 import { IssueAssignmentError, writeIssueVersionAssignment } from './version-issue-assignment'
-import type { TaskSourceContext } from '../../../shared/task-source-context'
+import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'
 
 /**
  * 原生单树右键菜单共用的绑定选择器。流程树和已关联 Issue 的工作区只补树上

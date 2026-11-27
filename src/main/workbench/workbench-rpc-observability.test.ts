@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { z } from 'zod'
-import { _resetTracerForTests, setActiveSink, type TracerSink } from '../observability/tracer'
+import { setActiveSink, type TracerSink } from '../observability/tracer'
 import { defineWorkbenchMethod } from './workbench-rpc-observability'
 
 type SpanRecord = {
@@ -30,7 +30,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  _resetTracerForTests()
+  setActiveSink(null)
 })
 
 const params = z.object({ value: z.string() })
@@ -41,6 +41,7 @@ describe('defineWorkbenchMethod', () => {
   it('passes ok-envelope and raw results through as Success server spans', async () => {
     const enveloped = defineWorkbenchMethod({
       name: 'workbench.test.read',
+      permission: 'workspace',
       params,
       handler: async () => ({ ok: true, value: 42 })
     })
@@ -52,6 +53,7 @@ describe('defineWorkbenchMethod', () => {
 
     const raw = defineWorkbenchMethod({
       name: 'workbench.test.raw',
+      permission: 'workspace',
       params,
       handler: () => ({ complete: true })
     })
@@ -63,6 +65,7 @@ describe('defineWorkbenchMethod', () => {
   it('records errorCode and a redactable cause for ok:false envelopes', async () => {
     const failing = defineWorkbenchMethod({
       name: 'workbench.test.save',
+      permission: 'workspace',
       params,
       handler: async () => ({
         ok: false as const,
@@ -82,6 +85,7 @@ describe('defineWorkbenchMethod', () => {
 
     const badCode = defineWorkbenchMethod({
       name: 'workbench.test.badcode',
+      permission: 'workspace',
       params,
       handler: async () => ({ ok: false as const, error: { code: 'not a code!', message: 'x' } })
     })
@@ -93,6 +97,7 @@ describe('defineWorkbenchMethod', () => {
   it('records Failure with the error chain for throws, Interrupted for AbortError', async () => {
     const throwing = defineWorkbenchMethod({
       name: 'workbench.test.throw',
+      permission: 'workspace',
       params,
       handler: async (): Promise<never> => {
         throw new Error('boom')
@@ -105,6 +110,7 @@ describe('defineWorkbenchMethod', () => {
 
     const aborting = defineWorkbenchMethod({
       name: 'workbench.test.abort',
+      permission: 'workspace',
       params,
       handler: async (): Promise<never> => {
         const err = new Error('aborted')

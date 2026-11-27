@@ -25,7 +25,7 @@ vi.mock('os', async (importOriginal) => ({
   networkInterfaces: networkInterfacesMock
 }))
 
-vi.mock('../runtime/windows-default-route-interfaces', () => ({
+vi.mock('../runtime/rpc/server/pairing/network/windows-default-route-interfaces', () => ({
   getWindowsDefaultRouteInterfaceNames: defaultRouteInterfaceNamesMock
 }))
 
@@ -34,8 +34,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { registerMobileHandlers } from './mobile'
 import { OrcaRuntimeService } from '../runtime/orca-runtime'
-import { OrcaRuntimeRpcServer } from '../runtime/runtime-rpc'
-import { WebSocketTransport } from '../runtime/rpc/ws-transport'
+import { OrcaRuntimeRpcServer } from '../runtime/rpc/server/runtime-rpc'
+import { WebSocketTransport } from '../runtime/rpc/transports/websocket/ws-transport'
 
 describe('mobile runtime pairing bind host', () => {
   const handlers = new Map<string, (...args: unknown[]) => unknown>()

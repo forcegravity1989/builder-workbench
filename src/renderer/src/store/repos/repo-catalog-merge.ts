@@ -1,39 +1,46 @@
-import { dropWorktreeRowsOfDroppedRepos } from './dropped-repo-worktree-rows'
-import { getRepoHostIdentity } from '../slices/repo-host-identity'
+import { isProjectGroupHookTrustKey } from '../../../../shared/workspace-setup/hooks/workspace-hook-owner'
+import { setPendingLaunchReadoptions } from '@/components/native-chat/drafts/native-chat-launch-draft-source'
+import { continueReadoptedLaunchDrafts } from '@/components/native-chat/drafts/native-chat-launch-draft-continuity'
 import type { AppState } from '../types'
-import type { SshRepoReadoption } from '../../../../shared/ssh-types'
-import type { ProjectHostSetup } from '../../../../shared/project-types'
-import type { Repo } from '../../../../shared/repo-types'
-import type { ProjectHostSetupProjection } from '../../../../shared/project-host-setup-projection'
-import { reconcileReadoptedSshRepoRows } from '../slices/superseded-ssh-repo-rows'
-import type { SshRepoReconciliation } from '../slices/superseded-ssh-repo-rows'
-import { reconcileReadoptedSshWorktreesByRepo } from '../slices/readopted-ssh-worktree-rows'
-import { callRuntimeRpc } from '../../runtime/runtime-rpc-client'
-import type { getActiveRuntimeTarget } from '../../runtime/runtime-rpc-client'
-import { getRepoExecutionHostId } from '../../../../shared/execution-host'
-import type { RepoSlice } from './repo-state'
-import { repoWithFetchedOwner } from './owner-routing'
-import { getRuntimeEnvironmentRevision } from '../../runtime/runtime-environment-revision'
-import { getRuntimeTargetHostId } from '../runtime-target-host'
+import type { SshRepoReadoption } from '../../../../shared/remote-runtime/ssh/ssh-types'
+import type { ProjectHostSetup } from '../../../../shared/project/project-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
+import type { ProjectHostSetupProjection } from '../../../../shared/project/host-setup/project-host-setup-projection'
+import {
+  reconcileReadoptedSshRepoRows,
+  type SshRepoReconciliation
+} from './superseded-ssh-repo-rows'
+
+import { reconcileReadoptedSshWorktreesByRepo } from './readopted-ssh-worktree-rows'
+import { callRuntimeRpc } from '../../runtime/rpc/calls/runtime-rpc-call'
+import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import { adoptFromEndpoint } from '../host-catalog/endpoint-catalog-adoption'
+import { getRuntimeTargetHostId } from '../../runtime/rpc/targets/runtime-client-target'
 import { fetchProjectHostSetupCompatibility } from '../projects/project-host-routing'
 import { mergeFetchedReposForHost } from './repo-catalog-identity'
-import {
-  mergeProjectHostSetupCompatibility,
-  projectCompatibilityFromRepos
-} from '../projects/project-compatibility-core'
+import { dropWorktreeRowsOfDroppedRepos } from './dropped-repo-worktree-rows'
+import { getRepoHostIdentity } from '../../../../shared/repository/repo-host-identity'
+import { withoutPendingRuntimeRepoRemovals } from './pending-runtime-repo-removals'
+
+import { getRuntimeEnvironmentRevision } from '@/runtime/rpc/environment-revisions/runtime-environment-revision'
 
 export type FetchedRepoCatalog = {
   repos: readonly Repo[]
   projectHostSetupCompatibility: ProjectHostSetupProjection
   hostId: ReturnType<typeof getRuntimeTargetHostId>
-  /** Repo registrations present when this catalog was requested. */
+  /** This store's repo rows when the request went out; a registration added since is not its to drop. */
   reposAtRequest: readonly Repo[]
+  sourceWrites?: ReturnType<AppState['githubSourceCollections']['catalogSnapshot']>
+  sourceOwner?: AppState['githubSourceCollections']
 }
 
 export async function fetchRepoCatalogForTarget(
-  target: ReturnType<typeof getActiveRuntimeTarget>,
-  reposAtRequest: readonly Repo[]
+  target: RuntimeClientTarget,
+  reposAtRequest: readonly Repo[],
+  sourceOwner?: AppState['githubSourceCollections']
 ): Promise<FetchedRepoCatalog> {
+  const sourceWrites = sourceOwner?.catalogSnapshot()
   const pairingRevision =
     target.kind === 'environment' ? getRuntimeEnvironmentRevision(target.environmentId) : undefined
   const fetchedRepos =
@@ -42,16 +49,19 @@ export async function fetchRepoCatalogForTarget(
       : (
           await callRuntimeRpc<{ repos: Repo[] }>(target, 'repo.list', undefined, {
             timeoutMs: 15_000,
-            reuseRecentCompatibilityFailure: true,
-            expectedEnvironmentPairingRevision: pairingRevision
+            reuseRecentCompatibilityFailure: true
           })
         ).repos
-  const repos = fetchedRepos.map((repo) => repoWithFetchedOwner(repo, target, pairingRevision))
+  const repos = fetchedRepos.map((repo) =>
+    adoptFromEndpoint(target, { kind: 'repo', row: repo, observedPairingRevision: pairingRevision })
+  )
   return {
     repos,
     projectHostSetupCompatibility: await fetchProjectHostSetupCompatibility(target, repos),
     hostId: getRuntimeTargetHostId(target),
-    reposAtRequest
+    reposAtRequest,
+    sourceOwner,
+    sourceWrites
   }
 }
 
@@ -65,7 +75,10 @@ export function mergeFetchedRepoCatalog(
 } {
   const repos = mergeFetchedReposForHost(
     currentRepos,
-    catalog.repos,
+    withoutPendingRuntimeRepoRemovals(
+      catalog.repos.map((repo) => catalog.sourceOwner?.adopt(repo, catalog.sourceWrites) ?? repo),
+      catalog.hostId
+    ),
     catalog.hostId,
     catalog.reposAtRequest
   )
@@ -96,8 +109,7 @@ export function filterSetupsForPrunedRepoRows(
       .filter((repo) => !survivingOwners.has(`${getRepoExecutionHostId(repo)}:${repo.id}`))
       .map((repo) => `${getRepoExecutionHostId(repo)}:${repo.id}`)
   )
-  // Why: this result feeds the compat merge as `previous`, so an unconditional copy would discard
-  // the identity that merge is about to try to preserve.
+  // Compat merge receives this as previous; unconditional copying defeats the identity it tries to retain.
   if (prunedOwners.size === 0) {
     return setups
   }
@@ -109,8 +121,11 @@ export function filterSetupsForPrunedRepoRows(
 
 export function reconcileReadoptedSshWorktreeState(
   state: Pick<AppState, 'worktreesByRepo' | 'detectedWorktreesByRepo' | 'sortEpoch'>,
-  readoptions: readonly SshRepoReadoption[]
+  readoptions: readonly SshRepoReadoption[],
+  remainingReadoptions: readonly SshRepoReadoption[] = readoptions
 ): Pick<AppState, 'worktreesByRepo' | 'detectedWorktreesByRepo' | 'sortEpoch'> {
+  continueReadoptedLaunchDrafts(readoptions)
+  setPendingLaunchReadoptions(remainingReadoptions)
   const worktreesByRepo = reconcileReadoptedSshWorktreesByRepo(state.worktreesByRepo, readoptions)
   const detectedRows = Object.fromEntries(
     Object.entries(state.detectedWorktreesByRepo).map(([repoId, result]) => [
@@ -146,20 +161,18 @@ export function reconcileFetchedCatalogWorktreeState(
     | 'sortEpoch'
   >,
   catalog: Pick<FetchedRepoCatalog, 'reposAtRequest'>,
-  nextRepos: readonly Repo[]
+  nextRepos: readonly Repo[],
+  remainingReadoptions: readonly SshRepoReadoption[]
 ): Pick<AppState, 'worktreesByRepo' | 'detectedWorktreesByRepo' | 'sortEpoch'> {
-  const readopted = reconcileReadoptedSshWorktreeState(state, state.pendingSshRepoReadoptions)
+  const readopted = reconcileReadoptedSshWorktreeState(
+    state,
+    state.pendingSshRepoReadoptions,
+    remainingReadoptions
+  )
   // Why: a catalog requested before an add may omit it; that add's rows are not this answer's to drop.
   const requested = new Set(catalog.reposAtRequest.map(getRepoHostIdentity))
   const previous = state.repos.filter((repo) => requested.has(getRepoHostIdentity(repo)))
   return dropWorktreeRowsOfDroppedRepos(readopted, previous, nextRepos)
-}
-
-export function projectCompatibilityForReconciledRepos(
-  repos: readonly Repo[],
-  fetched: ProjectHostSetupProjection
-): Pick<RepoSlice, 'projects' | 'projectHostSetups'> {
-  return mergeProjectHostSetupCompatibility(projectCompatibilityFromRepos(repos), fetched)
 }
 
 export function filterTrustedOrcaHooksToValidRepos(
@@ -168,7 +181,7 @@ export function filterTrustedOrcaHooksToValidRepos(
 ): AppState['trustedOrcaHooks'] {
   const next: AppState['trustedOrcaHooks'] = {}
   for (const [repoId, entry] of Object.entries(trust)) {
-    if (validRepoIds.has(repoId)) {
+    if (validRepoIds.has(repoId) || isProjectGroupHookTrustKey(repoId)) {
       next[repoId] = entry
     }
   }

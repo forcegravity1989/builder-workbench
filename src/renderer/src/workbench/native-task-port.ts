@@ -2,7 +2,7 @@ import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import {
   lookupGitHubWorkItemByOwnerRepoForSource,
   lookupGitHubWorkItemForSource
-} from '@/lib/github-work-item-source-lookup'
+} from '@/lib/work-items/github/github-work-item-source-lookup'
 import { useAppStore } from '@/store'
 import type { TaskPort } from './version-cycle/ports'
 import { createTaskPort, type TaskPortDeps } from './task-port'

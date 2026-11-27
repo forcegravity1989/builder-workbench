@@ -1,4 +1,4 @@
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import type { WorkbenchSkillTopic } from '../../../shared/workbench/skill-assets'
 import { ownerSpelledHostId } from './version-binding-port'
 import {

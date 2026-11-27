@@ -31,8 +31,11 @@ import { NewVersionDialog } from './NewVersionDialog'
 import { openGoalWorkspace } from './scoped-task-workspace'
 import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
 import { openVersionOverview, useProjectPage } from './project-page-state'
-import { getRepoExecutionHostId, toRuntimeExecutionHostId } from '../../../shared/execution-host'
-import type { Repo } from '../../../shared/repo-types'
+import {
+  getRepoExecutionHostId,
+  toRuntimeExecutionHostId
+} from '../../../shared/execution-host/execution-host'
+import type { Repo } from '../../../shared/repository/repo-types'
 import { versionRepoIdentity } from '../../../shared/workbench/version-repo-identity'
 import { replayWorkbenchGuide, useWorkbenchScreenGuide } from './WorkbenchScreenGuide'
 import { useWorkbenchScreenUsage } from './workbench-screen-usage'
@@ -577,7 +580,6 @@ export function WorkbenchVersionNav({
   return (
     <VersionTreeDisplayProvider
       value={nativeDisplay}
-      trees={project.worktrees}
       highlightedRevealRowKey={treeReveal.highlightedRevealRowKey}
     >
       {project.catalogReaders}

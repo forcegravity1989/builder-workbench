@@ -18,7 +18,7 @@ import { formatBoardAnnotationsAsMarkdown } from '../annotations/annotation-mark
 import { annotationRefFromElement } from '../annotations/types'
 import { useBoardAnnotations } from '../annotations/use-board-annotations'
 import { useAnnotationModeShortcut } from '../annotations/use-annotation-mode-shortcut'
-import { useOptionalShortcutLabel } from '@/hooks/useShortcutLabel'
+import { useOptionalShortcutLabel } from '@/lib/keyboard/useShortcutLabel'
 import { AcceptanceNotices } from './AcceptanceNotices'
 import { AcceptanceArchiveCard } from './AcceptanceArchiveCard'
 import { AcceptanceEmptyBoard } from './AcceptanceEmptyBoard'

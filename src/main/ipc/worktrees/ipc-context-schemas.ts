@@ -3,12 +3,14 @@ import type {
   AutomationWorkspaceProvenance,
   CliWorkspaceProvenance
 } from '../../../shared/worktree/types'
-import type { ExecutionHostId } from '../../../shared/execution-host'
-import type { ListDetectedWorktreesArgs } from '../../../shared/detected-worktree-provider-contract'
-import { WorkspaceLinkedItemSchema } from '../../../shared/workspace-linked-item-schema'
-import { TaskSourceContextSchema } from '../../../shared/task-source-context-schema'
+import type { ExecutionHostId } from '../../../shared/execution-host/execution-host'
+import type { NestedWorktreeRemovalApproval } from '../../../shared/worktree/removal/nested-removal'
+import type { ListDetectedWorktreesArgs } from '../../../shared/worktree/catalog/detected-worktree-provider-contract'
+import { WorkspaceLinkedItemSchema } from '../../../shared/workspace-attachments/workspace-linked-item-schema'
+import { WorkspaceAttachmentsSchema } from '../../../shared/workspace-attachments/workspace-attachment-schema'
+import { TaskSourceContextSchema } from '../../../shared/work-items/task-source-context-schema'
 import { WorkbenchVersionBindingSchema } from '../../../shared/workbench/version-binding'
-import { isWorkspaceLinkedItemSourceContextMatch } from '../../../shared/workspace-linked-item-source-context'
+import { isWorkspaceLinkedItemSourceContextMatch } from '../../../shared/workspace-attachments/workspace-linked-item-source-context'
 
 export type CreateWorktreeArgsWithSystemProvenance = CreateWorktreeArgs & {
   automationProvenance?: AutomationWorkspaceProvenance
@@ -19,11 +21,12 @@ export type RemoveWorktreeArgs = {
   worktreeId: string
   hostId?: ExecutionHostId
   force?: boolean
+  approvedNestedWorktrees?: NestedWorktreeRemovalApproval[]
+  expectedCheckout?: NestedWorktreeRemovalApproval
   /** Explicit Force Delete only — `force` alone is set by the ordinary confirmation (#11960). */
   allowUnverifiedPtyStop?: boolean
   skipArchive?: boolean
-  /** Explicit waiver for a FAILED archive hook (#19334). Distinct from `skipArchive`, which
-   *  never runs the hook at all, and never implied by `force`. */
+  /** Explicit failed-archive waiver; skipArchive bypasses execution, and force grants neither permission. */
   allowFailedArchiveHook?: boolean
   snapshotPruneBatchId?: string
 }
@@ -32,36 +35,39 @@ export type DetectedWorktreeRequestArgs = { repoId: string } | ListDetectedWorkt
 
 export const NullableWorkspaceLinkedItemSchema = WorkspaceLinkedItemSchema.nullable()
 export const NullableTaskSourceContextSchema = TaskSourceContextSchema.nullable()
-export const NullableWorkbenchVersionBindingSchema = WorkbenchVersionBindingSchema.nullable()
 
-/**
- * The local metadata IPC path carries no zod gate of its own, so the BW G2
- * version binding is validated here with the same shared contract the RPC
- * whitelist uses; malformed payloads fail instead of persisting garbage.
- * undefined stays untouched (old value kept), null clears.
- */
+const NullableWorkbenchVersionBindingSchema = WorkbenchVersionBindingSchema.nullable()
+
 export function normalizeWorkbenchVersionBindingField<
-  T extends {
-    workbenchVersionBinding?: unknown
-  }
+  T extends { workbenchVersionBinding?: unknown }
 >(input: T): T {
-  if (input.workbenchVersionBinding === undefined) {
-    return input
-  }
-  return {
-    ...input,
-    workbenchVersionBinding: NullableWorkbenchVersionBindingSchema.parse(
-      input.workbenchVersionBinding
+  const updates = { ...input }
+  // An explicit undefined preserves this binding. Other metadata fields retain their own semantics.
+  if (updates.workbenchVersionBinding === undefined) {
+    delete updates.workbenchVersionBinding
+  } else {
+    updates.workbenchVersionBinding = NullableWorkbenchVersionBindingSchema.parse(
+      updates.workbenchVersionBinding
     )
   }
+  return updates
 }
 
 export function normalizeLinkedWorkItemFields<
   T extends {
     linkedWorkItem?: unknown
+    linkedItems?: unknown
+    linkedItemsBase?: unknown
+    linkedItemsSelectionChanged?: boolean
     linkedTaskSourceContext?: unknown
   }
 >(input: T): T {
+  if (
+    input.linkedItemsSelectionChanged !== undefined &&
+    typeof input.linkedItemsSelectionChanged !== 'boolean'
+  ) {
+    throw new Error('Invalid attachment selection mutation')
+  }
   const linkedWorkItem =
     input.linkedWorkItem === undefined
       ? undefined
@@ -79,6 +85,12 @@ export function normalizeLinkedWorkItemFields<
   }
   return {
     ...input,
+    ...(input.linkedItems !== undefined
+      ? { linkedItems: WorkspaceAttachmentsSchema.parse(input.linkedItems) }
+      : {}),
+    ...(input.linkedItemsBase !== undefined
+      ? { linkedItemsBase: WorkspaceAttachmentsSchema.parse(input.linkedItemsBase) }
+      : {}),
     ...(linkedWorkItem !== undefined ? { linkedWorkItem } : {}),
     ...(linkedTaskSourceContext !== undefined ? { linkedTaskSourceContext } : {})
   }

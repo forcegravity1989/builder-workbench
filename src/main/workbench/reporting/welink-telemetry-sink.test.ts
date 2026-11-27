@@ -169,7 +169,7 @@ describe('welink telemetry sink protocol', () => {
     await transportFetch('https://us.i.posthog.com/batch/', {
       method: 'POST',
       headers: {},
-      body: batchPayload() // plain-string body path (no gzip header)
+      body: new Uint8Array(gzipSync(Buffer.from(batchPayload())))
     })
     expect(_getBufferedTelemetryEventsForTests()).toHaveLength(2)
 

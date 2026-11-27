@@ -1,8 +1,8 @@
 import { useAppStore } from '@/store'
-import { activateAndRevealWorktree } from '@/lib/worktree-activation'
-import { getWorktreeVisitTimestamp } from '@/lib/worktree-visit-recency'
-import type { Repo } from '../../../shared/repo-types'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
+import { getWorktreeVisitTimestamp } from '@/lib/workspace/activation/worktree-visit-recency'
+import type { Repo } from '../../../shared/repository/repo-types'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import { closeProjectPage } from './project-page-state'
 

@@ -10,7 +10,7 @@ import {
   Newspaper,
   Target
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,8 +18,8 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { VersionNativeTrees } from './VersionNativeTrees'
-import WorktreeContextMenu from '@/components/sidebar/WorktreeContextMenu'
-import { branchName } from '@/lib/git-utils'
+import WorktreeContextMenu from '@/components/sidebar/workspace-actions/context-menu/WorktreeContextMenu'
+import { branchName } from '@/lib/source-control/branches/branch-name'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'

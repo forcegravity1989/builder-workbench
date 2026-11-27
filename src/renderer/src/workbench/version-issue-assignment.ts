@@ -1,7 +1,7 @@
 import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { runIssueUpdate } from '@/components/github/github-work-item-edit-mutations'
-import type { Repo } from '../../../shared/repo-types'
-import type { TaskSourceContext } from '../../../shared/task-source-context'
+import type { Repo } from '../../../shared/repository/repo-types'
+import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'
 import {
   githubIssueAssignmentTarget,
   nextIssueVersionMembership
@@ -57,7 +57,7 @@ export async function writeIssueVersionAssignment(args: {
         repoId: args.repo.id,
         sourceContext: args.source,
         projectOrigin: undefined,
-        repository,
+        issueRepo: repository,
         number: args.number,
         updates: {
           ...(result.titleChanged ? { title: next.title } : {}),

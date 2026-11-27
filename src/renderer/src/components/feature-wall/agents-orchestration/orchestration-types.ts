@@ -1,5 +1,3 @@
-import { translate } from '@/i18n/i18n'
-// Beat timings — slow enough to read at a glance.
 export const BUBBLE_FLIGHT_MS = 1600
 export const BUBBLE_LAND_MS = BUBBLE_FLIGHT_MS + 360
 export const BUBBLE_GAP_MS = 3400
@@ -13,9 +11,7 @@ export type Beat = {
   to: AgentKey
   recipientMsg?: string
   coordMsg?: string
-  // The "send" *is* the "finish" — flipping the spinner to a check the
-  // moment the bubble departs reads as the agent wrapping up and reporting
-  // back to the orchestrator.
+  // Mark the sender done on departure, when it reports back to the orchestrator.
   senderFinishes?: boolean
 }
 
@@ -23,34 +19,30 @@ export const PHASE1_BEATS: readonly Beat[] = [
   {
     from: 'coord-claude',
     to: 'child-codex',
-    get recipientMsg() {
-      return translate('guidance.demo.addingColumn', 'Adding the email_verified column…')
-    }
+    recipientMsg: 'Adding the email_verified column…'
   },
   {
     from: 'coord-claude',
     to: 'child-claude',
-    get recipientMsg() {
-      return translate('guidance.demo.wiringMiddleware', 'Wiring withSession middleware…')
-    }
+    recipientMsg: 'Wiring withSession middleware…'
   },
   {
     from: 'child-codex',
     to: 'coord-claude',
-    get coordMsg() {
-      return translate('guidance.demo.firstPrReady', 'PR 1/2 ready')
-    },
+    coordMsg: 'PR 1/2 ready',
     senderFinishes: true
   },
   {
     from: 'child-claude',
     to: 'coord-claude',
-    get coordMsg() {
-      return translate('guidance.demo.secondPrReady', 'PR 2/2 ready')
-    },
+    coordMsg: 'PR 2/2 ready',
     senderFinishes: true
   }
 ]
+
+export const COORD_INITIAL_MSG = 'Splitting auth rewrite into 2 PRs…'
+export const CHILD_CODEX_INITIAL_MSG = 'Writing the users table migration…'
+export const CHILD_CLAUDE_INITIAL_MSG = 'Sketching withSession middleware…'
 
 export type AgentRowState = 'working' | 'done'
 
@@ -66,13 +58,7 @@ export const INITIAL_ROW_STATE: RowState = {
 }
 
 export const INITIAL_ROW_MESSAGES: RowMessages = {
-  get 'coord-claude'() {
-    return translate('guidance.demo.splitAuth', 'Splitting auth rewrite into 2 PRs…')
-  },
-  get 'child-codex'() {
-    return translate('guidance.demo.tableMigration', 'Writing the users table migration…')
-  },
-  get 'child-claude'() {
-    return translate('guidance.demo.sketchMiddleware', 'Sketching withSession middleware…')
-  }
+  'coord-claude': COORD_INITIAL_MSG,
+  'child-codex': CHILD_CODEX_INITIAL_MSG,
+  'child-claude': CHILD_CLAUDE_INITIAL_MSG
 }

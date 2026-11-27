@@ -18,8 +18,8 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import type { Repo } from '../../../shared/repo-types'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import type { Repo } from '../../../shared/repository/repo-types'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
 import { WallSourceAvatarGroup } from './WallSourceAvatarGroup'
 import type { ProjectCharter } from './project-charter'
@@ -107,7 +107,7 @@ export function ProjectWallCard({
     if (slot?.href) {
       void window.api.shell.openUrl(slot.href)
     } else if (getRepoExecutionHostId(slot.repo) === 'local') {
-      void window.api.shell.openPath(slot.repo.path)
+      void window.api.shell.openPath(slot.repo.path, getRepoExecutionHostId(slot.repo))
     }
   }
   return (

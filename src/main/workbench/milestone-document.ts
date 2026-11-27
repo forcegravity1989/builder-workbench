@@ -7,7 +7,7 @@ import {
   type MilestoneWorkingFile
 } from '../../shared/workbench/project-milestones'
 import { VersionDocumentError } from '../../shared/workbench/version-document'
-import { durableWriteTempPath, writeFileDurableIfCurrent } from '../durable-file-write'
+import { durableWriteTempPath, writeFileDurableIfCurrent } from '../filesystem/durable-file-write'
 import { isMissingFile, resolveMilestoneDocumentPath } from './version-document-path'
 import { materialContentRevision } from './version-history-snapshot'
 

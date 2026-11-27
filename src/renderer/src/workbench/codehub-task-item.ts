@@ -1,6 +1,6 @@
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import type { CodeHubTaskDetail, CodeHubTaskItem } from '../../../shared/codehub-tasks'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 
 /**
  * CodeHub 行形态映射（BW 单实现）：任务屏范围装载（P4）、task-port 详情打开与

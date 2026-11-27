@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
-import type { ExecutionHostId } from '../../../shared/execution-host'
+import type { ExecutionHostId } from '../../../shared/execution-host/execution-host'
 import type { Worktree } from '../../../shared/worktree/types'
 import { versionCatalogPlanTrees } from './version-catalog-plan-trees'
 import {
@@ -25,7 +25,7 @@ import {
 } from './version-catalog-source'
 import { useVersionCatalogDiscovery } from './use-version-catalog-discovery'
 import { useVersionPlanEntryTimes } from './use-version-plan-entry-times'
-import { PrioritySemaphore } from '../../../shared/priority-semaphore'
+import { PrioritySemaphore } from '../../../shared/concurrency/priority-semaphore'
 import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'
 
 const catalogReads = new PrioritySemaphore(3)

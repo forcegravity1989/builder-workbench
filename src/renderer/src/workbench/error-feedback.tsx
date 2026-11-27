@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
-import { sanitizeCrashReportString } from '../../../shared/crash-report-redaction'
-import { hasRuntimeRpcErrorCode } from '../runtime/runtime-rpc-client'
+import { sanitizeCrashReportString } from '../../../shared/crash-reporting/crash-report-redaction'
+import { hasRuntimeRpcErrorCode } from '../../../shared/remote-runtime/rpc/runtime-rpc-error-code'
 
 /**
  * The workspace a screen is bound to no longer resolves: version cleanup deleted its worktree

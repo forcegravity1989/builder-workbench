@@ -1,4 +1,4 @@
-import { branchName } from '@/lib/git-utils'
+import { branchName } from '@/lib/source-control/branches/branch-name'
 import type { Worktree, WorkspaceLinkedItem } from '../../../shared/worktree/types'
 import { validatePlanningVersion } from '../../../shared/workbench/version-document'
 import {
