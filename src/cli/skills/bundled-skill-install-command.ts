@@ -191,7 +191,7 @@ function rejectNonlocalSkillMutationFlags(
 export function createSkillMutationHandler(verb: SkillMutationVerb): CommandHandler {
   return async ({ flags, json }) => {
     rejectNonlocalSkillMutationFlags(flags, verb)
-    const guides = await loadCanonicalGuides()
+    const guides = (await loadCanonicalGuides()).filter((guide) => guide.name !== 'bw')
     const skillNames = resolveSelectedSkillNames(flags, guides)
     if (skillNames.length === 0) {
       const names = guides.map((guide) => guide.name)
