@@ -4359,8 +4359,7 @@
         "ghLabelsUpdateFailed": "Failed to update labels.",
         "codehubStartWorkspaceFromIssue": "Start workspace from issue",
         "codehubStartWorkspaceFromPr": "Start workspace from PR",
-        "codehubDuplicateOfLabel": "Duplicate of issue number",
-        "codehubProvider": "CodeHub"
+        "codehubDuplicateOfLabel": "Duplicate of issue number"
       },
       "Terminal": {
         "73768427cf": "Close",

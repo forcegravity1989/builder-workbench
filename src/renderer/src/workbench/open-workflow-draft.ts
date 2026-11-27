@@ -2,13 +2,20 @@ import { launchAgentInNewTabWithOutcome } from '@/lib/agent-session/launch/new-t
 import { settleAgentTabLaunch } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab-host-agents'
 import { createNonSecureContextUuid } from '../../../shared/identifiers/non-secure-context-uuid'
 import type { TuiAgent } from '../../../shared/agent-launch/catalog/tui-agent'
+import type { ExecutionHostId } from '../../../shared/execution-host/execution-host'
 
 /** Observe native launch and any available delivery receipt; draft visibility is verified in E2E. */
-export async function openWorkflowDraft(agent: TuiAgent, worktreeId: string, prompt: string) {
+export async function openWorkflowDraft(
+  agent: TuiAgent,
+  worktreeId: string,
+  workspaceExecutionHostId: ExecutionHostId,
+  prompt: string
+) {
   const result = launchAgentInNewTabWithOutcome({
     requestId: createNonSecureContextUuid(),
     agent,
     worktreeId,
+    workspaceExecutionHostId,
     prompt,
     promptDelivery: 'draft',
     activate: true

@@ -311,6 +311,7 @@ export function useProjectSettings(repo: Repo, onChanged: (charterUpdated: boole
             await openWorkflowDraft(
               agent,
               main.id,
+              scope.hostId,
               [
                 '请检查当前项目的项目信息提交失败，先读取仓库规则并确认已有 bw/project 分支和 PR/MR，避免重复提交。',
                 `错误：${error}`,

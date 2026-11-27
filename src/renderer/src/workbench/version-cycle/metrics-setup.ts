@@ -52,7 +52,7 @@ export async function prepareMetricsSession(args: {
       environmentId: baseScope.runtimeOwnerEnvironmentId
     })
   }
-  await openWorkflowDraft(agent, maintenance.id, assets.prompt)
+  await openWorkflowDraft(agent, maintenance.id, baseScope.hostId, assets.prompt)
   // Why: overview is the activity page. Selecting the maintenance tree and
   // opening a tab does not leave it, so the new session stays hidden.
   const view = useAppStore.getState()

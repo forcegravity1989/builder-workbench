@@ -15,6 +15,6 @@ export async function startCycleSession(
   const prompt = await buildCyclePrompt(scope, worktreeId, version)
   assertCurrentCycleWorkspace(scope, worktreeId)
   revealPlanChat()
-  await openWorkflowDraft(agent, worktreeId, prompt)
+  await openWorkflowDraft(agent, worktreeId, scope.hostId, prompt)
   assertCurrentCycleWorkspace(scope, worktreeId)
 }
