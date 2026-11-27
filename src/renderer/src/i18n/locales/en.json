@@ -18198,6 +18198,7 @@
           "invalidSyntax": "Invalid mermaid syntax"
         },
         "MonacoEditor": {
+          "pasteImageInRichMode": "Switch to Rich mode to paste an image.",
           "68cb83f4a7": "Add note on selected text",
           "fd68ae03b3": "Search in Files",
           "largePasteTooLarge": "Paste is too large."

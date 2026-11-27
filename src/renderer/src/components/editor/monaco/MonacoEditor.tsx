@@ -1,5 +1,8 @@
 import React, { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import Editor from '@monaco-editor/react'
+import { toast } from 'sonner'
+import { translate } from '@/i18n/i18n'
+import { clipboardImageItem } from '@/lib/clipboard/images/clipboard-image-item'
 import type { editor, IRange } from 'monaco-editor'
 import type { MarkdownDocument } from '../../../../../shared/file-listing/file-document'
 import { useAppStore } from '@/store/index'
@@ -289,6 +292,18 @@ export default function MonacoEditor({
   return (
     <div
       ref={editorContainerRef}
+      onPasteCapture={(event) => {
+        if (!readOnly && coreLanguage === 'markdown' && clipboardImageItem(event.clipboardData)) {
+          event.preventDefault()
+          event.stopPropagation()
+          toast.info(
+            translate(
+              'auto.components.editor.MonacoEditor.pasteImageInRichMode',
+              'Switch to Rich mode to paste an image.'
+            )
+          )
+        }
+      }}
       className={autoHeight ? 'relative' : 'relative h-full'}
       style={renderedEditorHeight === null ? undefined : { height: renderedEditorHeight }}
     >

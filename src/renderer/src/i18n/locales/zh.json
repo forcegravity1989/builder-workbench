@@ -17243,6 +17243,7 @@
           "invalidSyntax": "Mermaid 语法无效"
         },
         "MonacoEditor": {
+          "pasteImageInRichMode": "请切换到富文本模式后粘贴图片。",
           "68cb83f4a7": "在选定的文本上添加注释",
           "fd68ae03b3": "在文件中搜索",
           "largePasteTooLarge": "粘贴内容过大"
