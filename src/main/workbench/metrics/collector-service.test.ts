@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest'
 import type { MetricDefinition, MetricReadRequest } from '../../../shared/workbench/metrics'
-import { _resetTracerForTests, setActiveSink } from '../../observability/tracer'
+import { setActiveSink } from '../../observability/tracer'
 import { WORKBENCH_METRICS_METHODS } from '../../runtime/rpc/methods/workbench-metrics'
 import { nativeMetricsService } from '../metrics-runtime'
 import { createMetricsService, type MetricCollectorContext } from './collector-service'
@@ -147,7 +147,7 @@ it('preserves the original evidence time on execution and preparation failures',
       })
     }
   } finally {
-    _resetTracerForTests()
+    setActiveSink(null)
   }
 })
 

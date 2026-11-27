@@ -336,7 +336,7 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
             if (!store) {
               return false
             }
-            await store.getState().fetchRepos()
+            await store.getState().fetchRepos({ runtimeEnvironmentId: null })
             const repo = store.getState().repos.find((candidate) => candidate.id === repoId)
             if (!repo) {
               return false

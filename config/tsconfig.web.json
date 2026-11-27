@@ -1,13 +1,15 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
-  "files": ["../src/shared/workbench/work-calendar-2026.json"],
   "include": [
     "../src/renderer/src/env.d.ts",
     "../src/renderer/src/**/*",
     "../src/renderer/src/**/*.tsx",
     "../src/preload/api-types.ts",
     "../src/preload/api/**/*",
-    "../src/shared/**/*"
+    "../src/main/pi/rpc/options/rpc-model-schema.ts",
+    "../src/main/pi/rpc/options/rpc-model-options.ts",
+    "../src/shared/**/*",
+    "../cloud/packages/connector-contract/src/connect-messages.ts"
   ],
   "compilerOptions": {
     "composite": true,

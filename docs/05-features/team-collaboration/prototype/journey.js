@@ -92,7 +92,11 @@
   const bindingKey = (group, space) => `${group}|${space}`
   const demoProjectGroup = '300000000000000001'
   const employees = { lead: 'A0010001', lin: 'A0010002', chen: 'A0010003' }
-  const addresses = { lead: 'ws://192.0.2.9:6767', lin: 'ws://192.0.2.10:6768', chen: 'ws://192.0.2.11:6771' }
+  const addresses = {
+    lead: 'ws://192.0.2.9:6767',
+    lin: 'ws://192.0.2.10:6768',
+    chen: 'ws://192.0.2.11:6771'
+  }
   const dayMs = 86_400_000
   const auditRetentionDays = 14
   const auditLogDirectory = 'userData/logs/orca-shared-host/'
@@ -197,7 +201,9 @@
   function fixture(ready = false) {
     return {
       directories: { [bindingKey(demoGroup, demoSpaceId)]: ready ? seedDirectory() : null },
-      bindings: Object.fromEntries(Object.keys(names).map((person) => [person, bindingKey(demoGroup, demoSpaceId)])),
+      bindings: Object.fromEntries(
+        Object.keys(names).map((person) => [person, bindingKey(demoGroup, demoSpaceId)])
+      ),
       bound: ready
         ? { lead: true, lin: true, chen: true }
         : { lead: false, lin: false, chen: false },
@@ -367,11 +373,13 @@
 
   function seedDirectory() {
     const directory = blankDirectory(demoGroup, demoSpaceId)
-    directory.projects = [{
-      repo_id: catalogRepos.star.repoId,
-      name: catalogRepos.star.name,
-      repository: catalogRepos.star.repository,
-    }]
+    directory.projects = [
+      {
+        repo_id: catalogRepos.star.repoId,
+        name: catalogRepos.star.name,
+        repository: catalogRepos.star.repository
+      }
+    ]
     return syncDirectory(directory)
   }
 
@@ -382,9 +390,9 @@
     if (entry.repo_id && catalogRepos[entry.repo_id]) {
       return entry.repo_id
     }
-    return Object.keys(catalogRepos).find(
-      (id) => catalogRepos[id].repository === entry.repository
-    ) ?? ''
+    return (
+      Object.keys(catalogRepos).find((id) => catalogRepos[id].repository === entry.repository) ?? ''
+    )
   }
 
   function normalizeDirectory(directory) {
@@ -415,7 +423,7 @@
         ...entry,
         repo_id: repoId,
         name: entry.name ?? catalogRepos[repoId]?.name ?? '未命名项目',
-        repository: entry.repository ?? catalogRepos[repoId]?.repository ?? '',
+        repository: entry.repository ?? catalogRepos[repoId]?.repository ?? ''
       }
       delete normalized.sources
       return normalized
@@ -424,9 +432,7 @@
   }
 
   function localRepos(person = actor.value) {
-    return (wallRepos[person] ?? [])
-      .map((id) => [id, catalogRepos[id]])
-      .filter(([, repo]) => repo)
+    return (wallRepos[person] ?? []).map((id) => [id, catalogRepos[id]]).filter(([, repo]) => repo)
   }
 
   function activeDirectory(person = actor.value) {
@@ -482,19 +488,27 @@
     if (!teamProject(repoId, directory)) {
       return []
     }
-    return Object.keys(wallRepos).filter((person) => (wallRepos[person] ?? []).includes(repoId) && hosts[person])
+    return Object.keys(wallRepos).filter(
+      (person) => (wallRepos[person] ?? []).includes(repoId) && hosts[person]
+    )
   }
 
   function accessLevel(owner, visitor = actor.value) {
     if (owner === visitor) {
       return 'owner'
     }
-    return state.accessModes?.[visitor]?.[owner] ??
+    return (
+      state.accessModes?.[visitor]?.[owner] ??
       (state.full && owner === 'lin' && visitor === 'chen' ? 'full' : 'readonly')
+    )
   }
 
   function registered(person, repoId = 'star', directory = knownDirectory()) {
-    return Boolean(teamProject(repoId, directory) && directoryHost(person, directory) && sourceOwners(repoId, directory).includes(person))
+    return Boolean(
+      teamProject(repoId, directory) &&
+      directoryHost(person, directory) &&
+      sourceOwners(repoId, directory).includes(person)
+    )
   }
 
   function canReadTeamSource(owner, visitor = actor.value, repoId = 'star') {
@@ -507,7 +521,11 @@
   }
 
   function sourceAvailable(owner, repoId = 'star') {
-    return owner === actor.value || accessLevel(owner) === 'full' || canReadTeamSource(owner, actor.value, repoId)
+    return (
+      owner === actor.value ||
+      accessLevel(owner) === 'full' ||
+      canReadTeamSource(owner, actor.value, repoId)
+    )
   }
 
   function sourceValue(value) {
@@ -602,7 +620,7 @@
         target.projects.push({
           repo_id: repo.repoId,
           name: repo.name,
-          repository: repo.repository,
+          repository: repo.repository
         })
         if (draft) {
           render()
@@ -640,9 +658,10 @@
       .map((id) => {
         const member = weLinkMember(id)
         const endpoint = endpointFor(id, draft)
-        const fill = id === actor.value && writable
-          ? iconButton('Link2', endpoint ? '一键填入' : '一键生成并填入', 'fill-own-share')
-          : ''
+        const fill =
+          id === actor.value && writable
+            ? iconButton('Link2', endpoint ? '一键填入' : '一键生成并填入', 'fill-own-share')
+            : ''
         return `<tr><td><span class="row member-person"><img class="avatar team-avatar" src="${avatarAssets[id]}" alt="${member.name}头像"><span title="${member.member_id}"><strong>${member.name}</strong><small class="member-role">${id === 'lead' ? '群主' : '成员'}</small></span></span></td><td><div class="host-cell"><div class="row wrap"><input class="input member-address" aria-label="${hostLabel(id)} Orca 共享地址" data-address="${id}" value="${esc(endpoint)}" placeholder="Orca 共享地址"${id === actor.value && writable ? '' : ' readonly'}><span class="host-actions">${fill}</span></div></div></td></tr>`
       })
       .join('')
@@ -753,7 +772,12 @@
     return accessLevel(owner) === 'full'
   }
 
-  function audit(owner, action, result, resource = `${catalogRepos[current().repoId]?.name ?? project} · ${hosts[owner]?.tree ?? '共享主机'}`) {
+  function audit(
+    owner,
+    action,
+    result,
+    resource = `${catalogRepos[current().repoId]?.name ?? project} · ${hosts[owner]?.tree ?? '共享主机'}`
+  ) {
     const user = names[actor.value]
     state.logs[owner] ??= []
     state.logs[owner].unshift([Date.now(), `${user} · ${user}桌面`, resource, action, result])
@@ -770,9 +794,18 @@
       '结束资源订阅'
     ])
     const allowed = accessLevel(owner) === 'full' || readActions.has(action)
-    const result = allowed ? '已放行' : action === '未归类动作' ? '已拒绝 · 未知动作' : '已拒绝 · 团队只读'
+    const result = allowed
+      ? '已放行'
+      : action === '未归类动作'
+        ? '已拒绝 · 未知动作'
+        : '已拒绝 · 团队只读'
     if (!allowed || !readActions.has(action) || action === '连接共享主机') {
-      audit(owner, action, result, `${catalogRepos[repoId]?.name ?? project} · ${hosts[owner]?.tree ?? '共享主机'}`)
+      audit(
+        owner,
+        action,
+        result,
+        `${catalogRepos[repoId]?.name ?? project} · ${hosts[owner]?.tree ?? '共享主机'}`
+      )
     }
     return allowed
   }
@@ -797,10 +830,23 @@
   }
 
   function remoteHostPopover() {
-    const connections = Object.keys(names).filter((owner) => owner !== actor.value && state.teamConnections?.[actor.value]?.[owner])
-    const available = Object.keys(names).filter((owner) => owner !== actor.value && endpointFor(owner) && !state.teamConnections?.[actor.value]?.[owner])
-    const row = (owner, connected) => `<div class="remote-host-row"><div class="remote-host-main"><span class="remote-host-dot${connected ? ' is-connected' : ''}"></span><span><strong>${hostLabel(owner)}</strong><small>${connected ? '已连接 · 只读' : '已登记 · 未连接'}</small></span></div>${button(connected ? '断开' : '连接', connected ? 'disconnect-host' : 'quick-connect-host', { value: owner, kind: 'ghost' })}</div>`
-    return `<div class="remote-host-popover" role="dialog" aria-label="远程主机"><header class="row between"><strong>远程主机</strong>${iconButton('RefreshCw', '刷新远程主机', 'refresh-remote-hosts')}</header>${connections.concat(available).map((owner) => row(owner, connections.includes(owner))).join('') || '<p class="field-note">团队主机登记后会显示在这里。</p>'}<footer>${button('管理远程主机…', 'open-remote-settings', { kind: 'ghost' })}</footer></div>`
+    const connections = Object.keys(names).filter(
+      (owner) => owner !== actor.value && state.teamConnections?.[actor.value]?.[owner]
+    )
+    const available = Object.keys(names).filter(
+      (owner) =>
+        owner !== actor.value &&
+        endpointFor(owner) &&
+        !state.teamConnections?.[actor.value]?.[owner]
+    )
+    const row = (owner, connected) =>
+      `<div class="remote-host-row"><div class="remote-host-main"><span class="remote-host-dot${connected ? ' is-connected' : ''}"></span><span><strong>${hostLabel(owner)}</strong><small>${connected ? '已连接 · 只读' : '已登记 · 未连接'}</small></span></div>${button(connected ? '断开' : '连接', connected ? 'disconnect-host' : 'quick-connect-host', { value: owner, kind: 'ghost' })}</div>`
+    return `<div class="remote-host-popover" role="dialog" aria-label="远程主机"><header class="row between"><strong>远程主机</strong>${iconButton('RefreshCw', '刷新远程主机', 'refresh-remote-hosts')}</header>${
+      connections
+        .concat(available)
+        .map((owner) => row(owner, connections.includes(owner)))
+        .join('') || '<p class="field-note">团队主机登记后会显示在这里。</p>'
+    }<footer>${button('管理远程主机…', 'open-remote-settings', { kind: 'ghost' })}</footer></div>`
   }
 
   function rail(screen) {
@@ -1011,7 +1057,8 @@
   function nativeGrantRows(owner) {
     const endpoint = endpointFor(owner)
     const visitors = Object.keys(names).filter(
-      (visitor) => visitor !== owner && endpoint && state.teamConnections?.[visitor]?.[owner] === endpoint
+      (visitor) =>
+        visitor !== owner && endpoint && state.teamConnections?.[visitor]?.[owner] === endpoint
     )
     if (!visitors.length) {
       return '<p class="field-note">尚无共享服务器访问权限。其他团队主机连接后会出现在这里。</p>'
@@ -1048,8 +1095,9 @@
 
   function connectingServer() {
     const desktop = current()
-    const targets = Object.keys(names)
-      .filter((owner) => owner !== actor.value && (endpointFor(owner) || state.generatedLinks?.[owner]))
+    const targets = Object.keys(names).filter(
+      (owner) => owner !== actor.value && (endpointFor(owner) || state.generatedLinks?.[owner])
+    )
     const target = desktop.connectionTarget ?? targets[0] ?? ''
     const targetEndpoint = target ? endpointFor(target) : ''
     const targetAccess = targetEndpoint
@@ -1059,8 +1107,13 @@
       ? `<form id="pair-form" class="pair-form"><label class="field">目标主机<select class="input" name="owner" required>${targets.map((owner) => `<option value="${owner}"${owner === target ? ' selected' : ''}>${hostLabel(owner)}</option>`).join('')}</select></label>${targetAccess}<footer class="dialog-actions">${button('取消', 'add-server', { kind: 'ghost' })}<button class="btn btn-primary" type="submit"${targets.length ? '' : ' disabled'}>连接</button></footer></form>`
       : ''
     const connected = Object.keys(names)
-      .filter((owner) => owner !== actor.value && canReadTeamSource(owner, actor.value, desktop.repoId))
-      .map((owner) => `<p>${hostLabel(owner)} · 已连接 · ${accessLevel(owner) === 'full' ? '完全访问' : '只读'} · 同一 Orca 共享连接</p>`)
+      .filter(
+        (owner) => owner !== actor.value && canReadTeamSource(owner, actor.value, desktop.repoId)
+      )
+      .map(
+        (owner) =>
+          `<p>${hostLabel(owner)} · 已连接 · ${accessLevel(owner) === 'full' ? '完全访问' : '只读'} · 同一 Orca 共享连接</p>`
+      )
       .join('')
     return `<section class="muted-frame"><header class="row between"><h2>连接到远程服务器</h2>${button(`${icon('Plus')} 添加服务器`, 'add-server')}</header>${connected || '<p class="field-note">团队主机会出现在项目墙，但默认不会自动建立连接。</p>'}${form}</section>`
   }
@@ -1120,7 +1173,9 @@
       surface.querySelector('input[name="group"]')?.focus()
     },
     'cancel-team-switch': () => {
-      if (current().bindingPending) {return}
+      if (current().bindingPending) {
+        return
+      }
       current().switchingTeam = false
       notify('')
       render()
@@ -1176,7 +1231,10 @@
     },
     'fill-own-share': () => {
       const draft = current().directoryDraft
-      const endpoint = state.teamEndpoints?.[actor.value] ?? addresses[actor.value] ?? `ws://192.0.2.${12 + Object.keys(names).indexOf(actor.value)}:${6770 + Object.keys(names).indexOf(actor.value)}`
+      const endpoint =
+        state.teamEndpoints?.[actor.value] ??
+        addresses[actor.value] ??
+        `ws://192.0.2.${12 + Object.keys(names).indexOf(actor.value)}:${6770 + Object.keys(names).indexOf(actor.value)}`
       const host = draft?.hosts?.find((entry) => entry.member_id === employees[actor.value])
       if (!draft || !host || !endpoint) {
         notify('当前主机暂时无法生成 Orca 共享地址。')
@@ -1189,7 +1247,9 @@
       hydrateEndpoints()
       current().directoryDraft = structuredClone(activeDirectory())
       current().directoryBase = JSON.stringify(activeDirectory())
-      notify(`已${addresses[actor.value] ? '带入' : '生成并填入'}${hostLabel(actor.value)}的 Orca 共享地址`)
+      notify(
+        `已${addresses[actor.value] ? '带入' : '生成并填入'}${hostLabel(actor.value)}的 Orca 共享地址`
+      )
       render()
     },
     'legacy-add': () => {
@@ -1211,7 +1271,11 @@
       const desktop = current()
       desktop.tab = value
       if (desktop.source !== actor.value) {
-        authorizeRemoteAction(desktop.source, value === 'terminal' ? '查看终端输出' : '查看已有会话', desktop.repoId)
+        authorizeRemoteAction(
+          desktop.source,
+          value === 'terminal' ? '查看终端输出' : '查看已有会话',
+          desktop.repoId
+        )
       }
       render()
     },
@@ -1289,7 +1353,8 @@
         return
       }
       state.generatedLinks ??= {}
-      state.generatedLinks[owner] = owner === 'lin' ? samplePairing : `orca://pair?code=demo-${owner}`
+      state.generatedLinks[owner] =
+        owner === 'lin' ? samplePairing : `orca://pair?code=demo-${owner}`
       state.offered = true
       state.teamEndpoints[owner] = addresses[owner]
       notify(`已生成${hostLabel(owner)}的 Orca 访问链接。连接建立后默认只读。`)
@@ -1359,7 +1424,8 @@
           render()
         }
       )
-    },    'new-session': () => {
+    },
+    'new-session': () => {
       if (readOnly()) {
         const owner = current().source
         const repoId = current().repoId
@@ -1415,7 +1481,9 @@
     }
     if (event.target.matches('input[data-address]')) {
       const person = event.target.dataset.address
-      const host = current().directoryDraft?.hosts?.find((entry) => entry.member_id === employees[person])
+      const host = current().directoryDraft?.hosts?.find(
+        (entry) => entry.member_id === employees[person]
+      )
       if (host) {
         host.orca_endpoint = event.target.value.trim()
       }
@@ -1443,32 +1511,52 @@
       const person = actor.value
       const submittedState = state
       const desktop = current()
-      if (desktop.bindingPending) {return}
+      if (desktop.bindingPending) {
+        return
+      }
       const group = String(data.get('group')).trim()
       const space = String(data.get('space')).trim()
-      const valid = (group === demoGroup && space === demoSpaceId) || (group === alternateGroup && space === alternateSpaceId)
+      const valid =
+        (group === demoGroup && space === demoSpaceId) ||
+        (group === alternateGroup && space === alternateSpaceId)
       const fail = document.querySelector('#switch-result').value === 'failure'
       desktop.bindingPending = true
       desktop.bindingError = ''
       const form = event.target
-      for (const control of form.elements) {control.disabled = true}
+      for (const control of form.elements) {
+        control.disabled = true
+      }
       form.querySelector('button[type="submit"]').textContent = '正在读取团队…'
       form.querySelector('#binding-error').textContent = ''
       const closeButton = surface.querySelector('[aria-label="取消切换团队"]')
-      if (closeButton) {closeButton.disabled = true}
+      if (closeButton) {
+        closeButton.disabled = true
+      }
       setTimeout(() => {
-        if (state !== submittedState || desktops[person] !== desktop) {return}
+        if (state !== submittedState || desktops[person] !== desktop) {
+          return
+        }
         desktop.bindingPending = false
         if (!valid || fail) {
-          desktop.bindingError = desktop.switchingTeam ? '未能读取新团队，当前团队保持不变。核对两个 ID 后重试。' : '未能读取团队目录，核对两个 ID 后重试。'
-          if (actor.value === person) {render()}
+          desktop.bindingError = desktop.switchingTeam
+            ? '未能读取新团队，当前团队保持不变。核对两个 ID 后重试。'
+            : '未能读取团队目录，核对两个 ID 后重试。'
+          if (actor.value === person) {
+            render()
+          }
           return
         }
         state.bindings[person] = bindingKey(group, space)
         if (!activeDirectory(person)) {
           const directory = blankDirectory(group, space)
           if (group === alternateGroup) {
-            directory.projects = [{ repo_id: 'board', name: catalogRepos.board.name, repository: catalogRepos.board.repository }]
+            directory.projects = [
+              {
+                repo_id: 'board',
+                name: catalogRepos.board.name,
+                repository: catalogRepos.board.repository
+              }
+            ]
           }
           setActiveDirectory(syncDirectory(directory), person)
         }
@@ -1477,7 +1565,9 @@
         desktop.directoryDraft = structuredClone(activeDirectory(person))
         desktop.directoryBase = JSON.stringify(activeDirectory(person))
         desktop.switchingTeam = false
-        if (actor.value === person) {notify('已读取并切换团队')}
+        if (actor.value === person) {
+          notify('已读取并切换团队')
+        }
         render()
       }, 650)
     } else if (event.target.id === 'review-form' && data.get('recipient') === 'lead') {
@@ -1489,7 +1579,11 @@
       const owner = String(data.get('owner') || '')
       const link = String(data.get('link') || '')
       const endpoint = endpointFor(owner)
-      if (!owner || owner === actor.value || (!endpoint && (!state.generatedLinks?.[owner] || link !== state.generatedLinks[owner]))) {
+      if (
+        !owner ||
+        owner === actor.value ||
+        (!endpoint && (!state.generatedLinks?.[owner] || link !== state.generatedLinks[owner]))
+      ) {
         notify('群空间还没有这个主机的 Orca 地址，请让主机持有人先登记共享地址。')
         return
       }

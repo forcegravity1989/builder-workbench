@@ -1,12 +1,12 @@
-import { findRepoForHost } from '@/store/slices/repo-host-identity'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { findRepoForHost } from '@/store/repos/repo-host-identity'
+import { getRepoTaskSourceContext } from '../task-source-context'
 import { prefillCodehubDetailCache } from '@/components/task-page/codehub/codehub-detail-cache'
 import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
-import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
+import { lookupGitHubWorkItemForSource } from '@/lib/work-items/github/github-work-item-source-lookup'
 import { useAppStore } from '@/store'
 import { parseCodeHubRemote } from '../../../../shared/codehub'
 import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
-import { getRepoExecutionHostId } from '../../../../shared/execution-host'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host/execution-host'
 import type { WorkflowArchivePr } from '../../../../shared/workbench/version-workflow'
 import { codehubStateOf, codehubWebUrl } from '../codehub-task-item'
 import { gitHubIdentityForTaskReference, resolveReferenceRepo } from '../task-reference-repo'
@@ -58,7 +58,7 @@ export async function openArchivePrPage(
   }
   const options = { recordTasksInteraction: false, returnToPreviousView: true }
   if (archivePr.provider === 'github') {
-    const context = getTaskPageRepoSourceContext(repo, 'github')
+    const context = getRepoTaskSourceContext(repo, 'github')
     const identity = gitHubIdentityForTaskReference(repo, archivePr.repository)
     const sourceContext =
       context?.localTaskAccount && identity
@@ -93,7 +93,7 @@ export async function openArchivePrPage(
     return
   }
   if (archivePr.provider === 'codehub') {
-    const sourceContext = getTaskPageRepoSourceContext(repo, 'codehub')
+    const sourceContext = getRepoTaskSourceContext(repo, 'codehub')
     if (!sourceContext) {
       throw new Error('无法解析 codehub 任务来源上下文')
     }

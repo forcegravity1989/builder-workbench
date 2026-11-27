@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 const call = vi.hoisted(() => vi.fn())
-vi.mock('../runtime/runtime-rpc-client', () => ({ callRuntimeRpc: call }))
+vi.mock('../runtime/rpc/calls/runtime-rpc-call', () => ({ callRuntimeRpc: call }))
 import { nativeVersionMaterialPort } from './version-material-port'
 
 beforeEach(() => {

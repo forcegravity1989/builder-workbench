@@ -1,4 +1,4 @@
-import type { RuntimeWorktreeRecord } from '../../shared/runtime-worktree-contracts'
+import type { RuntimeWorktreeRecord } from '../../shared/worktree/catalog/runtime-worktree-contracts'
 import type { VersionHistoryPort } from '../../shared/workbench/version-history'
 import {
   WORKBENCH_VERSION_BINDING_SCHEMA_VERSION,
@@ -17,7 +17,7 @@ import {
   type VersionWorkspacePrepareResult,
   type VersionWorkspacePrepareStep
 } from '../../shared/workbench/version-workspace-prepare'
-import { getWorktreeExecutionHostId } from '../../shared/execution-host'
+import { getWorktreeExecutionHostId } from '../../shared/execution-host/execution-host'
 import {
   createWorkbenchRepoResolver,
   nativeWorkbenchWorkspaceHost,

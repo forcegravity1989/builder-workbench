@@ -1,4 +1,4 @@
-import { normalizeGitRemoteUrl } from '../git-remote-identity'
+import { normalizeGitRemoteUrl } from '../git/remotes/git-remote-identity'
 
 /** Version materials belong to the checked-out repository, not its upstream project. */
 export function versionRepoIdentity(repo: {

@@ -1,19 +1,16 @@
-import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
-import { TaskPageGitHubFilters } from './github/Filters'
+import type { TaskPageComposerActionsModel } from './use-task-page-composer-actions'
+import { TaskPageGitHubFilters } from './github/listing/Filters'
 import { TaskPageLinearFilters } from './linear/Filters'
 import { TaskPageJiraFilters } from './jira/Filters'
 import { TaskPageGitLabFilters } from './gitlab/Filters'
-import { TaskPageCodeHubFilters } from './codehub/Filters'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 export function TaskPageProviderFilters({
   model
 }: {
   model: TaskPageComposerActionsModel
 }): React.JSX.Element | null {
   const { linearConnected, jiraConnected, taskSource, githubMode } = model
-  return taskSource === 'github' && (githubMode === 'items' || isWorkbenchShell()) ? (
-    // Why: top of the joined GitHub list card — pairs with the
-    // table shell below (rounded-t-none border-t-0) as one surface.
+  return taskSource === 'github' && githubMode === 'items' ? (
+    // Join the filter chrome to the table shell below.
     <TaskPageGitHubFilters model={model} />
   ) : taskSource === 'linear' && linearConnected ? (
     <TaskPageLinearFilters model={model} />
@@ -21,7 +18,5 @@ export function TaskPageProviderFilters({
     <TaskPageJiraFilters model={model} />
   ) : taskSource === 'gitlab' ? (
     <TaskPageGitLabFilters model={model} />
-  ) : taskSource === 'codehub' ? (
-    <TaskPageCodeHubFilters model={model} />
   ) : null
 }

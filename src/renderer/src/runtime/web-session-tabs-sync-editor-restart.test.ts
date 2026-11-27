@@ -1,22 +1,23 @@
-import { expect, it, vi } from 'vitest'
-import { UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH } from '../../../shared/runtime-types'
-import { parseWorkspaceSession } from '../../../shared/workspace-session-schema'
-import { buildWorkspaceSessionPayload } from '../lib/workspace-session'
-import { createStoreSessionMockApi } from '../store/slices/store-session-test-harness'
-import { createTestStore, makeWorktree } from '../store/slices/store-test-helpers'
+// @vitest-environment happy-dom
+import { beforeEach, expect, it } from 'vitest'
+import { UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH } from '../../../shared/remote-runtime/session-graph/runtime-session-contracts'
+import { parseWorkspaceSession } from '../../../shared/workspace-session/workspace-session-schema'
+import { buildWorkspaceSessionPayload } from '../lib/workspace/persistence/workspace-session'
+import { createTestStore } from '../store/testing/app-store-test-fixture'
+import { makeWorktree } from '../store/slices/worktrees/worktree.test-fixture'
 import { buildMobileSessionTabSnapshots } from './sync-runtime-graph/mobile-session-snapshots'
-import { applyWebSessionTabsSnapshot } from './web-session-tabs-sync'
+import { applyWebSessionTabsSnapshot } from './web-session-tabs-sync/snapshots/snapshot-api'
 import {
   ENV,
   HOST_SURFACE_ID,
   LEAF_ID,
   NOW,
   WT,
-  makeSnapshot
-} from './web-session-tabs-sync-test-harness'
+  makeSnapshot,
+  resetWebSessionTabsSyncTestState
+} from './web-session-tabs-sync/testing/web-session-tabs-sync.test-fixture'
 
-vi.mock('sonner', () => ({ toast: { info: vi.fn(), success: vi.fn(), error: vi.fn() } }))
-createStoreSessionMockApi()
+beforeEach(resetWebSessionTabsSyncTestState)
 
 const mirroredPath = '/worktree/mirror-test.txt'
 const cleanMirroredPath = '/worktree/clean-mirror.txt'
@@ -73,24 +74,25 @@ it('does not echo restored mirrors, and host closure retires only the mirror wit
     activeTabType: 'file'
   })
   beforeQuit.setState(applyWebSessionTabsSnapshot(beforeQuit.getState(), hostOpen, ENV, NOW) ?? {})
-  beforeQuit.setState((state) => ({
-    openFiles: state.openFiles.map((file) =>
-      file.filePath === mirroredPath ? { ...file, isDirty: true } : file
-    ),
-    editorDrafts: { [mirroredPath]: 'unsaved edit from the client' }
-  }))
+  const mirrored = beforeQuit.getState().openFiles.find((file) => file.filePath === mirroredPath)
+  if (!mirrored) {
+    throw new Error('Expected the host editor tab to be mirrored')
+  }
+  beforeQuit.getState().setEditorDraft(mirrored.id, 'unsaved edit from the client')
+  beforeQuit.getState().markFileDirty(mirrored.id, true)
 
   const persisted = buildWorkspaceSessionPayload(beforeQuit.getState())
   const parsed = parseWorkspaceSession(persisted)
   if (!parsed.ok) {
     throw new Error('Saved editor session failed validation')
   }
+  resetWebSessionTabsSyncTestState()
   const afterRestart = createClient()
   afterRestart.getState().hydrateTabsSession(parsed.value)
   afterRestart.getState().hydrateEditorSession(parsed.value)
 
   const publish = () =>
-    buildMobileSessionTabSnapshots(afterRestart.getState())
+    buildMobileSessionTabSnapshots(afterRestart.getState(), false)
       .find((snapshot) => snapshot.worktree === WT)
       ?.tabs.flatMap((tab) => (tab.type === 'file' ? [tab.filePath] : []))
   expect(publish()).toEqual([ownPath])

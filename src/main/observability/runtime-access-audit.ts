@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import type {
   RuntimeAccessAuditEntry,
   RuntimeAccessAuditResult
-} from '../../shared/runtime-access-grants'
+} from '../../shared/remote-runtime/host-catalog/runtime-access-grants'
 import {
   runtimeAccessAuditActionKey,
   runtimeAccessAuditActionLabel

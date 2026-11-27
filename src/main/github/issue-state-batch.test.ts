@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 const ghExecFileAsync = vi.fn()
-vi.mock('./gh-utils', () => ({
-  ghExecFileAsync: (...args: unknown[]) => ghExecFileAsync(...args),
+vi.mock('../git/command-runner/hosted-cli/gh-exec-file', () => ({
+  ghExecFileAsync: (...args: unknown[]) => ghExecFileAsync(...args)
+}))
+vi.mock('./execution/github-operation-slots', () => ({
   acquire: () => Promise.resolve(),
   release: () => {}
 }))

@@ -2,9 +2,9 @@ import { countUnresolvedCodeHubThreadsSince } from '../../../../shared/workbench
 import { createCodeHubApi, createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { prefillCodehubDetailCache } from '@/components/task-page/codehub/codehub-detail-cache'
 import { useAppStore } from '@/store'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import type { CodeHubTaskDetail } from '../../../../shared/codehub-tasks'
-import { summarizeProviderChecks } from '../../../../shared/provider-check-summary'
+import { summarizeProviderChecks } from '../../../../shared/source-control/checks/provider-check-summary'
 import {
   reviewRepoIdentity,
   type ReviewSendInput

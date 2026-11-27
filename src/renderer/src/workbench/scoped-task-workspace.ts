@@ -1,8 +1,8 @@
 import type { Worktree } from '../../../shared/worktree/types'
-import type { Repo } from '../../../shared/repo-types'
-import type { TaskSourceContext } from '../../../shared/task-source-context'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import type { Repo } from '../../../shared/repository/repo-types'
+import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
+import { getCodeHubRepoSourceContext } from '@/lib/codehub-api'
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import type { WorkbenchTaskScope } from '../../../shared/workbench/task-scope'
@@ -12,7 +12,7 @@ import {
   findVersionGoalWorktrees,
   findVersionTaskWorktrees
 } from '../../../shared/workbench/version-workspace-match'
-import { findGithubWorkItemWorkspaceAttachment } from '@/lib/github-work-item-workspace-attachment'
+import { findGithubWorkItemWorkspaceAttachment } from '@/lib/work-items/github/github-work-item-workspace-attachment'
 import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
 import { resolveReferenceRepo } from './task-port'
 import { activateVersionWorktree } from './version-worktree-host'
@@ -75,7 +75,7 @@ export function attachedCodeHubDetailWorkspace(args: {
       worktrees,
       provider: 'codehub',
       item: { repoId: item.repoId, type: 'issue', number: item.iid },
-      sourceContext: getTaskPageRepoSourceContext(repo, 'codehub')
+      sourceContext: getCodeHubRepoSourceContext(repo)
     }).attached
   }
   const kind = item.type === 'mr' ? 'mr' : 'issue'

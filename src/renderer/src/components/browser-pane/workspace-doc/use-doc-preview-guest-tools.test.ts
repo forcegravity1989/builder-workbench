@@ -9,20 +9,20 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const calls = vi.hoisted(() => ({
-  annotationSend: [] as { browserTabId: string }[],
+  annotationSend: [] as { browserTabId: string; reviewDocumentPath: string }[],
   grabAnnotations: [] as { browserTabId: string; toolTargetId: string }[],
   grabMode: [] as string[],
   viewportBridge: [] as { toolTargetId: string }[]
 }))
 
-vi.mock('@/components/browser-pane/annotate/use-browser-page-annotation-send', () => ({
-  useBrowserPageAnnotationSend: (args: { browserTabId: string }) => {
-    calls.annotationSend.push({ browserTabId: args.browserTabId })
+vi.mock('@/components/browser-pane/annotate/delivery/use-browser-page-annotation-send', () => ({
+  useBrowserPageAnnotationSend: (args: { browserTabId: string; reviewDocumentPath: string }) => {
+    calls.annotationSend.push(args)
     return { browserAnnotations: [] }
   }
 }))
 
-vi.mock('@/components/browser-pane/annotate/use-browser-page-grab-annotations', () => ({
+vi.mock('@/components/browser-pane/annotate/grab/use-browser-page-grab-annotations', () => ({
   useBrowserPageGrabAnnotations: (args: { browserTabId: string; toolTargetId: string }) => {
     calls.grabAnnotations.push({
       browserTabId: args.browserTabId,
@@ -32,24 +32,24 @@ vi.mock('@/components/browser-pane/annotate/use-browser-page-grab-annotations', 
   }
 }))
 
-vi.mock('@/components/browser-pane/annotate/use-browser-page-markup-capture', () => ({
+vi.mock('@/components/browser-pane/annotate/capture/use-browser-page-markup-capture', () => ({
   useBrowserPageMarkupCapture: () => ({ isActive: false })
 }))
 
-vi.mock('@/components/browser-pane/annotate/useGrabMode', () => ({
+vi.mock('@/components/browser-pane/annotate/grab/useGrabMode', () => ({
   useGrabMode: (toolTargetId: string) => {
     calls.grabMode.push(toolTargetId)
     return { state: 'idle' }
   }
 }))
 
-vi.mock('@/components/browser-pane/annotate/guest-annotation-viewport-bridge', () => ({
+vi.mock('@/components/browser-pane/annotate/viewport/guest-annotation-viewport-bridge', () => ({
   syncGuestAnnotationViewportBridge: (args: { toolTargetId: string }) => {
     calls.viewportBridge.push({ toolTargetId: args.toolTargetId })
   }
 }))
 
-vi.mock('@/hooks/useShortcutLabel', () => ({ useShortcutLabel: () => 'G' }))
+vi.mock('@/lib/keyboard/useShortcutLabel', () => ({ useShortcutLabel: () => 'G' }))
 
 import { useDocPreviewGuestTools } from './use-doc-preview-guest-tools'
 
@@ -109,7 +109,10 @@ describe('useDocPreviewGuestTools ids', () => {
 
     render(FIRST_GRANT)
 
-    expect(calls.annotationSend.at(-1)?.browserTabId).toBe(PREVIEW_ID)
+    expect(calls.annotationSend.at(-1)).toMatchObject({
+      browserTabId: PREVIEW_ID,
+      reviewDocumentPath: '/repo/doc.html'
+    })
     expect(calls.grabAnnotations.at(-1)?.browserTabId).toBe(PREVIEW_ID)
     expect(calls.grabAnnotations.at(-1)?.toolTargetId).toBe(PREVIEW_ID)
     expect(calls.grabMode.at(-1)).toBe(PREVIEW_ID)

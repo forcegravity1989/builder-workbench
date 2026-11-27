@@ -17,48 +17,53 @@ import { versionSelection } from '../../../workbench/version-selection'
 export const WORKBENCH_MATERIAL_METHODS = [
   defineWorkbenchMethod({
     name: 'workbench.materials.context',
+    permission: 'workspace',
     params: VersionMaterialScopeSchema,
     handler: (params, { runtime }) => materialResult(() => versionSelection(runtime, params))
   }),
   defineWorkbenchMethod({
     name: 'workbench.materials.select',
+    permission: 'workspace',
     params: VersionMaterialReadSchema,
     handler: (params, { runtime }) =>
       materialResult(() => versionSelection(runtime, params, params.version))
   }),
   defineWorkbenchMethod({
     name: 'workbench.materials.previewMigration',
+    permission: 'workspace',
     params: VersionMigrationReadSchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).previewMigration(params))
   }),
   defineWorkbenchMethod({
     name: 'workbench.materials.migrate',
+    permission: 'workspace',
     params: VersionMigrationApplySchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).migrate(params))
   }),
   defineWorkbenchMethod({
     name: 'workbench.materials.list',
+    permission: 'workspace',
     params: VersionMaterialScopeSchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).list(params))
   }),
   defineWorkbenchMethod({
     name: 'workbench.materials.read',
+    permission: 'workspace',
     params: VersionMaterialReadSchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).read(params))
   }),
   defineWorkbenchMethod({
     name: 'workbench.materials.save',
+    permission: 'workspace',
     params: VersionMaterialSaveSchema,
     handler: (params, ctx) =>
       materialResult(async () => {
         const service = nativeVersionMaterialService(ctx.runtime)
-        // Human-only conclusions enter through UI channels only; the CLI channel
-        // (no clientKind) must round-trip them unchanged. Guard runs on the owning
-        // runtime because the CLI client itself cannot be trusted.
+        // The owning runtime decides whether the authenticated caller may edit human fields.
         await assertHumanFieldsUntouched((input) => service.read(input), params, ctx)
         return service.save(params)
       })
@@ -68,6 +73,7 @@ export const WORKBENCH_MATERIAL_METHODS = [
   // 守卫（见 version-material-artifact.ts）。
   defineWorkbenchMethod({
     name: 'workbench.materials.addArtifact',
+    permission: 'workspace',
     params: VersionMaterialAddArtifactSchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).addArtifact(params))

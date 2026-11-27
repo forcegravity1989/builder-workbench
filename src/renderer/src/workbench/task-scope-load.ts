@@ -1,10 +1,14 @@
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
-import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
-import { sortWorkItemsByNumber } from '../../../shared/work-items'
-import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import {
+  getRepoExecutionHostId,
+  type ExecutionHostId
+} from '../../../shared/execution-host/execution-host'
+import { normalizeGitRemoteUrl } from '../../../shared/git/remotes/git-remote-identity'
+import { sortWorkItemsByNumber } from '../../../shared/work-items/work-item-order'
+import type { GitHubWorkItem } from '../../../shared/github/work-items/work-item-types'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
-import type { Repo } from '../../../shared/repo-types'
+import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'
+import type { Repo } from '../../../shared/repository/repo-types'
 import {
   WorkbenchTaskScopeSchema,
   type WorkbenchTaskScope
@@ -24,7 +28,7 @@ export type TaskScopeMissingRow = {
 export type TaskScopeLoadResult = {
   viewProvider: 'github' | 'codehub'
   githubItems: GitHubWorkItem[]
-  codehubItems: CodeHubTaskItem[]
+  codehubItems: (CodeHubTaskItem & { sourceContext?: TaskSourceContext | null })[]
   missing: TaskScopeMissingRow[]
 }
 
@@ -59,7 +63,7 @@ function projectScope(
 ): TaskScopeLoadResult {
   const viewProvider = viewProviderFor(references)
   const githubItems: GitHubWorkItem[] = []
-  const codehubItems: CodeHubTaskItem[] = []
+  const codehubItems: (CodeHubTaskItem & { sourceContext?: TaskSourceContext | null })[] = []
   const missing: TaskScopeMissingRow[] = []
   let index = 0
   for (const reference of references) {
@@ -73,7 +77,7 @@ function projectScope(
       if (value?.kind === 'github') {
         githubItems.push(value.item)
       } else if (value?.kind === 'codehub') {
-        codehubItems.push(value.item)
+        codehubItems.push({ ...value.item, sourceContext: value.source })
       } else {
         reason = value?.error ?? '尚未读取'
       }

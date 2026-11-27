@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ExecutionHostId } from '../../../../shared/execution-host'
+import type { ExecutionHostId } from '../../../../shared/execution-host/execution-host'
 import type { ReleaseStatusResult } from '../../../../shared/workbench/release-status'
 import type { WorkflowReleaseRef } from '../../../../shared/workbench/version-workflow'
 import type { VersionCycleContext } from './cycle-context'

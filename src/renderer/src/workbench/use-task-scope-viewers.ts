@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import type { WorkbenchTaskScope } from '../../../shared/workbench/task-scope'
-import { parseTaskQuery } from '../../../shared/task-query'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { parseTaskQuery } from '../../../shared/work-items/task-query'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
-import { lookupGitHubViewerForSource } from '@/lib/github-work-item-source-lookup'
-import { getTaskPageGitHubItemSource } from '@/components/task-page-source-context'
+import { getTaskPageGitHubItemSource, lookupGitHubViewerForSource } from './task-source-context'
 import { taskScopeGitHubViewerKey } from './task-scope-projection'
 import type { TaskScopeLoadResult } from './task-scope-load'
 import { useAppStore } from '@/store'
@@ -42,7 +41,7 @@ export function useTaskScopeViewers(
           (value) => value.trim().toLowerCase() === '@me'
         )
       : model.taskSource === 'github' &&
-        [query.author, query.assignee].some((value) => value?.toLowerCase() === '@me')
+        [...query.authors, query.assignee].some((value) => value?.toLowerCase() === '@me')
   const requests = new Map<
     string,
     {

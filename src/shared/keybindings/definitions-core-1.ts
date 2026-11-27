@@ -1,5 +1,5 @@
-// Ordered slices of one registry: `definitions.ts` concatenates core-1..4 in order and that order
-// is the palette order, so the boundaries follow line count, not theme — do not regroup thematically.
+// definitions.ts concatenates core-1..4 in palette order; slices follow line limits, so thematic regrouping would reorder commands.
+import { UPDATE_PRODUCT_NAME } from '../updater/release-channel'
 import type { KeybindingDefinition } from './types'
 import { platformBindings } from './definitions-support'
 
@@ -18,7 +18,10 @@ export const KEYBINDING_DEFINITION_CORE_1: readonly KeybindingDefinition[] = [
     group: 'Global',
     scope: 'global',
     searchKeywords: ['shortcut', 'settings', 'preferences'],
-    defaultBindings: platformBindings(['Mod+Comma']),
+    // macOS convention: ⌘, opens Settings; keep Ctrl+, on Windows/Linux for terminal apps such as Codex.
+    defaultBindings: { darwin: ['Mod+Comma'], linux: [], win32: [] },
+    // Why: ⌘, was unbound from #23136 until now, so a user may have assigned it to another action.
+    implicitDefaultYields: true,
     conflictGroup: 'menu'
   },
   {
@@ -36,19 +39,15 @@ export const KEYBINDING_DEFINITION_CORE_1: readonly KeybindingDefinition[] = [
     group: 'Global',
     scope: 'global',
     searchKeywords: ['workbench', 'annotation', 'feedback', '批注', '改进助手'],
-    defaultBindings: platformBindings(['Mod+Alt+B'])
+    defaultBindings: platformBindings(UPDATE_PRODUCT_NAME === 'Workbench' ? ['Mod+Alt+B'] : [])
   },
   {
     id: 'worktree.palette',
-    title: 'Switch worktree',
+    title: 'Search everything',
     group: 'Global',
     scope: 'global',
-    searchKeywords: ['shortcut', 'global', 'worktree', 'switch', 'jump'],
-    defaultBindings: {
-      darwin: ['Mod+J'],
-      linux: ['Mod+Shift+J'],
-      win32: ['Mod+Shift+J']
-    }
+    searchKeywords: ['shortcut', 'global', 'search', 'palette', 'switch worktree', 'jump'],
+    defaultBindings: platformBindings(['Mod+K'])
   },
   {
     id: 'worktree.navigateUp',
@@ -56,7 +55,10 @@ export const KEYBINDING_DEFINITION_CORE_1: readonly KeybindingDefinition[] = [
     group: 'Global',
     scope: 'global',
     searchKeywords: ['shortcut', 'global', 'worktree', 'previous', 'up'],
-    defaultBindings: platformBindings(['Mod+Shift+ArrowUp'])
+    defaultBindings: platformBindings(['Mod+Shift+ArrowUp']),
+    // Why: default Mod+Shift+Up is the field's select-to-start.
+    allowInTextField: 'non-default-chords',
+    runsInChatPrompt: true
   },
   {
     id: 'worktree.navigateDown',
@@ -64,7 +66,10 @@ export const KEYBINDING_DEFINITION_CORE_1: readonly KeybindingDefinition[] = [
     group: 'Global',
     scope: 'global',
     searchKeywords: ['shortcut', 'global', 'worktree', 'next', 'down'],
-    defaultBindings: platformBindings(['Mod+Shift+ArrowDown'])
+    defaultBindings: platformBindings(['Mod+Shift+ArrowDown']),
+    // Why: default Mod+Shift+Down is the field's select-to-end.
+    allowInTextField: 'non-default-chords',
+    runsInChatPrompt: true
   },
   {
     id: 'workspace.create',
@@ -90,22 +95,22 @@ export const KEYBINDING_DEFINITION_CORE_1: readonly KeybindingDefinition[] = [
   },
   {
     id: 'workspace.delete',
-    title: 'Delete Workspace',
+    title: 'Delete Selected Workspace',
     group: 'Global',
     scope: 'global',
     searchKeywords: [
       'shortcut',
       'global',
       'workspace',
-      'current workspace',
+      'selected workspace',
+      'sidebar',
       'worktree',
       'delete',
       'remove',
       'trash'
     ],
     // Why: Backspace avoids the terminal pane's D-based split shortcuts on every platform.
-    defaultBindings: platformBindings(['Mod+Shift+Backspace']),
-    allowInTerminal: true
+    defaultBindings: platformBindings(['Mod+Shift+Backspace'])
   },
   {
     id: 'workspace.openBoard',
@@ -144,8 +149,7 @@ export const KEYBINDING_DEFINITION_CORE_1: readonly KeybindingDefinition[] = [
       'open',
       'close'
     ],
-    // Why: configurable but unbound by default, matching workspace.openBoard — an
-    // experimental surface must not claim a global chord from terminal users.
+    // Experimental surfaces stay unbound rather than claim terminal users’ global chords, matching workspace.openBoard.
     defaultBindings: platformBindings([]),
     allowInTerminal: true
   },
@@ -184,6 +188,14 @@ export const KEYBINDING_DEFINITION_CORE_1: readonly KeybindingDefinition[] = [
     scope: 'global',
     searchKeywords: ['shortcut', 'tasks', 'github issues', 'linear'],
     defaultBindings: platformBindings([])
+  },
+  {
+    id: 'view.plugins',
+    title: 'Open Plugins',
+    group: 'Global',
+    scope: 'global',
+    searchKeywords: ['shortcut', 'plugins', 'extensions', 'marketplace'],
+    defaultBindings: { darwin: ['Mod+Alt+X'], linux: ['Mod+Shift+Y'], win32: ['Mod+Shift+Y'] }
   },
   {
     id: 'sidebar.left.toggle',

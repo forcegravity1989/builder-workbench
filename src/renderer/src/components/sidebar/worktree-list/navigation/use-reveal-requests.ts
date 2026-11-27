@@ -1,27 +1,22 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
-import { Crosshair } from 'lucide-react'
-import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
+import { useConfirmationDialog } from '@/components/dismiss/confirmation/confirmation-dialog-context'
 import { translate } from '@/i18n/i18n'
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
 import {
   SCROLL_TO_CURRENT_WORKSPACE_REVEAL_REQUEST_EVENT,
   type ScrollToCurrentWorkspaceRevealRequestDetail
-} from '@/lib/scroll-to-current-workspace-status'
-import type { FolderWorkspace } from '../../../../../../shared/folder-workspace-types'
-import type { Worktree } from '../../../../../../shared/worktree/types'
+} from '@/lib/workspace/navigation/scroll-to-current-workspace-status'
+import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
 import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-types'
-import type { ExecutionHostId } from '../../../../../../shared/execution-host'
+import type { Worktree } from '../../../../../../shared/worktree/types'
+import type { ExecutionHostId } from '../../../../../../shared/execution-host/execution-host'
 import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
-import { normalizeStoredWorkbenchVersionBinding } from '../../../../../../shared/workbench/version-binding'
-import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
-import { isPinnedSectionWorktree } from '../../pinned-section-worktrees'
-import {
-  getVersionSidebarProjection,
-  requestVersionTreeWorktreeReveal
-} from '@/workbench/version-sidebar-state'
-import type { WorktreeGroupBy } from '../grouping/row-types'
+import { folderWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
+import type { WorktreeGroupBy } from '../../../../../../shared/sidebar-list/row-types'
 import { getKnownSidebarWorktreeById } from './folder-reveal'
-import { resolveSidebarRevealRoute } from './version-tree-reveal-route'
+import { readSidebarRevealTarget } from '../../sidebar-reveal-target-state'
+import { requestVersionTreeWorktreeReveal } from '@/workbench/version-sidebar-state'
+import { getVersionTreeRevealTarget } from './version-tree-reveal-target'
 
 function workspacePassesFilters(
   worktree: Worktree,
@@ -35,12 +30,13 @@ function workspacePassesFilters(
   )
 }
 
-// Turns a "show me the current workspace" request into whatever the sidebar must change
-// first — grouping mode, active filters — before the viewport can scroll to it.
-export type SidebarRevealRequestArgs = {
+// Adjust grouping and filters before scheduling the requested workspace’s viewport reveal.
+export function useSidebarRevealRequests(args: {
   groupBy: WorktreeGroupBy
   renderedSidebarRowKeys: ReadonlySet<string>
   visibleWorktrees: readonly Worktree[]
+  filteredWorktrees: readonly Worktree[]
+  worktreeLineageById: Readonly<Record<string, WorktreeLineage>>
   visibleFolderWorkspaces: readonly FolderWorkspace[]
   currentSidebarWorktreeId: string | null
   currentSidebarExecutionHostId: ExecutionHostId | null
@@ -48,24 +44,22 @@ export type SidebarRevealRequestArgs = {
   worktrees: readonly Worktree[]
   folderWorkspaces: readonly FolderWorkspace[]
   hasFilters: boolean
-  clearFilters: () => void
-  /** Pre-version-scoping filter results: the version tree shares these filters (#762). */
-  filteredWorktrees: readonly Worktree[]
-  worktreeLineageById: Readonly<Record<string, WorktreeLineage>>
-}
-
-export function useSidebarRevealRequests(args: SidebarRevealRequestArgs): void {
+  revealWorkspaceFilters: (worktree: Worktree) => void
+}): void {
   const {
     groupBy,
     renderedSidebarRowKeys,
+    visibleWorktrees,
+    filteredWorktrees,
+    worktreeLineageById,
+    visibleFolderWorkspaces,
     currentSidebarWorktreeId,
     currentSidebarExecutionHostId,
     worktreeMap,
     worktrees,
     folderWorkspaces,
     hasFilters,
-    clearFilters,
-    worktreeLineageById
+    revealWorkspaceFilters
   } = args
   const setGroupBy = useAppStore((s) => s.setGroupBy)
   const setSidebarBody = useAppStore((s) => s.setSidebarBody)
@@ -80,7 +74,10 @@ export function useSidebarRevealRequests(args: SidebarRevealRequestArgs): void {
   })
 
   useEffect(() => {
-    if (!pendingRevealSidebarRow) {
+    if (
+      !pendingRevealSidebarRow ||
+      useAppStore.getState().pendingRevealSidebarRow !== pendingRevealSidebarRow
+    ) {
       return
     }
     const rowKey = pendingRevealSidebarRow.rowKey
@@ -93,60 +90,29 @@ export function useSidebarRevealRequests(args: SidebarRevealRequestArgs): void {
       return
     }
     if (!renderedSidebarRowKeys.has(rowKey) && hasFilters) {
-      clearFilters()
+      const target = getKnownSidebarWorktreeById(
+        rowKey,
+        worktreeMap,
+        folderWorkspaces,
+        worktrees,
+        currentSidebarExecutionHostId
+      )
+      if (target) {
+        revealWorkspaceFilters(target)
+      }
     }
   }, [
-    clearFilters,
     groupBy,
     hasFilters,
+    currentSidebarExecutionHostId,
+    folderWorkspaces,
     pendingRevealSidebarRow,
     renderedSidebarRowKeys,
-    setGroupBy
+    setGroupBy,
+    worktreeMap,
+    worktrees,
+    revealWorkspaceFilters
   ])
-
-  // Shared filter-confirmation gate for both reveal routes; reads the latest args after the
-  // dialog closes so a workspace switch mid-dialog cannot clear filters for a stale target.
-  const confirmFilterClearForReveal = useCallback(
-    async (passesFilters: (latest: SidebarRevealRequestArgs) => boolean): Promise<boolean> => {
-      if (!hasFilters || passesFilters(latestArgs.current)) {
-        return true
-      }
-      if (confirmationPending.current) {
-        return false
-      }
-      confirmationPending.current = true
-      let confirmed: boolean
-      try {
-        confirmed = await confirm({
-          icon: Crosshair,
-          initialFocus: 'confirm',
-          cancelVariant: 'ghost',
-          title: translate('sidebar.revealFiltered.title', 'Reveal hidden workspace?'),
-          description: translate(
-            'sidebar.revealFiltered.description',
-            'The active workspace is hidden in the sidebar. Revealing it will clear your sidebar filters.'
-          ),
-          confirmLabel: translate('sidebar.revealFiltered.confirm', 'Clear filters and reveal'),
-          cancelLabel: translate('sidebar.revealFiltered.cancel', 'Keep filters')
-        })
-      } finally {
-        confirmationPending.current = false
-      }
-      const latest = latestArgs.current
-      if (
-        !confirmed ||
-        latest.currentSidebarWorktreeId !== currentSidebarWorktreeId ||
-        latest.currentSidebarExecutionHostId !== currentSidebarExecutionHostId
-      ) {
-        return false
-      }
-      if (latest.hasFilters && !passesFilters(latest)) {
-        latest.clearFilters()
-      }
-      return true
-    },
-    [confirm, hasFilters, currentSidebarWorktreeId, currentSidebarExecutionHostId]
-  )
 
   const handleRevealCurrentWorkspaceRequest = useCallback(
     async (event: Event) => {
@@ -168,6 +134,11 @@ export function useSidebarRevealRequests(args: SidebarRevealRequestArgs): void {
       if (!currentSidebarWorktreeId) {
         return
       }
+      // Bots rows, and what no section lists, are not this list's to reveal: no filter
+      // dialog, no filter or group change, no pending reveal that could never land.
+      if (readSidebarRevealTarget().section !== 'projects') {
+        return
+      }
       const activeWorktree = getKnownSidebarWorktreeById(
         currentSidebarWorktreeId,
         worktreeMap,
@@ -178,80 +149,87 @@ export function useSidebarRevealRequests(args: SidebarRevealRequestArgs): void {
       if (!activeWorktree || activeWorktree.isArchived) {
         return
       }
-      // Version-bound unpinned trees live in the version tree (#500), so the native
-      // renderRows can never contain them; route before the native filter confirmation.
-      const versionProjection = getVersionSidebarProjection()
-      const worktreeIdentity = getWorktreeHostIdentity(activeWorktree)
-      // Why: read pin placement from the unfiltered catalog, not the filter-scoped Pinned
-      // set, so a filter hiding a pinned version tree keeps it on its native Pinned path.
-      const isPinnedVersionBound = isPinnedSectionWorktree(
-        activeWorktree,
-        worktrees,
-        worktreeLineageById,
-        worktreeMap
-      )
+      const beginRename = detail && 'beginRename' in detail && detail.beginRename === true
+      const versionTarget = beginRename
+        ? null
+        : getVersionTreeRevealTarget(activeWorktree, worktrees, worktreeLineageById, worktreeMap)
+      const initialVisible = versionTarget ? filteredWorktrees : visibleWorktrees
+      // Collapsed groups hide rows without excluding their workspaces from the filter results.
       if (
-        resolveSidebarRevealRoute({
-          worktreeIdentity,
-          versionTreeIdentities: versionProjection.worktreeIdentities,
-          isPinnedVersionBound
-        }) === 'version-tree'
+        hasFilters &&
+        !workspacePassesFilters(activeWorktree, initialVisible, visibleFolderWorkspaces)
       ) {
-        const confirmed = await confirmFilterClearForReveal((latest) =>
-          workspacePassesFilters(
+        if (confirmationPending.current) {
+          return
+        }
+        confirmationPending.current = true
+        let confirmed: boolean
+        try {
+          confirmed = await confirm({
+            initialFocus: 'confirm',
+            title: translate('sidebar.revealFiltered.title', 'Reveal hidden workspace?'),
+            description: translate(
+              'sidebar.revealFiltered.description',
+              'The active workspace is hidden in the sidebar. Revealing it will adjust only the filters hiding it.'
+            ),
+            confirmLabel: translate('sidebar.revealFiltered.confirm', 'Adjust & reveal'),
+            cancelLabel: translate('sidebar.revealFiltered.cancel', 'Keep filters')
+          })
+        } finally {
+          confirmationPending.current = false
+        }
+        const latest = latestArgs.current
+        // A workspace switch while the dialog is open must not clear filters for a stale target.
+        if (
+          !confirmed ||
+          latest.currentSidebarWorktreeId !== currentSidebarWorktreeId ||
+          latest.currentSidebarExecutionHostId !== currentSidebarExecutionHostId ||
+          readSidebarRevealTarget().section !== 'projects'
+        ) {
+          return
+        }
+        if (
+          latest.hasFilters &&
+          !workspacePassesFilters(
             activeWorktree,
-            latest.filteredWorktrees,
+            versionTarget ? latest.filteredWorktrees : latest.visibleWorktrees,
             latest.visibleFolderWorkspaces
           )
-        )
-        if (!confirmed) {
-          return
+        ) {
+          revealWorkspaceFilters(activeWorktree)
         }
-        const binding = normalizeStoredWorkbenchVersionBinding(
-          activeWorktree.workbenchVersionBinding
-        )
-        if (!binding || !versionProjection.repoId) {
-          return
-        }
-        // Why: the version tree lives in the workspaces body; under the Agents body it is
-        // unmounted, so switch bodies first (same redirect the native reveal action does).
+      }
+      if (versionTarget) {
         setSidebarBody('workspaces')
         requestVersionTreeWorktreeReveal({
-          repoId: versionProjection.repoId,
-          version: binding.version,
-          worktreeIdentity
+          ...versionTarget,
+          highlight: detail?.highlight !== false
         })
-        return
-      }
-      // Collapsed groups hide rows without excluding their workspaces from the filter results.
-      const confirmed = await confirmFilterClearForReveal((latest) =>
-        workspacePassesFilters(
-          activeWorktree,
-          latest.visibleWorktrees,
-          latest.visibleFolderWorkspaces
-        )
-      )
-      if (!confirmed) {
         return
       }
       revealWorktreeInSidebar(currentSidebarWorktreeId, {
         behavior: 'smooth',
-        highlight: true,
-        beginRename: (detail as { beginRename?: boolean } | undefined)?.beginRename === true,
+        highlight: detail?.highlight !== false,
+        beginRename: beginRename === true,
         executionHostId: currentSidebarExecutionHostId ?? undefined
       })
     },
     [
-      confirmFilterClearForReveal,
+      confirm,
+      hasFilters,
       currentSidebarWorktreeId,
       currentSidebarExecutionHostId,
       folderWorkspaces,
       revealSidebarRow,
-      worktreeLineageById,
-      setSidebarBody,
+      visibleWorktrees,
+      visibleFolderWorkspaces,
       revealWorktreeInSidebar,
       worktreeMap,
-      worktrees
+      worktrees,
+      filteredWorktrees,
+      worktreeLineageById,
+      setSidebarBody,
+      revealWorkspaceFilters
     ]
   )
 

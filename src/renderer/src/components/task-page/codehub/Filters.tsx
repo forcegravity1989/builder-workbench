@@ -1,23 +1,48 @@
-import { CodeHubFilterPopover } from './FilterPopover'
+import { WorkbenchTaskFilterRow } from '../WorkbenchTaskFilterRow'
+import { CodeHubFilterPopover, type CodeHubFilterModel } from './FilterPopover'
 import { CodeHubCreateIssueDialog } from './CreateIssueDialog'
 import { useEffect, useState } from 'react'
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
-import { cn } from '@/lib/utils'
+import type { ComponentProps } from 'react'
+import type { TaskPageRepoSelectionModel } from '../use-task-page-repo-selection'
+import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import TaskProjectSourceCombobox from '@/components/task-project-source-combobox'
-import { normalizeTaskRepoSelection } from '@/components/task-page-default-repo-selection'
+import TaskProjectSourceCombobox from '../source-selection/task-project-source-combobox'
+import { normalizeTaskRepoSelection } from '../../../../../shared/work-items/task-repo-selection'
 import { LoaderCircle, Plus, RefreshCw, Search, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { isCodeHubGitRemote } from '../../../../../shared/codehub'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
+export type CodeHubFiltersModel = CodeHubFilterModel &
+  Pick<
+    TaskPageRepoSelectionModel,
+    | 'eligibleRepos'
+    | 'repoSelection'
+    | 'setRepoSelection'
+    | 'taskPickerGroups'
+    | 'taskPickerRepos'
+    | 'updateSettings'
+  > & {
+    codehubPreset: 'open' | 'mine' | 'review'
+    codehubLoading: boolean
+    codehubQuery: string
+    setCodehubView: (view: 'issues' | 'mrs') => void
+    setCodehubQuery: (query: string) => void
+    setCodehubRefreshNonce: (update: (nonce: number) => number) => void
+    getTaskPickerRepoHostLabel?: ComponentProps<
+      typeof TaskProjectSourceCombobox
+    >['getRepoHostLabel']
+    workbenchScope: boolean
+    clearWorkbenchProject: () => void
+  }
+
 export function TaskPageCodeHubFilters({
   model
 }: {
-  model: TaskPageComposerActionsModel
+  model: CodeHubFiltersModel
 }): React.JSX.Element {
   const {
     codehubView,
@@ -70,7 +95,7 @@ export function TaskPageCodeHubFilters({
     setCodehubAssignee('')
     setCodehubLabels([])
   }
-  return (
+  const filters = (
     <div
       className="flex min-w-0 flex-col gap-2.5 rounded-md rounded-b-none border border-border/50 bg-muted/35 px-3 py-2.5"
       data-contextual-tour-target="tasks-search-presets"
@@ -280,5 +305,10 @@ export function TaskPageCodeHubFilters({
         onCreated={() => setCodehubRefreshNonce((nonce) => nonce + 1)}
       />
     </div>
+  )
+  return workbench ? (
+    <WorkbenchTaskFilterRow helpEnabled={!createOpen}>{filters}</WorkbenchTaskFilterRow>
+  ) : (
+    filters
   )
 }

@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { getKeybindingContext } from '@/components/terminal-workspace-model'
-import { isEditableTarget } from '@/lib/editable-target'
-import { getShortcutPlatform } from '@/lib/shortcut-platform'
+import { getKeybindingContext } from '@/components/terminal/workbench/terminal-workspace-model'
+import { isEditableTarget } from '@/lib/text-input/focus/editable-target'
+import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 import { useAppStore } from '@/store'
-import { keybindingMatchesAction } from '../../../../shared/keybindings'
+import { keybindingMatchesAction } from '../../../../shared/keybindings/matching'
 
 /**
  * Why a board-local window listener instead of a native app-command handler:

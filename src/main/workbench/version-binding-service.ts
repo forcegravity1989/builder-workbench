@@ -1,8 +1,8 @@
-import type { ExecutionHostId } from '../../shared/execution-host'
+import type { ExecutionHostId } from '../../shared/execution-host/execution-host'
 import type { Worktree } from '../../shared/worktree/types'
 import type { WorktreeMeta } from '../../shared/worktree/meta-types'
-import { areWorkspaceLinkedItemsEqual } from '../../shared/workspace-linked-item'
-import { areTaskSourceContextsEqual } from '../../shared/task-source-context'
+import { areWorkspaceLinkedItemsEqual } from '../../shared/workspace-attachments/workspace-linked-item'
+import { areTaskSourceContextsEqual } from '../../shared/work-items/task-source-context'
 import {
   VersionBindingScopeSchema,
   VersionBindingSetSchema,

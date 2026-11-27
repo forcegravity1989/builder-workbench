@@ -1,12 +1,14 @@
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
-import { githubWorkItemWorkspaceComposerData } from '@/components/task-page-github-workspace-composer'
-import { prefillCodehubDetailCache } from '@/components/task-page/codehub/codehub-detail-cache'
-import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
-import { lookupGitHubWorkItemByOwnerRepoForSource } from '@/lib/github-work-item-source-lookup'
+import { getRepoTaskSourceContext } from './task-source-context'
+import { githubWorkItemWorkspaceComposerData } from '@/components/task-page/task-page-github-workspace-composer'
+import { getRepoWorkspaceCreationTargetHint } from '@/lib/workspace/creation/project-host-workspace-target'
 import {
   findIndexedRepoOwner,
   findIndexedRepoOwnerForHost
-} from '@/lib/worktree-runtime-owner-index'
+} from '@/lib/workspace/ownership/repo-owner-index'
+import { githubRepoIdentityKey } from '../../../shared/github/repositories/repository-identity-key'
+import { prefillCodehubDetailCache } from '@/components/task-page/codehub/codehub-detail-cache'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
+import { lookupGitHubWorkItemByOwnerRepoForSource } from '@/lib/work-items/github/github-work-item-source-lookup'
 import { useAppStore } from '@/store'
 import {
   findTaskItemLinkRepo,
@@ -15,8 +17,10 @@ import {
   type TaskItemLink
 } from '../../../shared/task-item-link'
 import { parseCodeHubRemote } from '../../../shared/codehub'
-import { githubRepoIdentityKey } from '../../../shared/github/repository-identity-key'
-import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../shared/execution-host/execution-host'
 import { codeHubTaskItemFromDetail } from './codehub-task-item'
 import { notifyScopedWorkspaceUnavailable } from './scoped-task-workspace'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
@@ -45,7 +49,7 @@ export async function openWorkbenchTaskItemLink(
       if (!isCurrent()) {
         return
       }
-      const source = getTaskPageRepoSourceContext(repo, 'codehub')
+      const source = getRepoTaskSourceContext(repo, 'codehub')
       if (!source) {
         continue
       }
@@ -97,7 +101,7 @@ export async function openWorkbenchTaskItemLink(
       `未在已登记项目中找到 ${link.host}/${link.repository}。请先添加项目，或选择浏览器打开。`
     )
   }
-  const source = getTaskPageRepoSourceContext(repo, link.provider)
+  const source = getRepoTaskSourceContext(repo, link.provider)
   if (!source) {
     throw new Error('无法解析任务来源。请刷新项目后重试。')
   }
@@ -149,6 +153,7 @@ export async function openWorkbenchTaskItemLink(
     if (outcome === 'none') {
       state.openModal('new-workspace-composer', {
         ...githubWorkItemWorkspaceComposerData(item!, sourceContext),
+        initialWorkspaceTarget: getRepoWorkspaceCreationTargetHint(repo, state.projectHostSetups),
         initialNote: `拉取最新代码，按项目 workbench-start 处理 Issue ${item!.url}。`
       })
     }

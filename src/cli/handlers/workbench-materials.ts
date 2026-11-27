@@ -6,14 +6,14 @@ import {
   AcceptanceMaterialSchema,
   PlanningMaterialSchema
 } from '../../shared/workbench/version-material'
-import type { CommandHandler, HandlerContext } from '../dispatch'
+import type { CommandHandler, HandlerContext } from '../dispatch/dispatch'
 import {
   VersionMigrationReadSchema,
   VersionMigrationApplySchema
 } from '../../shared/workbench/version-material-migration'
-import { getOptionalStringFlag, getRequiredStringFlag } from '../flags'
-import { printResult } from '../format'
-import { RuntimeClientError } from '../runtime/types'
+import { getOptionalStringFlag, getRequiredStringFlag } from '../arguments/flags'
+import { printResult } from '../output/command-result-output'
+import { RuntimeClientError } from '../runtime/connection/types'
 import {
   VersionMaterialAddArtifactSchema,
   VersionMaterialReadSchema,
