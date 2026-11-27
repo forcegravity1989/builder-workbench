@@ -4,7 +4,8 @@ import { writeFileAtomically } from '../../../filesystem/atomic-file-publication
 import type { Bot, BotAgent } from '../../../../shared/bot-types'
 import { LOOK_AROUND_DEFAULTS } from '../../../../shared/bots/bot-look-around'
 import { MonicaSupportRequest } from '../../../../shared/workbench/monica-support'
-import { runtimeBotChats } from '../../../bots/bot-chat-session'
+import { botFirstKickoff } from '../../../../shared/bots/bot-import'
+import { requireStructuredHost, runtimeBotChats } from '../../../bots/bot-chat-session'
 import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import { prepareWorkbenchSkill } from '../../../workbench/skill-install'
 import type { RpcContext } from '../core'
@@ -12,6 +13,25 @@ import type { RpcContext } from '../core'
 const role = 'workbench-monica-support'
 const opening = new WeakMap<RpcContext['runtime'], Promise<{ bot: Bot; skillWarning?: string }>>()
 
+const greetingInFlight = new Set<string>()
+
+async function greetIfNew(runtime: RpcContext['runtime'], bot: Bot): Promise<void> {
+  if (!bot.firstRun || greetingInFlight.has(bot.id)) {
+    return
+  }
+  greetingInFlight.add(bot.id)
+  try {
+    const chats = runtimeBotChats(runtime)
+    const host = await requireStructuredHost(runtime)
+    const sessionId = await chats.ensure(bot.id)
+    const sends = await host.journalReads(sessionId).sendFingerprints()
+    if (sends.length === 0) {
+      await chats.sendToSession(bot.id, sessionId, botFirstKickoff(bot), undefined, 'bot-created')
+    }
+  } finally {
+    greetingInFlight.delete(bot.id)
+  }
+}
 async function openSupportBot(runtime: RpcContext['runtime'], agent?: BotAgent) {
   const existing = runtime.bots.list().find((bot) => bot.templateId === role)
   if (!existing && !agent) {
@@ -51,16 +71,9 @@ async function openSupportBot(runtime: RpcContext['runtime'], agent?: BotAgent) 
     join(home, 'monica-feedback.json'),
     JSON.stringify({ skillPath: skillPath ?? null })
   )
-  if (existing) {
-    return { bot, skillWarning }
-  }
-  void runtimeBotChats(runtime)
-    .sendToChat(
-      bot.id,
-      'Introduce yourself briefly as Monica product support in the owner’s language.',
-      'bot-created'
-    )
-    .catch((error: unknown) => console.warn('[workbench] Monica greeting failed:', error))
+  void greetIfNew(runtime, bot).catch((error: unknown) =>
+    console.warn('[workbench] Monica greeting failed:', error)
+  )
   return { bot, skillWarning }
 }
 export const MONICA_SUPPORT_METHOD = defineWorkbenchMethod({
