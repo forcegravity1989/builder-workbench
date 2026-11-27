@@ -23193,8 +23193,8 @@
     },
     "copyChoice": {
       "lastSaved": "Zuletzt gespeichert: {{time}}.",
-      "useSqliteButton": "SQLite verwenden (empfohlen)",
-      "useJsonButton": "JSON verwenden",
+      "useRecommendedCopy": "{{format}} verwenden (empfohlen)",
+      "useCopy": "{{format}} verwenden",
       "quitButton": "Beenden",
       "title": "Profilzustand auswählen",
       "message": "Für dieses Profil gibt es zwei gespeicherte Kopien, die nicht übereinstimmen.",

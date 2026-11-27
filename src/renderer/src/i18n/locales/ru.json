@@ -23767,8 +23767,8 @@
       "quitButton": "Выйти",
       "sqliteOption": "SQLite: данные, сохранённые текущей версией Orca. Изменения, внесённые в более старой версии, будут отброшены.",
       "title": "Выберите состояние профиля",
-      "useJsonButton": "Использовать JSON",
-      "useSqliteButton": "Использовать SQLite (рекомендуется)"
+      "useCopy": "Использовать {{format}}",
+      "useRecommendedCopy": "Использовать {{format}} (рекомендуется)"
     },
     "recoveryNotApplied": {
       "message": "Orca не удалось применить выбранное состояние профиля.",

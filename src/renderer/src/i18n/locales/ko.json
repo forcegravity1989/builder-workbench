@@ -25671,8 +25671,8 @@
     },
     "copyChoice": {
       "lastSaved": "마지막 저장: {{time}}.",
-      "useSqliteButton": "SQLite 사용(권장)",
-      "useJsonButton": "JSON 사용",
+      "useRecommendedCopy": "{{format}} 사용(권장)",
+      "useCopy": "{{format}} 사용",
       "quitButton": "종료",
       "title": "프로필 상태 선택",
       "message": "이 프로필에 서로 일치하지 않는 저장본이 두 개 있습니다.",

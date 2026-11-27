@@ -22700,8 +22700,8 @@
     },
     "copyChoice": {
       "lastSaved": "上次儲存於 {{time}}。",
-      "useSqliteButton": "使用 SQLite（建議）",
-      "useJsonButton": "使用 JSON",
+      "useRecommendedCopy": "使用 {{format}}（建議）",
+      "useCopy": "使用 {{format}}",
       "quitButton": "結束",
       "title": "選擇設定檔狀態",
       "message": "此設定檔有兩份已儲存的副本，內容不一致。",

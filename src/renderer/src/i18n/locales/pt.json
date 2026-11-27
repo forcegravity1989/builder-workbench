@@ -23954,8 +23954,8 @@
     },
     "copyChoice": {
       "lastSaved": "Salvo pela última vez em {{time}}.",
-      "useSqliteButton": "Usar SQLite (recomendado)",
-      "useJsonButton": "Usar JSON",
+      "useRecommendedCopy": "Usar {{format}} (recomendado)",
+      "useCopy": "Usar {{format}}",
       "quitButton": "Sair",
       "title": "Escolher o estado do perfil",
       "message": "Este perfil tem duas cópias salvas que não coincidem.",

@@ -23155,8 +23155,8 @@
     },
     "copyChoice": {
       "lastSaved": "En son {{time}} kaydedildi.",
-      "useSqliteButton": "SQLite kullan (önerilen)",
-      "useJsonButton": "JSON kullan",
+      "useRecommendedCopy": "{{format}} kullan (önerilen)",
+      "useCopy": "{{format}} kullan",
       "quitButton": "Çık",
       "title": "Profil durumunu seçin",
       "message": "Bu profilin birbiriyle uyuşmayan iki kayıtlı kopyası var.",

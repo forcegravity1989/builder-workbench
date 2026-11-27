@@ -73,7 +73,7 @@ export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRe
     // The key includes catalog content; row reference churn must not refetch provider facts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
-  const reason = catalog ? versionCatalogErrors(catalog)[0] : project.sourceProblems[0]?.errors[0]
+  const reason = catalog ? versionCatalogErrors(catalog)[0] : project.firstCurrentSourceError
   const readings: WallCardReadings =
     repo.kind === 'folder'
       ? { kind: 'empty' }

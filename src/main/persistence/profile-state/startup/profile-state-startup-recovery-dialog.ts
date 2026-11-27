@@ -113,14 +113,25 @@ export async function chooseProfileStateCopy(
     time === undefined
       ? ''
       : ` ${deps.translate('profileState.copyChoice.lastSaved', 'Last saved {{time}}.', { time: format(time) })}`
+  const sqliteTime = deps.sqliteSavedAt?.getTime() ?? Number.NaN
+  const jsonTime = deps.jsonSavedAt?.getTime() ?? Number.NaN
+  const recommended = sqliteTime > jsonTime ? 'SQLite' : jsonTime > sqliteTime ? 'JSON' : undefined
+  const formats = ['SQLite', 'JSON'] as const
   const { response } = await deps.showMessageBox({
     type: 'warning',
     buttons: [
-      deps.translate('profileState.copyChoice.useSqliteButton', 'Use SQLite (Recommended)'),
-      deps.translate('profileState.copyChoice.useJsonButton', 'Use JSON'),
+      ...formats.map((format) =>
+        format === recommended
+          ? deps.translate(
+              'profileState.copyChoice.useRecommendedCopy',
+              'Use {{format}} (Recommended)',
+              { format }
+            )
+          : deps.translate('profileState.copyChoice.useCopy', 'Use {{format}}', { format })
+      ),
       deps.translate('profileState.copyChoice.quitButton', 'Quit')
     ],
-    defaultId: 0,
+    defaultId: recommended === undefined ? 2 : formats.indexOf(recommended),
     cancelId: 2,
     noLink: true,
     title: deps.translate('profileState.copyChoice.title', 'Choose profile state'),

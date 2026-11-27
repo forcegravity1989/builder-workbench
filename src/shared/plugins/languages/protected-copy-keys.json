@@ -1455,8 +1455,8 @@
     "profileState.copyChoice.quitButton",
     "profileState.copyChoice.sqliteOption",
     "profileState.copyChoice.title",
-    "profileState.copyChoice.useJsonButton",
-    "profileState.copyChoice.useSqliteButton",
+    "profileState.copyChoice.useCopy",
+    "profileState.copyChoice.useRecommendedCopy",
     "profileState.recoveryNotApplied.message",
     "profileState.recoveryNotApplied.quitButton",
     "profileState.recoveryNotApplied.reopenDetail",
@@ -1782,7 +1782,5 @@
     "worktree.setupTrust.branchSetupScript",
     "worktree.setupTrust.runOnce"
   ],
-  "prefixes": [
-    "bots.access."
-  ]
+  "prefixes": ["bots.access."]
 }

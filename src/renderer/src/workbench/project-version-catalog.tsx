@@ -1,7 +1,10 @@
 import { versionTreeKey } from './version-material-selection'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host/execution-host'
+import {
+  getRepoExecutionHostId,
+  parseExecutionHostId
+} from '../../../shared/execution-host/execution-host'
 import type { Repo } from '../../../shared/repository/repo-types'
 import { versionRepoIdentity } from '../../../shared/workbench/version-repo-identity'
 import { isWallRowVisible } from './workbench-wall-projects'
@@ -14,6 +17,7 @@ import {
   type ProjectVersionPreference
 } from './project-version-catalog-merge'
 type Reader = { repo: Repo; key: string }
+type CatalogRead = { state: VersionCatalogState; errors: string[] }
 
 export function versionCatalogErrors(state: VersionCatalogState | null | undefined): string[] {
   if (!state) {
@@ -80,15 +84,30 @@ export function useProjectVersionCatalog(
       return [{ repo, key: versionCatalogSourceKey([repo]) }]
     })
   }, [environments, primaryRepo, repos])
-  const [reads, setReads] = useState<Record<string, VersionCatalogState | null>>({})
+  const [reads, setReads] = useState<Record<string, CatalogRead>>({})
   const report = useCallback((key: string, state: VersionCatalogState | null) => {
-    setReads((current) => (current[key] === state ? current : { ...current, [key]: state }))
+    setReads((current) => {
+      const previous = current[key]
+      if (!state) {
+        if (!previous) {
+          return current
+        }
+        const next = { ...current }
+        delete next[key]
+        return next
+      }
+      if (previous?.state === state) {
+        return current
+      }
+      const errors = state.loading ? (previous?.errors ?? []) : versionCatalogErrors(state)
+      return { ...current, [key]: { state, errors } }
+    })
   }, [])
   const sources = useMemo(
     () =>
       readers.flatMap(({ repo, key }) => {
-        const state = reads[key]
-        return state ? [{ repo, state }] : []
+        const read = reads[key]
+        return read ? [{ repo, ...read }] : []
       }),
     [readers, reads]
   )
@@ -136,18 +155,21 @@ export function useProjectVersionCatalog(
       versions[0]?.entry.mergeStatus === 'unmerged'
         ? false
         : versions.some((version) => version.planOrderPending),
-    sourceProblems: sources.flatMap(({ repo, state }) => {
-      const errors = versionCatalogErrors(state)
-      return errors.length
+    firstCurrentSourceError: sources
+      .map(({ state }) => versionCatalogErrors(state)[0])
+      .find(Boolean),
+    sourceProblems: sources.flatMap(({ repo, state, errors }) =>
+      errors.length
         ? [
             {
               key: versionCatalogSourceKey([repo]),
               hostId: getRepoExecutionHostId(repo),
               errors,
+              loading: state.loading,
               retry: state.reload
             }
           ]
         : []
-    })
+    )
   }
 }

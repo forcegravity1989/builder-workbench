@@ -24240,8 +24240,8 @@
     },
     "copyChoice": {
       "lastSaved": "最終保存: {{time}}。",
-      "useSqliteButton": "SQLite を使用（推奨）",
-      "useJsonButton": "JSON を使用",
+      "useRecommendedCopy": "{{format}} を使用（推奨）",
+      "useCopy": "{{format}} を使用",
       "quitButton": "終了",
       "title": "プロファイル状態を選択",
       "message": "このプロファイルには、一致しない保存コピーが 2 つあります。",

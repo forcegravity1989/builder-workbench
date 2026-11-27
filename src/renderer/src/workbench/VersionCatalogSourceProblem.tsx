@@ -6,10 +6,12 @@ import { ErrorDetails } from './error-feedback'
 export function VersionCatalogSourceProblem({
   hostId,
   errors,
+  loading,
   retry
 }: {
   hostId: ExecutionHostId
   errors: readonly string[]
+  loading: boolean
   retry: () => void
 }) {
   const label = useAppStore((state) => selectExecutionHostDisplayLabel(state, hostId))
@@ -18,7 +20,8 @@ export function VersionCatalogSourceProblem({
       <ErrorDetails summary={`${label} 的版本暂未读全`} detail={errors.join('\n')} />
       <button
         type="button"
-        className="underline"
+        className="underline disabled:opacity-50"
+        disabled={loading}
         onClick={retry}
         aria-label={`重试读取 ${label} 的版本`}
       >

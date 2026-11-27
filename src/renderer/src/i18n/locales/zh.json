@@ -25874,8 +25874,8 @@
     },
     "copyChoice": {
       "lastSaved": "上次保存于 {{time}}",
-      "useSqliteButton": "使用 SQLite（推荐）",
-      "useJsonButton": "使用 JSON",
+      "useRecommendedCopy": "使用 {{format}}（推荐）",
+      "useCopy": "使用 {{format}}",
       "quitButton": "退出",
       "title": "选择配置文件状态",
       "message": "此配置文件有两个不一致的已保存副本",

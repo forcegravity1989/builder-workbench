@@ -23448,8 +23448,8 @@
     },
     "copyChoice": {
       "lastSaved": "Dernier enregistrement : {{time}}.",
-      "useSqliteButton": "Utiliser SQLite (recommandé)",
-      "useJsonButton": "Utiliser JSON",
+      "useRecommendedCopy": "Utiliser {{format}} (recommandé)",
+      "useCopy": "Utiliser {{format}}",
       "quitButton": "Quitter",
       "title": "Choisir l'état du profil",
       "message": "Ce profil a deux copies enregistrées qui ne correspondent pas.",

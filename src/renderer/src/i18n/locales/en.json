@@ -26754,8 +26754,8 @@
     },
     "copyChoice": {
       "lastSaved": "Last saved {{time}}.",
-      "useSqliteButton": "Use SQLite (Recommended)",
-      "useJsonButton": "Use JSON",
+      "useRecommendedCopy": "Use {{format}} (Recommended)",
+      "useCopy": "Use {{format}}",
       "quitButton": "Quit",
       "title": "Choose profile state",
       "message": "This profile has two saved copies that don’t match.",
