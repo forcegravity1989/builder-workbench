@@ -51,6 +51,7 @@ if (argv.includes('--print-version')) {
 
 const environment = {
   ...process.env,
+  WORKBENCH_WINDOWS_INSTALLER: '1',
   WORKBENCH_SHELL: process.env.WORKBENCH_SHELL || '1',
   VITE_WORKBENCH_SHELL: process.env.VITE_WORKBENCH_SHELL || '1',
   ORCA_PRODUCT_NAME: process.env.ORCA_PRODUCT_NAME || 'Workbench',
@@ -59,7 +60,7 @@ const environment = {
   ORCA_WIN_ADHOC: '1',
   ORCA_ADHOC_BUILD_VERSION: releaseVersion
 }
-console.log(`注入 Workbench 版本 ${releaseVersion}（未签名构建通道，省略 publisherName）`)
+console.log(`注入 Monica 版本 ${releaseVersion}（未签名构建通道，省略 publisherName）`)
 const { command, prefixArgs, shell } = resolvePnpmCliInvocation()
 
 // build:desktop 含 typecheck。设置页仍引用已删除的 mobile 模块，类型检查失败，

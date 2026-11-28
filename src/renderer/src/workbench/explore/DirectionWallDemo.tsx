@@ -1,6 +1,7 @@
 import { Input } from '@/components/ui/input'
 import { ProjectWallCard, type WallCardView } from '../ProjectWallCard'
-import { DirectionOverviewFrame, sampleCharter } from './DirectionCharterDemo'
+import { DirectionOverviewFrame } from './DirectionCharterDemo'
+import { sampleCharter } from './sample-charter'
 import '../workbench-wall.css'
 
 const ignore = () => {}
@@ -34,7 +35,7 @@ function makeCard(id: string, name: string, charter: WallCardView['charter']): W
   }
 }
 
-const bookExchange = makeCard('direction-demo', sampleCharter.name, sampleCharter)
+const operationsBoard = makeCard('direction-demo', sampleCharter.name, sampleCharter)
 const communityMap = makeCard('direction-demo-secondary', '社区地图', null)
 
 export function DirectionWallDemo({ time }: { time: number }) {
@@ -42,8 +43,8 @@ export function DirectionWallDemo({ time }: { time: number }) {
     return <DirectionOverviewFrame expanded={false} />
   }
 
-  const query = bookExchange.displayName.slice(0, Math.max(0, Math.floor((time - 1050) / 280)))
-  const cards = query ? [bookExchange] : [bookExchange, communityMap]
+  const query = operationsBoard.displayName.slice(0, Math.max(0, Math.floor((time - 1050) / 280)))
+  const cards = query ? [operationsBoard] : [operationsBoard, communityMap]
 
   return (
     <div className="wb-wall direction-demo-window direction-wall-demo">

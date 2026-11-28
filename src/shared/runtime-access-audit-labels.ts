@@ -33,6 +33,7 @@ const EXACT_LABELS: Record<string, string> = {
   'workbench.charter.submit': '提交章程',
   'workbench.repo.removeRegistration': '移除项目登记',
   'workbench.repo.deleteGroup': '删除项目分组',
+  'workbench.support.open': '打开 Monica 使用助手',
   'workbench.skills.prepare': '开始计划/验收会话',
   'terminal.createAgentSession': '启动 Agent 会话',
   'terminal.ensureAgentSession': '续接 Agent 会话',

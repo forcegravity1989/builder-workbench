@@ -33,14 +33,14 @@ export function SkillsPageHeader({
   scannedSourceCount: number
   hostLabel: string | null
   onClose: () => void
-  onStartShare: () => void
+  onStartShare?: () => void
   /** Disable deletion with a reason until the target and host capability are known. */
   deleteSupported: boolean
   deleteUnsupportedReason: string | null
   onStartDelete: () => void
   onInstallFromLink: () => void
   onManageInstalls: () => void
-  onOpenSharedLinks: () => void
+  onOpenSharedLinks?: () => void
 }): React.JSX.Element {
   const t = useTranslate()
   return (
@@ -84,10 +84,12 @@ export function SkillsPageHeader({
             ) : null}
           </div>
         </div>
-        <Button type="button" size="sm" onClick={onStartShare}>
-          <Share2 className="size-3.5" />
-          {t('auto.components.skills.SkillShareSelectionControls.01c5a15e02', 'Share skills')}
-        </Button>
+        {onStartShare ? (
+          <Button type="button" size="sm" onClick={onStartShare}>
+            <Share2 className="size-3.5" />
+            {t('auto.components.skills.SkillShareSelectionControls.01c5a15e02', 'Share skills')}
+          </Button>
+        ) : null}
         <Button type="button" variant="outline" size="sm" onClick={onInstallFromLink}>
           <Download className="size-3.5" />
           {t('auto.components.skills.SkillsPage.aee7b99cc6', 'Install from link')}
@@ -108,10 +110,12 @@ export function SkillsPageHeader({
               <History />
               {t('auto.components.skills.SkillsPage.c13b82793c', 'Manage installs')}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onOpenSharedLinks}>
-              <Link2 />
-              {t('auto.components.skills.SkillsPage.sharedLinks', 'Shared links')}
-            </DropdownMenuItem>
+            {onOpenSharedLinks ? (
+              <DropdownMenuItem onSelect={onOpenSharedLinks}>
+                <Link2 />
+                {t('auto.components.skills.SkillsPage.sharedLinks', 'Shared links')}
+              </DropdownMenuItem>
+            ) : null}
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="pointer-events-auto block">

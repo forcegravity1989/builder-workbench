@@ -55,7 +55,7 @@ export function SkillsList({
   deleteUnsupportedReason: string | null
   onSelectedChange: (skillId: string, selected: boolean) => void
   onSelectResults: (results: readonly DiscoveredSkill[]) => void
-  onShare: (skill: DiscoveredSkill) => void
+  onShare?: (skill: DiscoveredSkill) => void
   onDelete: (skill: DiscoveredSkill) => void
 }): React.JSX.Element {
   const t = useTranslate()
@@ -129,12 +129,14 @@ export function SkillsList({
             setDetailSkill(null)
           }
         }}
-        onShare={() => {
-          if (detailSkill) {
-            onShare(detailSkill)
-            setDetailSkill(null)
-          }
-        }}
+        onShare={
+          onShare && detailSkill
+            ? () => {
+                onShare(detailSkill)
+                setDetailSkill(null)
+              }
+            : undefined
+        }
         onDelete={() => {
           if (detailSkill) {
             onDelete(detailSkill)
@@ -188,7 +190,7 @@ export function SkillsList({
               onFocus={() => setFocusedId(skill.id)}
               onOpenDetail={() => setDetailSkill(skill)}
               onSelectionChange={(selected, range) => handleSelection(index, selected, range)}
-              onShare={() => onShare(skill)}
+              onShare={onShare ? () => onShare(skill) : undefined}
               onDelete={() => onDelete(skill)}
               onReveal={() => void revealSkill(skill)}
               ownerHostId={ownerHostId}

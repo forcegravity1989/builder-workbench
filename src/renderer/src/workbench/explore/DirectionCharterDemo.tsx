@@ -3,20 +3,11 @@ import { ProjectCard } from '../overview-project-card'
 import { ProjectCharterFields } from '../ProjectCharterFields'
 import { ProjectSettingsReviewSummary } from '../ProjectSettingsReview'
 import { WorkbenchIconButton } from '../WorkbenchIconButton'
-import type { ProjectCharter } from '../project-charter'
+import { sampleCharter } from './sample-charter'
 import '../project-settings.css'
 import '../workbench-overview.css'
 
-export const sampleCharter: ProjectCharter = {
-  name: '周末书集',
-  kind: '',
-  benchmark: '',
-  owner: '林小满',
-  brief: '让邻居用手机预约周末的图书交换。',
-  opportunity: '让社区借书更方便。'
-}
-
-const vision = '每周都有人带一本书来，也带一本书回家。'
+const vision = '让运营每天看清变化，及时安排跟进。'
 const ignore = () => {}
 
 export function DirectionOverviewFrame({

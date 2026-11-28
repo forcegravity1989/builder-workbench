@@ -4,6 +4,7 @@ const LAZY_MODAL_IDS = [
   'workspace-cleanup',
   'setup-guide',
   'feature-wall',
+  'feedback',
   'feature-tips'
 ] as const
 

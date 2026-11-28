@@ -81,7 +81,7 @@ export function SkillRow({
   focusable: boolean
   onOpenDetail: () => void
   onSelectionChange: (selected: boolean, range: boolean) => void
-  onShare: () => void
+  onShare?: () => void
   onDelete: () => void
   onReveal: () => void
   /** Host the skill file lives on. */
@@ -111,13 +111,17 @@ export function SkillRow({
       icon: <Info />,
       onSelect: onOpenDetail
     },
-    {
-      key: 'share',
-      label: t('auto.components.skills.SkillCard.d25a1b8ae6', 'Share skill'),
-      icon: <Share2 />,
-      disabled: !shareable,
-      onSelect: onShare
-    },
+    ...(onShare
+      ? [
+          {
+            key: 'share',
+            label: t('auto.components.skills.SkillCard.d25a1b8ae6', 'Share skill'),
+            icon: <Share2 />,
+            disabled: !shareable,
+            onSelect: onShare
+          }
+        ]
+      : []),
     {
       key: 'reveal',
       label: t('auto.components.skills.SkillsPage.dc4c3328ee', 'Reveal file'),

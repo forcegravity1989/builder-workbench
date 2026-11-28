@@ -16,6 +16,8 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { useTranslate } from '@/i18n/use-translate'
+import { WORKBENCH_HELP_LINKS } from '@/workbench/help-links'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 const MACOS_UPDATE_GUIDE_URL = 'https://support.apple.com/en-us/108382'
 const VENTURA_COMPATIBILITY_URL = 'https://support.apple.com/en-us/102861'
@@ -36,6 +38,7 @@ export function MacosUpdateRequirementDialog({
   onOpenUrl: (url: string, event: MouseEvent<HTMLButtonElement>) => void
 }): JSX.Element {
   const t = useTranslate()
+  const workbench = isWorkbenchShell()
   const primaryButtonRef = useRef<HTMLButtonElement>(null)
   const macos = requirement.minimumMacosVersion
   const checking = support === undefined
@@ -44,7 +47,9 @@ export function MacosUpdateRequirementDialog({
   const primaryUrl = canUpgrade
     ? MACOS_UPDATE_GUIDE_URL
     : cannotUpgrade
-      ? MACOS_SUPPORT_DISCUSSION_URL
+      ? workbench
+        ? WORKBENCH_HELP_LINKS.docs
+        : MACOS_SUPPORT_DISCUSSION_URL
       : isVenturaRequirement(macos)
         ? VENTURA_COMPATIBILITY_URL
         : MACOS_UPDATE_GUIDE_URL
@@ -62,16 +67,26 @@ export function MacosUpdateRequirementDialog({
       >
         <DialogHeader>
           <DialogTitle size="display" className="mr-6">
-            {t('macosUpdateRequirement.title', 'Orca updates now need macOS {{macos}}', {
-              macos
-            })}
+            {workbench
+              ? t('macosUpdateRequirement.workbenchTitle', 'BW updates now need macOS {{macos}}', {
+                  macos
+                })
+              : t('macosUpdateRequirement.title', 'Orca updates now need macOS {{macos}}', {
+                  macos
+                })}
           </DialogTitle>
           <DialogDescription>
-            {t(
-              'macosUpdateRequirement.description',
-              'Orca {{version}} requires macOS {{macos}} or later. This version keeps working, but it won’t get new updates on this Mac.',
-              { version: requirement.version, macos }
-            )}
+            {workbench
+              ? t(
+                  'macosUpdateRequirement.workbenchDescription',
+                  'BW {{version}} requires macOS {{macos}} or later. This version keeps working, but it won’t get new updates on this Mac.',
+                  { version: requirement.version, macos }
+                )
+              : t(
+                  'macosUpdateRequirement.description',
+                  'Orca {{version}} requires macOS {{macos}} or later. This version keeps working, but it won’t get new updates on this Mac.',
+                  { version: requirement.version, macos }
+                )}
           </DialogDescription>
         </DialogHeader>
 
@@ -80,10 +95,15 @@ export function MacosUpdateRequirementDialog({
             {checking
               ? t('macosUpdateRequirement.checking', 'Checking whether this Mac can upgrade…')
               : canUpgrade
-                ? t(
-                    'macosUpdateRequirement.upgradeDescription',
-                    'Your Mac can upgrade. Update macOS to get the latest Orca.'
-                  )
+                ? workbench
+                  ? t(
+                      'macosUpdateRequirement.workbenchUpgradeDescription',
+                      'Your Mac can upgrade. Update macOS to get the latest BW.'
+                    )
+                  : t(
+                      'macosUpdateRequirement.upgradeDescription',
+                      'Your Mac can upgrade. Update macOS to get the latest Orca.'
+                    )
                 : cannotUpgrade
                   ? t(
                       'macosUpdateRequirement.unsupportedDescription',
@@ -108,10 +128,15 @@ export function MacosUpdateRequirementDialog({
           <CollapsibleContent>
             <div className="space-y-3 pt-2 text-sm leading-relaxed">
               <p>
-                {t(
-                  'macosUpdateRequirement.whyIntro',
-                  'We updated parts of Orca’s foundation, like Electron and the on-device speech engine, to bring:'
-                )}
+                {workbench
+                  ? t(
+                      'macosUpdateRequirement.workbenchWhyIntro',
+                      'BW updated its desktop runtime, including Electron, to support:'
+                    )
+                  : t(
+                      'macosUpdateRequirement.whyIntro',
+                      'We updated parts of Orca’s foundation, like Electron and the on-device speech engine, to bring:'
+                    )}
               </p>
               <ul className="list-disc space-y-2 pl-4">
                 <li>
@@ -158,7 +183,9 @@ export function MacosUpdateRequirementDialog({
               : canUpgrade
                 ? t('macosUpdateRequirement.updateAction', 'How to update macOS')
                 : cannotUpgrade
-                  ? t('macosUpdateRequirement.discussionAction', 'Join the discussion')
+                  ? workbench
+                    ? t('macosUpdateRequirement.workbenchHelpAction', 'Open BW documentation')
+                    : t('macosUpdateRequirement.discussionAction', 'Join the discussion')
                   : t('macosUpdateRequirement.checkAction', 'Check compatibility')}
             {!checking ? <ArrowUpRight className="size-4" aria-hidden /> : null}
           </Button>

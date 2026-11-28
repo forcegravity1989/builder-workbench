@@ -70,6 +70,7 @@ function ChevronSpacer(): React.JSX.Element {
 export { VersionNativeTrees as BoundTreeRows } from './VersionNativeTrees'
 
 type WorkflowRowProps = {
+  guideTarget?: boolean
   version: string
   workflow: VersionWorkflow
   worktrees: readonly Worktree[]
@@ -86,6 +87,7 @@ type WorkflowRowProps = {
  */
 export function WorkflowRow({
   version,
+  guideTarget = true,
   workflow,
   worktrees,
   active,
@@ -126,7 +128,9 @@ export function WorkflowRow({
       <button
         type="button"
         onClick={onNavigate}
-        data-contextual-tour-target={workflow === 'plan' ? 'workbench-versions-plan' : undefined}
+        data-contextual-tour-target={
+          workflow === 'plan' && guideTarget ? 'workbench-versions-plan' : undefined
+        }
         disabled={busy}
         title={branchTitle}
         aria-current={active ? 'page' : undefined}
