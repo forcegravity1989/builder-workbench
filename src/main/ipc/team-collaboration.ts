@@ -27,8 +27,10 @@ import { resolveSignedInW3Partition } from './w3-account-ipc'
 const NUMERIC_ID = /^\d{1,32}$/
 const TEXT_ID = /^.{1,256}$/u
 
-/** How long the hidden warm-up page may take to seed the CSRF cookie. */
-const ONEBOX_WARMUP_TIMEOUT_MS = 8_000
+/** How long the hidden warm-up page may take to seed the CSRF cookie. A cold
+ * partition redoes the full SSO handshake, which has been observed to outrun
+ * 8s on first open; 15s avoids that transient miss while staying bounded. */
+const ONEBOX_WARMUP_TIMEOUT_MS = 15_000
 const ONEBOX_WARMUP_POLL_INTERVAL_MS = 250
 /** Bound for each OneBox API round trip; a hung response must not wedge the IPC. */
 const ONEBOX_REQUEST_TIMEOUT_MS = 15_000
