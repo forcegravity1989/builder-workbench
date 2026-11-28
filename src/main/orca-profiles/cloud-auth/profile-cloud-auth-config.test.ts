@@ -36,6 +36,12 @@ describe('Orca cloud auth config read from the installed app environment', () =>
     })
   })
 
+  it('keeps Orca Cloud unavailable on a Monica host even with existing endpoint overrides', () => {
+    expect(getOrcaCloudAuthConfig({ ...DEV_OVERRIDES, WORKBENCH_SHELL: '1' }, true)).toMatchObject({
+      configured: false
+    })
+  })
+
   it('allows the dev overrides in an unpackaged host', () => {
     installFakeAppEnvironment({ isPackaged: () => false })
 

@@ -1,4 +1,5 @@
 import { NativeChatMemoryUpdatedRow } from './NativeChatMemoryUpdatedRow'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 // The cards a bot's chat draws in place of a status line: offers, import plans, setup cards, requests.
 import type { NativeChatTextBlock } from '../../../../shared/native-chat/native-chat-types'
 import {
@@ -68,6 +69,14 @@ export function nativeChatBotCard(
   timestamp: number | null = null
 ): React.JSX.Element | null {
   const card = nativeChatBotCardOf(block)
+  if (
+    isWorkbenchShell() &&
+    (card?.kind === 'connectorOffer' ||
+      card?.kind === 'googleSetup' ||
+      card?.kind === 'composioSetup')
+  ) {
+    return <p className="text-sm text-chat-foreground-faint">{block.text}</p>
+  }
   return card ? drawCard(card, { messageId, timestamp, fallback: block.text }) : null
 }
 

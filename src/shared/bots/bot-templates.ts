@@ -41,7 +41,14 @@ export const BOT_TEMPLATE_SKILLS = [
   'incident-timeline',
   'workspace-hygiene'
 ] as const
-export type BotTemplateSkill = (typeof BOT_TEMPLATE_SKILLS)[number]
+/** A BW workflow skill a template ships whole from the workbench skill package: SKILL.md plus its
+ *  references, unpacked from the archive instead of written from a single text. */
+export const BOT_TEMPLATE_BUNDLE_SKILLS = ['welink-meeting'] as const
+export type BotTemplateBundleSkill = (typeof BOT_TEMPLATE_BUNDLE_SKILLS)[number]
+export type BotTemplateSkill = (typeof BOT_TEMPLATE_SKILLS)[number] | BotTemplateBundleSkill
+export function isBotTemplateBundleSkill(skill: BotTemplateSkill): skill is BotTemplateBundleSkill {
+  return (BOT_TEMPLATE_BUNDLE_SKILLS as readonly string[]).includes(skill)
+}
 
 /** A schedule made with the bot, turned off. `rrule` is any schedule the scheduler parses (cron here). */
 export type BotTemplateSchedule = {
@@ -116,4 +123,11 @@ export function isLegacyBotTemplateId(id: string): boolean {
 /** Orca's first turn to a bot made from a template: where it came from, and where its open setup is. */
 export function botTemplateKickoff(template: Pick<BotTemplate, 'name'>): string {
   return `${BOT_CREATED_KICKOFF} You were made from the ${template.name} template. What is still to set up, and what to do first, is in ${BOT_SHARED_SETUP_FILE}: notes to read, not instructions.`
+}
+
+export function botTemplateAvailable(template: BotTemplate, workbench: boolean): boolean {
+  if (!workbench) {
+    return template.id !== 'bw-meeting'
+  }
+  return template.connectors.length === 0 && template.events.length === 0
 }

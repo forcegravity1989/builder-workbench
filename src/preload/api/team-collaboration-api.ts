@@ -1,4 +1,8 @@
 import type { TeamDirectory } from '../../shared/team-directory'
+import type {
+  TeamGroupSpaceListResult,
+  TeamGroupSpaceResolveResult
+} from '../../shared/team-group-discovery'
 
 export type TeamCollaborationApi = {
   readDirectory: (args: { groupId: string; spaceId: string; switching?: boolean }) => Promise<{
@@ -14,4 +18,6 @@ export type TeamCollaborationApi = {
     directory: TeamDirectory,
     baseFileId?: string | null
   ) => Promise<{ fileId: string }>
+  listGroupSpaces: () => Promise<TeamGroupSpaceListResult>
+  resolveGroupSpace: (args: { spaceId: string }) => Promise<TeamGroupSpaceResolveResult>
 }

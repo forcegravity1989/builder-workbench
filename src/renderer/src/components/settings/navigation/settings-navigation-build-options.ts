@@ -9,7 +9,6 @@ export type SettingsNavigationBuildOptions = {
   isLocalWindowsHost: boolean
   isWindowsTerminalHost: boolean
   isWebClient: boolean
-  showWorkbenchOrcaAccount?: boolean
   /** Settings › Bots › Enable bots. */
   botsEnabled: boolean
   hostQueuesMessages: boolean

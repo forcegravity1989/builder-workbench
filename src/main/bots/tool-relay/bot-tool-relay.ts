@@ -11,6 +11,7 @@ import {
 } from '../../../shared/composio/composio-apps'
 import { readComposioKey } from '../../composio/composio-key-store'
 import { getMainHttpClient } from '../../network/http-client'
+import { isWorkbenchProduct } from '../../startup/workbench-product'
 import { onBotToolCredentialEnded, type BotToolCredentialEnded } from '../bot-tool-credential-ended'
 import {
   botToolCredentialSource,
@@ -339,5 +340,9 @@ export const composioHeaderSource =
 /** The relay for this process; upstream calls follow Orca's proxy settings. */
 export const botToolRelay = new BotToolRelay(
   (url, init) => getMainHttpClient().fetch(url, init),
-  botToolCredentialSource({ [COMPOSIO_HEADER_SOURCE]: composioHeaderSource(readComposioKey) })
+  botToolCredentialSource({
+    [COMPOSIO_HEADER_SOURCE]: composioHeaderSource(() =>
+      isWorkbenchProduct() ? null : readComposioKey()
+    )
+  })
 )

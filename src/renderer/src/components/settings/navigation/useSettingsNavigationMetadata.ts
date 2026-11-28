@@ -58,7 +58,6 @@ export function buildSettingsNavigationMetadata(
     isLocalWindowsHost = isWindows,
     isWindowsTerminalHost = isWindows,
     isWebClient,
-    showWorkbenchOrcaAccount = false,
     botsEnabled = true,
     hostQueuesMessages = false,
     typedChatPermissions = false,
@@ -76,7 +75,6 @@ export function buildSettingsNavigationMetadata(
     isLocalWindowsHost?: boolean
     isWindowsTerminalHost?: boolean
     isWebClient: boolean
-    showWorkbenchOrcaAccount?: boolean
     botsEnabled?: boolean
     hostQueuesMessages?: boolean
     typedChatPermissions?: boolean
@@ -114,7 +112,6 @@ export function buildSettingsNavigationMetadata(
     isLocalWindowsHost,
     isWindowsTerminalHost,
     isWebClient,
-    showWorkbenchOrcaAccount,
     botsEnabled,
     hostQueuesMessages,
     typedChatPermissions,
@@ -145,9 +142,7 @@ export function buildSettingsNavigationMetadata(
     : sections
 }
 
-export function useSettingsNavigationMetadata(
-  showWorkbenchOrcaAccount = false
-): SettingsNavSection[] {
+export function useSettingsNavigationMetadata(): SettingsNavSection[] {
   const t = useTranslate()
   // The locale subscription must also invalidate the memo or labels retain the previous language.
   const languageRevision = useUiLanguageRevision()
@@ -208,7 +203,6 @@ export function useSettingsNavigationMetadata(
           isLocalWindowsHost,
           isWindowsTerminalHost,
           isWebClient,
-          showWorkbenchOrcaAccount,
           botsEnabled,
           hostQueuesMessages,
           typedChatPermissions,
@@ -233,7 +227,6 @@ export function useSettingsNavigationMetadata(
       isLocalWindowsHost,
       isWindowsTerminalHost,
       isWebClient,
-      showWorkbenchOrcaAccount,
       botsEnabled,
       hostQueuesMessages,
       typedChatPermissions,
