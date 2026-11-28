@@ -1,0 +1,19 @@
+src/main/ipc/team-collaboration.ts
+  s_8acf87b8b165b8::t_8c65744c52be41 30-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "65d110d3b4ef5e98d1f6b022aede507c6ad0c097",
+  "prompts": {},
+  "sessions": {
+    "s_8acf87b8b165b8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "20ad3700-9035-4ad8-ad88-abb17292b422",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
