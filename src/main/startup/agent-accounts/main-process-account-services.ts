@@ -15,6 +15,7 @@ import { createDesktopOrcaAccountService } from '../desktop-orca-account-service
 import { installOrcaServerSignIn, OrcaServerSignIn } from '../../orca-profiles/orca-server-sign-in'
 import { GoogleConnect, installGoogleConnect } from '../../google/google-connect'
 import { setBotToolSignInBrowser } from '../../bots/tool-oauth/bot-tool-sign-in-flows'
+import { isWorkbenchProduct } from '../workbench-product'
 
 export type DesktopAccountServiceDeps = {
   store: Store
@@ -58,7 +59,9 @@ export async function initializeMainProcessAccountServices(
   core.orcaAccount = createDesktopOrcaAccountService(openExternal)
   // A paired client may sign this host in too (D3); the desktop keeps its own window sign-in.
   installOrcaServerSignIn(new OrcaServerSignIn({ account: core.orcaAccount }))
-  installGoogleConnect(new GoogleConnect({ openBrowser: openExternal }))
+  if (!isWorkbenchProduct()) {
+    installGoogleConnect(new GoogleConnect({ openBrowser: openExternal }))
+  }
   setBotToolSignInBrowser(openExternal)
   // Defer shared-home migration; compatibility launches re-arm non-destructive scans for new rollouts (#4444, #8612, #12480).
   core.codexSessionMigration.scheduleInitialRun()

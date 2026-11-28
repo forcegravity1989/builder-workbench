@@ -336,6 +336,25 @@ function getService(): W3AccountService {
   return service
 }
 
+/**
+ * Partition of a freshly verified signed-in W3 session, for same-layer main
+ * consumers that must ride the W3 SSO cookies (OneBox group discovery).
+ * getStatus() performs a real account-API check rather than reading a cache, so
+ * this never hands out a partition whose sign-in has already lapsed.
+ */
+export async function resolveSignedInW3Partition(): Promise<
+  { partition: string } | { failure: 'w3-unconfigured' | 'w3-not-signed-in' }
+> {
+  const status = await getService().getStatus()
+  if (status.state === 'unconfigured') {
+    return { failure: 'w3-unconfigured' }
+  }
+  if (status.state !== 'signed-in') {
+    return { failure: 'w3-not-signed-in' }
+  }
+  return { partition: status.sessionPartition }
+}
+
 export function registerW3AccountHandlers(): void {
   ipcMain.removeHandler('w3Account:status')
   ipcMain.removeHandler('w3Account:start')

@@ -24,6 +24,7 @@ import { TeamBindingForm } from './TeamBindingForm'
 import { TeamSettingsMembers } from './TeamSettingsMembers'
 import { logWorkbenchError, notifyWorkbenchError } from './error-feedback'
 import { rememberedTeamBinding, rememberTeamBinding, syncTeamHosts } from './team-hosts'
+import type { TeamBindingSelection } from './use-team-group-picker'
 
 type TeamSettingsDialogProps = {
   open: boolean
@@ -41,8 +42,9 @@ export function TeamSettingsDialog({
   open,
   onOpenChange
 }: TeamSettingsDialogProps): React.JSX.Element {
-  const [groupId, setGroupId] = useState('')
-  const [spaceId, setSpaceId] = useState('')
+  // The group the binding form is offering to switch to; both IDs come from the
+  // picker rather than from two hand-typed fields.
+  const [pendingSelection, setPendingSelection] = useState<TeamBindingSelection | null>(null)
   const [directory, setDirectory] = useState<TeamDirectory | null>(null)
   const [directoryBase, setDirectoryBase] = useState<string | null>(null)
   const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
@@ -83,15 +85,23 @@ export function TeamSettingsDialog({
       setLoadFailed(false)
       setSwitchingTeam(false)
       setSwitchFailed(false)
+      setPendingSelection(null)
       directoryFileIdRef.current = undefined
     }
   }, [open])
 
   const enterTeam = (): void => {
+    if (!pendingSelection) {
+      return
+    }
+    const { groupId, spaceId } = pendingSelection
+    if (!directory) {
+      setPendingSelection(null)
+    }
     const remembered = rememberedTeamBinding()
     const changingBinding =
       Boolean(remembered.groupId && remembered.spaceId) &&
-      (groupId.trim() !== remembered.groupId || spaceId.trim() !== remembered.spaceId)
+      (groupId !== remembered.groupId || spaceId !== remembered.spaceId)
     if (switchingTeam || changingBinding) {
       void loadDirectory(groupId, spaceId, true)
     } else {
@@ -148,7 +158,7 @@ export function TeamSettingsDialog({
     const nextGroupId = requestedGroupId.trim()
     const nextSpaceId = requestedSpaceId.trim()
     if (!nextGroupId || !nextSpaceId) {
-      notifyWorkbenchError('团队信息不完整', null, '填写群 ID 和群空间 ID 后重试。')
+      notifyWorkbenchError('团队信息不完整', null, '重新选择 WeLink 群后重试。')
       return false
     }
     reading.current = true
@@ -188,7 +198,7 @@ export function TeamSettingsDialog({
       notifyWorkbenchError(
         '团队目录读取失败',
         cause,
-        '检查 WeLink 连接；若接口限流，稍后手动重试。'
+        '重新打开团队设置并重新选择 WeLink 群后重试。'
       )
       return false
     } finally {
@@ -202,8 +212,7 @@ export function TeamSettingsDialog({
       return
     }
     const binding = rememberedTeamBinding()
-    setGroupId(binding.groupId)
-    setSpaceId(binding.spaceId)
+    setPendingSelection(null)
     if (binding.groupId && binding.spaceId) {
       if (
         directorySnapshot?.directory.team_group_id === binding.groupId &&
@@ -223,7 +232,7 @@ export function TeamSettingsDialog({
 
   const saveDirectory = async (): Promise<void> => {
     if (!directory || !directory.team_group_id || !directory.team_space_id) {
-      notifyWorkbenchError('团队信息不完整', null, '填写群 ID 和群空间 ID 后重试。')
+      notifyWorkbenchError('团队信息不完整', null, '重新绑定团队后再保存。')
       return
     }
     setSaving(true)
@@ -390,8 +399,8 @@ export function TeamSettingsDialog({
             <DialogTitle>{switchingTeam ? '切换团队' : '连接团队'}</DialogTitle>
             <DialogDescription className="sr-only">
               {switchingTeam
-                ? '填写新团队的群 ID 和群空间 ID。'
-                : '填写群 ID 和群空间 ID 绑定团队。'}
+                ? '按名称选择新的 WeLink 群。'
+                : '按名称选择 WeLink 群绑定团队，群 ID 与群空间 ID 自动获取。'}
             </DialogDescription>
           </DialogHeader>
         )}
@@ -401,10 +410,8 @@ export function TeamSettingsDialog({
           </div>
         ) : !directory || switchingTeam ? (
           <TeamBindingForm
-            groupId={groupId}
-            spaceId={spaceId}
-            onGroupIdChange={setGroupId}
-            onSpaceIdChange={setSpaceId}
+            selection={pendingSelection}
+            onSelectionChange={setPendingSelection}
             switching={switchingTeam}
             editedLocally={editedLocally}
             loading={loading}
@@ -433,8 +440,7 @@ export function TeamSettingsDialog({
                 className="ml-auto"
                 disabled={busy}
                 onClick={() => {
-                  setGroupId('')
-                  setSpaceId('')
+                  setPendingSelection(null)
                   setSwitchFailed(false)
                   setSwitchingTeam(true)
                 }}

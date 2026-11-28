@@ -1,9 +1,16 @@
+import { isWorkbenchProduct } from '../startup/workbench-product'
 // Create from a built-in template: the bot is made from the owner's reviewed seed (SOUL.md), then gets the
 // template's package from this host's own catalog: the skills the owner kept, schedules turned off, and
 // a setup note offering its event automations and connectors in its first chat.
 import type { Bot } from '../../shared/bot-types'
 import { BOT_OWN_SKILLS_FOLDER } from '../../shared/bots/bot-package'
-import { botTemplate, type BotTemplate } from '../../shared/bots/bot-templates'
+import {
+  botTemplate,
+  botTemplateAvailable,
+  isBotTemplateBundleSkill,
+  type BotTemplate,
+  type BotTemplateBundleSkill
+} from '../../shared/bots/bot-templates'
 import type { BotCreateParams } from '../../shared/rpc-contract/bots-params'
 import type { BotController, BotOrigin } from './bot-controller'
 import {
@@ -11,6 +18,7 @@ import {
   type BotPackageApply,
   type BotPackageApplyDeps
 } from './bot-package-apply'
+import { installBundleSkills } from './bot-template-bundle-skills'
 import { BOT_TEMPLATE_SKILL_TEXT } from './bot-template-skill-text'
 
 export type BotTemplateCreateParams = BotCreateParams & {
@@ -28,7 +36,7 @@ export function templatePackage(
   const kept = new Set(keptSkills)
   return {
     files: template.skills
-      .filter((skill) => kept.has(skill))
+      .filter((skill) => kept.has(skill) && !isBotTemplateBundleSkill(skill))
       .map((skill) => ({
         to: `${BOT_OWN_SKILLS_FOLDER}/${skill}/SKILL.md`,
         text: BOT_TEMPLATE_SKILL_TEXT[skill]
@@ -67,11 +75,22 @@ export function botTemplateCreation(
   if (!template) {
     return { params, finish: async (bot) => bot }
   }
+  if (!botTemplateAvailable(template, isWorkbenchProduct())) {
+    throw new Error('This template is not available on this host.')
+  }
   const agent = params.agent ?? 'claude'
+  const kept = new Set(fromTemplate.skills)
+  const bundleTopics = template.skills.filter(
+    (skill): skill is BotTemplateBundleSkill => isBotTemplateBundleSkill(skill) && kept.has(skill)
+  )
   return {
     params: { ...params, agent },
     origin: { templateId: template.id },
-    finish: (bot) => applyBotPackage(deps, bot, templatePackage(template, fromTemplate.skills))
+    finish: (bot) =>
+      applyBotPackage(deps, bot, templatePackage(template, fromTemplate.skills), async (made) => {
+        await installBundleSkills(deps.filesystem, deps.botsRoot, made, bundleTopics)
+        return made
+      })
   }
 }
 
