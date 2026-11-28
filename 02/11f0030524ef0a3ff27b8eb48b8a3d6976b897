@@ -1,0 +1,33 @@
+docs/05-features/artifact-sharing/STATUS.md
+  s_fcb6ce216ed451::t_fb7f8bb10a9de2 5,35
+docs/05-features/artifact-sharing/prototype/annotations-viewer.html
+  s_8f7ac2fa0ae1d0::t_60784fe6d8a4fe 456-464,467-471,473-478,481-483,485-496,499-500,502-517,519-526,531,534,537-563,567-569,572-574,577-600,602,608-617,619,624-626,628,632,638-642,649-650,653-655,657-660,664-665,703,712-714,718-720,722-724,733-734,740-742,746-761,766-768,775-786,792-835,885-888,912-916,923-927,951-955,962-966,988-992,1081-1084,1124-1126,1130-1131,1136,1138,1142-1146,1148-1156,1160,1173-1189,1191,1208-1236,1317
+docs/05-features/artifact-sharing/spec.md
+  s_fcb6ce216ed451::t_528cc3996557c6 12,36,71
+services/bw-share/src/viewer.html
+  s_fcb6ce216ed451::t_b46d89276ab5a0 376-384,387-391,396-397,400,402-412,414-415,417-425,428-442,446,449,452-482,486-488,491-493,496-519,521,527-536,538,543-545,547,551,557-561,568-569,572-574,576-579,583-586,589,595,689-734,758-760,764,781-784,798,800,864,866-867,871-875,1043,1052-1055,1181-1182,1188-1190,1204-1236,1240,1244,1248-1251,1253-1263,1267,1280-1297,1299
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "0211f0030524ef0a3ff27b8eb48b8a3d6976b897",
+  "prompts": {},
+  "sessions": {
+    "s_8f7ac2fa0ae1d0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e77e777b-aadd-456e-b6a2-f9d1068ec1ff",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    },
+    "s_fcb6ce216ed451": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ce72f769-0229-49d5-a3bb-013507da555c",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
