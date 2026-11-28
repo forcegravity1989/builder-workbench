@@ -1,0 +1,78 @@
+docs/04-design-system/guidance.md
+  s_2286a39be95825::t_6ea7591e85d46c 77
+docs/05-features/README.md
+  s_2286a39be95825::t_7537ba58467a42 13-28
+docs/05-features/artifact-sharing/STATUS.md
+  s_2286a39be95825::t_861970a8220241 5,7-14,30,41
+docs/05-features/artifact-sharing/prototype/index.html
+  s_2286a39be95825::t_147d22f11d4130 752,820,846
+docs/05-features/artifact-sharing/spec.md
+  s_2286a39be95825::t_d88c10a276df1e 10,26,30,57-77,87
+docs/architecture.md
+  s_2286a39be95825::t_b1988e6f573267 68
+services/bw-share/README.md
+  s_2286a39be95825::t_ff63903088e01c 28,31,56,70,101,113,126,130-133
+services/bw-share/deploy/nginx.conf.example
+  s_2286a39be95825::t_5ec10914ea16cd 20-22,36,48
+services/bw-share/src/config.mjs
+  s_2286a39be95825::t_985bc246fa232f 5
+services/bw-share/src/http.mjs
+  s_2286a39be95825::t_f356a345a1e171 14-15
+services/bw-share/src/main.mjs
+  s_2286a39be95825::t_a335ca6aa343db 49-51
+skill-guides/orca-cli/references/artifacts.md
+  s_2286a39be95825::t_f9ac510687f97a 23-26
+skill-guides/orca-cli/references/skill-sharing.md
+  s_2286a39be95825::t_5ec83af60045cc 28-33,37
+src/cli/skills/bundled-skill-guides.ts
+  s_2286a39be95825::t_460190eb97c2dc 973-976,1845-1850,1854
+src/main/artifacts/self-hosted-share-service.test.ts
+  s_2286a39be95825::t_f43527773b961a 163-169,171
+src/main/artifacts/self-hosted-share-service.ts
+  s_2286a39be95825::t_d3bc294c34d872 43-44,50,152-154
+src/main/artifacts/share-html-inline.test.ts
+  s_2286a39be95825::t_2660442f7816bf 1,111-155,175,177-178,225-226,229-230
+src/main/artifacts/share-html-inline.ts
+  s_2286a39be95825::t_fe9736d5042123 4,26-27,30,55,63,79-83,91-154,220-232,235-237,243-262,299,308
+src/renderer/src/components/artifacts/workbench-artifact-publish.ts
+  s_23b6b4fcbf9184::t_72f04fdad37a89 165,232,236,259
+src/renderer/src/components/browser-pane/describe-page/browser-artifact-upload.ts
+  s_2286a39be95825::t_d8779f1ce5dc78 2,56
+src/renderer/src/i18n/locales/en.json
+  s_2286a39be95825::t_9cf6ddb5db2442 20558,20568-20569
+src/shared/workbench/improvement-skill-package.json
+  s_2286a39be95825::t_35dae9743da2fc 4-6,9
+src/shared/workbench/share.ts
+  s_2286a39be95825::t_e4701bc4425070 4-5,7
+services/bw-share/.env.example
+  h_d0d195a8c70989 23-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "cb6b219e6d1273120c45b99d294aa50ac4fac7e4",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_2286a39be95825": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01493b78-2f0b-42a1-867e-d48801ddbc82",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    },
+    "s_23b6b4fcbf9184": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e35d1405-0069-47e2-9c68-1a64ee48660d",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
