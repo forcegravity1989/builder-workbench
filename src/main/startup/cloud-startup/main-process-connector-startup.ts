@@ -1,3 +1,4 @@
+import { isWorkbenchProduct } from '../workbench-product'
 import { powerMonitor } from 'electron'
 import { join } from 'node:path'
 import type { ConnectorCloud } from '../../connector-cloud/connector-cloud'
@@ -19,6 +20,12 @@ export function installMainProcessConnectorCloud(serve: boolean): void {
     return
   }
   const runtime = state.core.runtime
+  if (!serve) {
+    registerAvatarGenerationHandlers(() => runtime.getCommitMessageAgentEnvironmentResolvers())
+  }
+  if (isWorkbenchProduct()) {
+    return
+  }
   const userDataPath = getProfileUserDataPath()
   const host = installConnectorHost({
     runtime,
@@ -39,7 +46,6 @@ export function installMainProcessConnectorCloud(serve: boolean): void {
   powerMonitor.on('resume', host.refreshLinearLogins)
   registerGoogleSetupHandlers()
   registerSlackHandOffHandlers(() => runtime.getConnectorCloud())
-  registerAvatarGenerationHandlers(() => runtime.getCommitMessageAgentEnvironmentResolvers())
 }
 
 /** This process's connector, for the startup, auth and quit hooks. */

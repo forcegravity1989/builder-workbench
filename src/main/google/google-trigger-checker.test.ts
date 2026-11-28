@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { AutomationGoogleTrigger } from '../../shared/automation-google-triggers'
 import type { GoogleApi } from './google-api-client'
 import { GoogleTriggerChecker, type GoogleTriggerCheckerDeps } from './google-trigger-checker'
+import { bindGoogleTriggersToAutomations } from './google-trigger-runtime'
 import type { GoogleTriggerState } from './google-trigger-state'
 
 const NOW = Date.parse('2026-11-22T12:00:00Z')
@@ -36,6 +37,24 @@ const rule = (id: string, account: string, minutesBefore: number): AutomationGoo
   event: 'starting_soon',
   account,
   minutesBefore
+})
+
+it('leaves the Monica scheduler alone when legacy Google trigger records may exist', () => {
+  const existingTick = vi.fn()
+  const service = { onTick: existingTick, stop: vi.fn() }
+  const store = { listAutomations: vi.fn(() => []), getBots: vi.fn(() => []) }
+  const runtime = { runAutomationForEvent: vi.fn() }
+
+  vi.stubEnv('WORKBENCH_SHELL', '1')
+  try {
+    bindGoogleTriggersToAutomations(service, store, runtime)
+    expect(service.onTick).toBe(existingTick)
+    service.onTick()
+    expect(existingTick).toHaveBeenCalledOnce()
+    expect(store.listAutomations).not.toHaveBeenCalled()
+  } finally {
+    vi.unstubAllEnvs()
+  }
 })
 
 describe('Calendar timers follow their rule', () => {

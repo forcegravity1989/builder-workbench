@@ -6,6 +6,8 @@
 
 Builder 在 Workbench 的设置 → 集成中可以确认任务、评审和诊断报告所依赖的本机 CLI 状态。缺少 CLI 或登录状态时，页面提供对应的安装或登录入口。完成配置后，状态从真实探测读回，重启后仍能独立确认当前状态。
 
+用户可以从 Monica 的 Bots 使用执行机上的内部集成。首条旅程是在通用会议助手确认预览并预订 WeLink 会议，随后在原会话获得已读回的会议信息。
+
 ## 价值与依据
 
 集成页把项目工作所需的外部 CLI 收到一个入口，减少跨终端查状态和复制命令。来源为 [#323](https://github.com/forcegravity1989/builder-workbench/issues/323) 及其承接的安装引导问题，CloudBuild 入口来自 [#366](https://github.com/forcegravity1989/builder-workbench/issues/366)。多 Builder 的使用效果尚未量化。

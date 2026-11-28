@@ -11,6 +11,7 @@ import type { BackendServiceCleanup } from '../backend/service-composition'
 import { orcadServedProfileId } from './orcad-served-profile'
 import type * as OrcadConnector from './orcad-connector'
 import { scheduleTeamPolicyRefresh } from '../orca-profiles/cloud-auth/team-policy-refresh'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 
 /** The daemon's relay host and its Orca account, which signs the relay in and out. */
 export async function installOrcadRelayAndAccount(
@@ -79,7 +80,9 @@ export function installOrcadOrcaAccount(
   // A rotation saved only in memory would be replayed after restart and end the session family.
   getAppEnvironment().onWillQuit(flushUnsavedCloudSessions)
   registerCleanup(() => installOrcaServerSignIn(null))
-  // No browser here: Google sign-in prints its link and takes the pasted address, or a paired desktop's.
-  installGoogleConnect(new GoogleConnect())
-  registerCleanup(() => installGoogleConnect(null))
+  if (!isWorkbenchProduct()) {
+    // No browser here: Google sign-in prints its link and takes the pasted address, or a paired desktop's.
+    installGoogleConnect(new GoogleConnect())
+    registerCleanup(() => installGoogleConnect(null))
+  }
 }

@@ -198,7 +198,37 @@
       .team-directory .members-table th:nth-child(2) { width: auto; }
       .directory-links { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); }
       .directory-links > button { flex: none; white-space: nowrap; }
-      .directory-id-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      /* #790：群名称联想输入，取代原先并排的两个手填 ID 输入框。 */
+      .group-picker { display: grid; gap: 5px; min-width: 0; margin-top: 4px; }
+      .group-picker > span { font-size: 14px; }
+      .group-picker-control { position: relative; min-width: 0; }
+      .group-picker-trigger { width: 100%; justify-content: space-between; gap: 8px; font-weight: 400; }
+      .group-picker-trigger > svg { flex: none; opacity: 0.55; }
+      .group-picker-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .group-picker-value.is-placeholder { color: var(--muted-foreground); }
+      .group-picker-panel { position: absolute; top: calc(100% + 4px); left: 0; z-index: 20; width: min(420px, calc(100vw - 1rem)); overflow: hidden; background: var(--popover); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-dialog); }
+      .group-picker-search { border-radius: 0; border-width: 0 0 1px; background: transparent; }
+      .group-picker-list { max-height: 232px; overflow-y: auto; padding: 4px; }
+      .group-picker-option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--foreground); font: inherit; text-align: left; cursor: pointer; }
+      .group-picker-option:hover, .group-picker-option:focus-visible { background: var(--accent); outline: none; }
+      .group-picker-option:disabled { opacity: 0.5; cursor: default; }
+      .group-picker-check { display: inline-flex; flex: none; width: 14px; }
+      .group-picker-check svg { width: 14px; height: 14px; }
+      .group-picker-text { display: grid; gap: 2px; min-width: 0; }
+      .group-picker-text strong { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .group-picker-text small { color: var(--muted-foreground); }
+      .group-picker-empty, .group-picker-busy { margin: 0; padding: 22px 12px; color: var(--muted-foreground); font-size: 12px; text-align: center; }
+      .group-picker-busy { display: flex; align-items: center; justify-content: center; gap: 7px; }
+      .group-picker-failure { display: grid; gap: 8px; justify-items: start; padding: 12px; }
+      .group-picker-failure p { margin: 0; color: var(--destructive); font-size: 12px; }
+      .group-picker-foot { margin: 0; padding: 8px 12px; border-top: 1px solid var(--border); color: var(--muted-foreground); font-size: 11px; }
+      .binding-derived { margin-top: 8px; }
+      .binding-derived code { color: var(--foreground); font-family: var(--font-mono); }
+      .spin { display: inline-flex; animation: group-picker-spin 1s linear infinite; }
+      .spin svg { width: 14px; height: 14px; }
+      @keyframes group-picker-spin { to { transform: rotate(360deg); } }
+      /* 真实弹窗的 DialogDescription 是 sr-only，这里保持同样的可见性。 */
+      .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; white-space: nowrap; border: 0; clip-path: inset(50%); }
       .directory-identifiers { display: flex; flex-wrap: wrap; gap: 6px 24px; min-width: 0; margin: 0; }
       .directory-identifiers dt { color: var(--muted-foreground); font-size: 12px; }
       .directory-identifiers dd { margin: 0; font-family: var(--font-mono); overflow-wrap: anywhere; }
@@ -234,14 +264,14 @@
       .review-links { font-size: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
       .review-tools { margin-bottom: 10px; font-size: 12px; }
       .review-tools .input { width: auto; }
-      @media (max-width: 600px) { .directory-links { flex-wrap: wrap; } .directory-links > button { margin-left: auto; } .directory-id-grid { grid-template-columns: minmax(0, 1fr); } }
+      @media (max-width: 600px) { .directory-links { flex-wrap: wrap; } .directory-links > button { margin-left: auto; } }
     </style>
     <script src="prototype/journey.js" defer></script>
   </head>
   <body>
     <main class="review-frame">
       <header class="review-header">
-        <div><h1>团队多人协作</h1><p>项目墙 → 团队设置 · #791 切换团队已认可 · 静态表达 / 演示数据</p></div>
+        <div><h1>团队多人协作</h1><p>项目墙 → 团队设置 · #791 切换团队已认可 · #790 群名称绑定原型已认可 · 静态表达 / 演示数据</p></div>
         <div class="row wrap">
           <label for="actor">模拟桌面</label>
           <select id="actor" class="input">
@@ -255,14 +285,15 @@
           <button class="btn btn-ghost" data-action="theme">明暗</button>
         </div>
       </header>
-      <nav class="review-links"><a href="intent.md">意图</a><a href="spec.md">规格</a><a href="STATUS.md">状态</a><a href="../../../src/renderer/src/workbench/TeamSettingsDialog.tsx">当前界面来源</a><span>基线 c836246117；静态参照，未加载 React 组件</span></nav>
-      <div class="row wrap review-tools"><strong>原型评审工具</strong><button class="btn btn-secondary" data-action="review-791">查看团队切换</button><label>读取结果 <select id="switch-result" class="input"><option value="success">成功</option><option value="failure">失败（保留原团队）</option></select></label><span>团队 A：938583054774198541 / 20065474；团队 B：938583054774198542 / 20065475</span></div>
+      <nav class="review-links"><a href="intent.md">意图</a><a href="spec.md">规格</a><a href="STATUS.md">状态</a><a href="../../../src/renderer/src/workbench/TeamSettingsDialog.tsx">当前界面来源</a><a href="../../../src/renderer/src/workbench/TeamGroupSpaceCombobox.tsx">#790 群名称控件来源</a><a href="../w3-account/prototype.html">W3 账户设置（另一特性原型）</a><span>基线 e6ebf32872 + #790 群名称绑定改动；静态参照，未加载 React 组件</span></nav>
+      <div class="row wrap review-tools"><strong>原型评审工具</strong><button class="btn btn-secondary" data-action="review-791">查看团队切换</button><label>群列表 <select id="group-list-result" class="input"><option value="ready">读取成功</option><option value="truncated">成功但群数超过上限</option><option value="w3-unconfigured">W3 账户未配置</option><option value="w3-not-signed-in">W3 账户未登录</option><option value="onebox-unauthorized">免密未通过 OneBox 校验</option><option value="rate-limit">OneBox 限流</option><option value="unreachable">连不上 OneBox</option><option value="parse-failed">群列表无法解析</option></select></label><label>读取结果 <select id="switch-result" class="input"><option value="success">成功</option><option value="failure">失败（保留原团队）</option></select></label><span>演示群：神盾局项目群（团队 A）、交付看板协作群（团队 B）、星图交付保障群、星图服务发布群、临时对齐（群已解散）；emeeting-* 会议空间已在列表中过滤。</span></div>
       <details class="walkthrough">
         <summary>原型注释：操作路线</summary>
         <ol>
-          <li>#791：点「查看团队切换」，已绑定的两个 ID 只读，右侧「切换团队」打开新 ID 表单。取消或读取失败保留原团队与草稿；成功后整体切换。刷新按钮悬停或键盘聚焦显示「刷新当前团队目录」。已保存远程主机保留，群空间文件不变。底部不再放「解除绑定」。</li>
-          <li>「从头开始」。韩岚首次在弹窗中同时填写群 ID 和群空间 ID。绑定后本机记住这组绑定，重新打开 BW 直接进入团队目录。welink-cli 读取已支持的成员和群主信息，当前桌面的 WeLink 身份用于匹配主机归属，项目目录为空。</li>
-          <li>林安绑定同一群号。项目墙保留当前 BW 的「添加项目」入口，团队设置也提供「登记项目」。登记星图服务后，项目身份写入群空间。</li>
+          <li>#791：点「查看团队切换」，已绑定的两个 ID 只读，右侧「切换团队」打开新的群名称选择。取消或读取失败保留原团队与草稿；成功后整体切换。刷新按钮悬停或键盘聚焦显示「刷新当前团队目录」。已保存远程主机保留，群空间文件不变。底部不再放「解除绑定」。</li>
+          <li>#790：「从头开始」。韩岚首次在弹窗里只看到一个「WeLink 群名称」输入框。点击展开群列表，不输入也能翻找已列出的群名；输入时本地同步收窄，前缀命中排在包含命中前。选中「神盾局项目群」后群 ID 与群空间 ID 由 OneBox 自动获取，只读显示在下方，两个 ID 都不再手填；获取完成前提交键禁用。绑定后本机记住这组绑定，重新打开 BW 直接进入团队目录。welink-cli 读取已支持的成员和群主信息，当前桌面的 WeLink 身份用于匹配主机归属，项目目录为空。</li>
+          <li>#790 失败注入：把「群列表」切到 W3 账户未配置 / 未登录 / 免密未通过时，群名称下方直接显示对应原因和「打开 W3 账户设置」（导航到 w3-account 特性原型，不在本原型复制设置页）；切到限流、连不上、无法解析时只显示原因，不提供跳转。选中「临时对齐（群已解散）」后收起下拉，在群名称下方显示「这个空间没有关联 WeLink 群」。切到「成功但群数超过上限」时列表底部说明搜索仅覆盖已列出的群。</li>
+          <li>林安绑定同一个群。项目墙保留当前 BW 的「添加项目」入口，团队设置也提供「登记项目」。登记星图服务后，项目身份写入群空间。</li>
           <li>陈远绑定该群后，BW 根据已登记的 repoId 和各主机项目墙上的实际来源合并成一张现有样式的项目卡。他不需要重复登记星图服务，「交付看板」仍是他的个人项目。</li>
           <li>在团队设置的本机地址栏点击「一键生成并填入」；已有 Orca 配置时按钮变为「一键填入」。群成员随后自动看到地址和连接目标，连接默认保持断开，建立连接后默认只读。</li>
           <li>项目卡保留现有 BW 的主机状态；未连接来源只显示离线状态。需要连接时，从左下角「管理远程主机」进入 Orca 远程服务器设置，建立连接后再回到项目卡查看。</li>
@@ -273,9 +304,11 @@
       <details class="references">
         <summary>原型注释：证据、来源与限制</summary>
         <p>#791 增量为团队设置局部交互，原型已认可。沿用既有静态旅程与配色；未加载原生 React 弹窗与 Tooltip，周边页面保留已有静态参照。未连接 WeLink，未验证 Electron、双机、权限与重启读回；本原型不能证明产品能力已交付。</p>
+        <p>#790 群名称绑定原型已认可。控件形态参照 <a href="../../../src/renderer/src/workbench/TeamGroupSpaceCombobox.tsx">TeamGroupSpaceCombobox</a>（Popover + cmdk）与 <a href="../../../src/renderer/src/workbench/TeamBindingForm.tsx">TeamBindingForm</a> 静态表达，未加载 React 组件；失败场景与控件内 <code>failureCopy</code> 一一对应，会议空间过滤与主进程 <a href="../../../src/main/workbench/team-collaboration/onebox-group-space-client.ts"><code>isMeetingSpaceName</code></a> 同一条规则，本地排序与 <a href="../../../src/renderer/src/workbench/team-group-search.ts"><code>searchTeamGroupSpaces</code></a> 同一套档位。仍需验证：截断阈值路径、真壳点击流与重启读回。OneBox 免密链路已在 BW 的 W3 分区内真壳复现（2026-11-28，PR #823：隐藏窗口预热让页面 JS 完成 SSO 并种下 WAPCSRFTOKEN，读回 318 个群空间）。演示群名、成员数与群主均为演示数据。</p>
+        <p>本原型仍沿用 <code>data-theme="light"</code> 与设计系统 <code>styles.css</code>，未切到设计系统现行的 <code>data-skin="ds" data-theme="claude"</code> + <code>workbench-tokens.css</code> 约定；这次不做主题迁移，避免改动已认可的 #791 各屏视觉，配色差异由后续单独处理。</p>
         <p>页头动作沿用 <a href="../../../src/renderer/src/workbench/WorkbenchIconButton.tsx">WorkbenchIconButton</a> 和现有 Lucide 图标。团队设置采用同尺寸的 UsersRound 图标，放在<a href="../../../src/renderer/src/workbench/ProjectWallPage.tsx">项目墙原远程主机操作入口</a>的位置。项目卡片复用当前 ProjectWallCard 的布局和操作，不增加团队专用卡片动作。原“批量导入主机”的页头入口改为同位置的 UsersRound“团队设置”入口。</p>
         <p>窗口、墙卡右栏、评审入口与远程设置分别对应 <a href="../../../src/renderer/src/app-shell/AppWorkspaceShell.tsx">AppWorkspaceShell</a>、<a href="../../../src/renderer/src/workbench/ProjectSettingsRail.tsx">ProjectSettingsRail</a>、<a href="../../../src/renderer/src/workbench/pr-review-notifications/ReviewSendDialog.tsx">发送评审</a>及<a href="../../../src/renderer/src/components/settings/RuntimeEnvironmentsPane.tsx">远程 Orca 服务器</a>。浅化的是这条旅程周边的原生内容。</p>
-        <p>样例在浏览器内模拟按群号查群、welink-cli 身份匹配、群空间目录同步、成员项目墙按 repoId 聚合、团队主机默认未连接、Orca 同连接只读与完全访问分层和 PR。群空间跳转目标等待实际内网接口提供，不使用虚构地址。团队地址、连接和授权复用 Orca 原生共享主机设置；访问日志只在被访问主机的<a href="../../../src/renderer/src/components/settings/RuntimeAccessGrantList.tsx">我分享出去的链接</a>设置中由主机持有人查看，按动作、结果、时间和访问者筛选，存于主机的 <code>userData/logs/orca-shared-host/</code> 并按 14 天自动清理。<em>原型注释：</em>业界参考 <a href="https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/managing-team-access-to-an-organization-repository">GitHub 团队仓库访问</a>。</p>
+        <p>样例在浏览器内模拟按群名称查群空间与群 ID、welink-cli 身份匹配、群空间目录同步、成员项目墙按 repoId 聚合、团队主机默认未连接、Orca 同连接只读与完全访问分层和 PR。群空间跳转目标等待实际内网接口提供，不使用虚构地址。团队地址、连接和授权复用 Orca 原生共享主机设置；访问日志只在被访问主机的<a href="../../../src/renderer/src/components/settings/RuntimeAccessGrantList.tsx">我分享出去的链接</a>设置中由主机持有人查看，按动作、结果、时间和访问者筛选，存于主机的 <code>userData/logs/orca-shared-host/</code> 并按 14 天自动清理。<em>原型注释：</em>业界参考 <a href="https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/managing-team-access-to-an-organization-repository">GitHub 团队仓库访问</a>。</p>
       </details>
     </main>
     <dialog id="dialog" class="dialog" aria-labelledby="dialog-title"></dialog>
