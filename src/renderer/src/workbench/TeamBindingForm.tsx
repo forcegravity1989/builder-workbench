@@ -1,7 +1,34 @@
-import { LoaderCircle, UsersRound } from 'lucide-react'
+import { ArrowRightLeft, LoaderCircle, UsersRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TeamGroupSpaceCombobox } from './TeamGroupSpaceCombobox'
 import { useTeamGroupPicker, type TeamBindingSelection } from './use-team-group-picker'
+
+export function TeamDirectoryReadFailure({
+  switchButtonRef,
+  onSwitch,
+  onRetry
+}: {
+  switchButtonRef: React.Ref<HTMLButtonElement>
+  onSwitch: () => void
+  onRetry: () => void
+}): React.JSX.Element {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-destructive" role="alert">
+        团队目录读取失败。已保留当前团队绑定。
+      </p>
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button ref={switchButtonRef} type="button" variant="ghost" onClick={onSwitch}>
+          <ArrowRightLeft />
+          切换团队
+        </Button>
+        <Button type="button" onClick={onRetry}>
+          重试读取团队目录
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 type TeamBindingFormProps = {
   selection: TeamBindingSelection | null

@@ -20,7 +20,7 @@ import { useAppStore } from '@/store'
 import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { cacheGeneratedRuntimePairingLink } from '@/components/settings/runtime-pairing-link-state'
 import { parsePairingCode } from '../../../shared/remote-runtime/pairing/pairing'
-import { TeamBindingForm } from './TeamBindingForm'
+import { TeamBindingForm, TeamDirectoryReadFailure } from './TeamBindingForm'
 import { TeamSettingsMembers } from './TeamSettingsMembers'
 import { logWorkbenchError, notifyWorkbenchError } from './error-feedback'
 import {
@@ -422,27 +422,15 @@ export function TeamSettingsDialog({
             <LoaderCircle className="size-5 animate-spin" aria-label="正在读取团队目录" />
           </div>
         ) : savedDirectoryFailed ? (
-          <div className="space-y-3">
-            <p className="text-sm text-destructive" role="alert">
-              团队目录读取失败。已保留当前团队绑定。
-            </p>
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button ref={switchButton} type="button" variant="ghost" onClick={beginSwitch}>
-                <ArrowRightLeft />
-                切换团队
-              </Button>
-              <Button
-                type="button"
-                onClick={() =>
-                  void loadDirectory(savedBinding.groupId, savedBinding.spaceId).then(
-                    syncLoadedTeamHosts
-                  )
-                }
-              >
-                重试读取团队目录
-              </Button>
-            </div>
-          </div>
+          <TeamDirectoryReadFailure
+            switchButtonRef={switchButton}
+            onSwitch={beginSwitch}
+            onRetry={() =>
+              void loadDirectory(savedBinding.groupId, savedBinding.spaceId).then(
+                syncLoadedTeamHosts
+              )
+            }
+          />
         ) : !directory || switchingTeam ? (
           <TeamBindingForm
             selection={pendingSelection}
