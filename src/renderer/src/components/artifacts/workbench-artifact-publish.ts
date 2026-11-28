@@ -162,7 +162,7 @@ export function shareErrorDescription(code: string, fallback: string): string {
     case 'too-large':
       return translate(
         'auto.components.artifacts.artifact-publish-flow.tooLargeDescription',
-        'This artifact exceeds the 10 MiB share limit.'
+        'This artifact exceeds the 200 MiB share limit.'
       )
     case 'rate-limited':
       return translate(
@@ -229,11 +229,11 @@ function artifactPreparationErrorDescription(error: ArtifactPublishPreparationEr
       return error.bytes === undefined
         ? translate(
             'auto.components.artifacts.artifact-publish-flow.workbenchTooLarge',
-            'This file exceeds the 10 MiB share limit.'
+            'This file exceeds the 200 MiB share limit.'
           )
         : translate(
             'auto.components.artifacts.artifact-publish-flow.tooLargeWithSize',
-            'This file is {{size}}; the share limit is 10 MiB.',
+            'This file is {{size}}; the share limit is 200 MiB.',
             { size: formatShareSize(error.bytes) }
           )
     case 'unreadable':
@@ -256,7 +256,7 @@ function artifactPreparationErrorDescription(error: ArtifactPublishPreparationEr
 
 function formatShareSize(bytes: number): string {
   const mib = bytes / (1024 * 1024)
-  // Round oversized values up so "10.0 MiB" never appears next to a 10 MiB limit.
+  // Round oversized values up so "200.0 MiB" never appears next to a 200 MiB limit.
   const shown = bytes > SHARE_MAX_CONTENT_BYTES ? Math.ceil(mib * 10) / 10 : mib
   return `${shown >= 10 ? shown.toFixed(1) : shown.toFixed(2)} MiB`
 }

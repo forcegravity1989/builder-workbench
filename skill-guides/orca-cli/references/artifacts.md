@@ -20,8 +20,10 @@ ORCA artifacts delete <id> --json
   `nextCursor`, pass it back with `--cursor <cursor>`. `delete <id>` deletes an account-owned
   artifact by the id returned from `list`; it does not need the original local file or its
   edit-token record.
-- Relative HTML assets are not uploaded. Share a self-contained HTML file or use absolute
-  asset URLs.
+- Relative HTML assets are not uploaded as separate files. For local files, Workbench inlines
+  relative stylesheets, fonts, images and image tags before upload; references it cannot read
+  (remote sources, absolute paths) stay unchanged, so prefer self-contained HTML or absolute
+  asset URLs for portability.
 - If an upload exceeds the CLI transport limit, use the browser upload page as directed
   by the error.
 - For local or staging development, `--api-url <url>` overrides the artifact service;

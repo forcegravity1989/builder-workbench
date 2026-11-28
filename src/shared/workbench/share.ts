@@ -1,11 +1,10 @@
 import { z } from 'zod'
-import { ARTIFACT_MAX_CONTENT_BYTES } from '../artifacts/artifacts'
 
 /**
- * The service's per-share cap (`BW_SHARE_MAX_BYTES`). Aliased from the artifact contract so there is
- * one number to change; larger content is rejected before it reaches the network.
+ * The self-hosted service's per-share cap (`BW_SHARE_MAX_BYTES`, default in
+ * `services/bw-share/src/config.mjs`). Larger content is rejected before it reaches the network.
  */
-export const SHARE_MAX_CONTENT_BYTES = ARTIFACT_MAX_CONTENT_BYTES
+export const SHARE_MAX_CONTENT_BYTES = 200 * 1024 * 1024
 
 export const ShareSourceSchema = z.object({ sourceKey: z.string().min(1).max(8192) }).strict()
 

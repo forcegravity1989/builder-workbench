@@ -20555,7 +20555,7 @@
           "unauthorizedDescription": "The share server rejected this device. Try sharing again.",
           "forbiddenDescription": "This device can no longer update the link. Share the file again to create a new one.",
           "staleRecordDescription": "This link no longer belongs to this computer. It was removed from your list, but it may still open until an administrator deletes it on the share server.",
-          "tooLargeDescription": "This artifact exceeds the 10 MiB share limit.",
+          "tooLargeDescription": "This artifact exceeds the 200 MiB share limit.",
           "rateLimitedDescription": "Too many uploads. Try again in a minute.",
           "busyDescription": "The share server is busy. Try again shortly.",
           "notFoundDescription": "The shared link no longer exists on the server.",
@@ -20565,8 +20565,8 @@
           "registryUnavailableDescription": "The share server cannot read its device list and is refusing new shares. An administrator has to restore it on the server.",
           "recordsUnreadableDescription": "Your share history on this computer could not be read, so this list may be incomplete. Existing links may still work; sharing a file again creates a new link.",
           "unknownDescription": "Something went wrong while sharing. The details are in the app logs.",
-          "workbenchTooLarge": "This file exceeds the 10 MiB share limit.",
-          "tooLargeWithSize": "This file is {{size}}; the share limit is 10 MiB."
+          "workbenchTooLarge": "This file exceeds the 200 MiB share limit.",
+          "tooLargeWithSize": "This file is {{size}}; the share limit is 200 MiB."
         },
         "ArtifactPublishedLinkPanel": {
           "copyLink": "Copy link",

@@ -11,8 +11,8 @@ const RATE_WINDOW_MS = 60_000
  */
 const BODY_LIMIT_FACTOR = 6
 const JSON_OVERHEAD_BYTES = 1024 * 1024
-/** Bodies held in memory at once across all requests, so overlapping uploads cannot exhaust a 1 GB box. */
-const MAX_IN_FLIGHT_BODY_BYTES = 64 * 1024 * 1024
+/** Bodies held in memory at once across all requests, sized for one 200 MiB upload plus a second smaller one. */
+const MAX_IN_FLIGHT_BODY_BYTES = 512 * 1024 * 1024
 const RATE_MAP_LIMIT = 10_000
 
 /**

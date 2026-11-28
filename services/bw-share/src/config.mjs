@@ -2,7 +2,7 @@ import path from 'node:path'
 
 /** Defaults are the documented production posture; every value is overridable by env. */
 export const DEFAULT_PORT = 8787
-export const DEFAULT_MAX_BYTES = 10 * 1024 * 1024
+export const DEFAULT_MAX_BYTES = 200 * 1024 * 1024
 export const DEFAULT_RETENTION_DAYS = 30
 export const DEFAULT_RATE_LIMIT_PER_MINUTE = 30
 /**

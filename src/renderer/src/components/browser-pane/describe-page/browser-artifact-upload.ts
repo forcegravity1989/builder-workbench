@@ -1,5 +1,5 @@
 import type { ArtifactWriteRequest } from '../../../../../shared/artifacts/artifacts'
-import { ARTIFACT_MAX_CONTENT_BYTES } from '../../../../../shared/artifacts/artifacts'
+import { SHARE_MAX_CONTENT_BYTES } from '../../../../../shared/workbench/share'
 import { getRuntimePathBasename } from '../../../../../shared/file-access/cross-platform-path'
 import { ArtifactPublishPreparationError } from '@/components/artifacts/artifact-publish-flow'
 import {
@@ -53,7 +53,7 @@ export async function readBrowserHtmlArtifactRequest(url: string): Promise<Artif
     if (stat.isDirectory) {
       throw new ArtifactPublishPreparationError('unsupported')
     }
-    if (stat.size > ARTIFACT_MAX_CONTENT_BYTES) {
+    if (stat.size > SHARE_MAX_CONTENT_BYTES) {
       throw new ArtifactPublishPreparationError('too-large')
     }
     const result = await window.api.fs.readFile({

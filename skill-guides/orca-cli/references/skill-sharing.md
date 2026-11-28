@@ -25,15 +25,16 @@ ORCA artifacts delete <id> --json
 - `list` returns every link this computer created: file path, id, updated time, and URL.
   `unshare <file>` deletes by file path; `delete <id>` deletes by the id from `list`.
   Deleting a link makes it stop working immediately.
-- Relative stylesheets and the fonts/images they reference are inlined into the HTML on the
-  host before upload, so the share page renders like the local file. This applies to local
-  files only; SSH and remote-runtime sources upload as-is. Each inlined resource is capped at
-  2 MiB; missing, oversized or non-whitelisted references are kept as-is and logged, never
-  blocking the share. External scripts are not inlined. The 10 MiB service limit applies to
+- Relative stylesheets, the fonts/images they reference, `<img src>`/`srcset`, `poster` and
+  URL references inside element `style` attributes are inlined into the HTML on the host
+  before upload, so the share page renders like the local file. This applies to local files
+  only; SSH and remote-runtime sources upload as-is. Each inlined resource is capped at
+  200 MiB; missing, oversized or non-whitelisted references are kept as-is and logged, never
+  blocking the share. External scripts are not inlined. The 200 MiB service limit applies to
   the inlined document; the 800 KB CLI transport limit below applies to the source file
   before inlining.
 - The CLI transport limit is 800 KB per command. For larger files (the service accepts up
-  to 10 MiB), open the file in Workbench and use Share as artifact.
+  to 200 MiB), open the file in Workbench and use Share as artifact.
 
 ## Skill sharing
 
