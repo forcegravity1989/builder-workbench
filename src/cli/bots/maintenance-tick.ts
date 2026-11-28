@@ -59,7 +59,7 @@ const tick: CommandHandler = async (ctx) => {
       ])
       queue.waiting.push(...discovered.filter((issue) => !known.has(issue.url)))
       await save()
-      const reports = []
+      const reports: { issue: string; pr?: unknown; status?: string; reason?: string }[] = []
       for (const pending of queue.reports) {
         try {
           const landed = await deliverMaintenanceResult(ctx, repoId, caller, pending)
