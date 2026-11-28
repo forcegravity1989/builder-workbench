@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 // The one way a bot surface asks for Orca sign-in before an Orca Cloud feature: a reason, Sign in that
 // opens the browser right away, then the action the owner started carries on in the same place.
 import React, { useState } from 'react'
@@ -46,8 +47,11 @@ function SignInButton({
 }: Omit<React.ComponentProps<typeof Button>, 'onClick' | 'type'> & {
   busy: boolean
   onClick: () => void
-}): React.JSX.Element {
+}): React.JSX.Element | null {
   const t = useTranslate()
+  if (isWorkbenchShell()) {
+    return null
+  }
   return (
     <Button {...props} type="button" disabled={busy || disabled} onClick={onClick}>
       {busy ? (
@@ -68,7 +72,7 @@ export function OrcaCloudSignInButton({
   ...props
 }: Omit<React.ComponentProps<typeof SignInButton>, 'onClick' | 'busy'> & {
   onSignedIn?: () => unknown
-}): React.JSX.Element {
+}): React.JSX.Element | null {
   const { start, busy } = useSignInThen(onSignedIn)
   return <SignInButton {...props} busy={busy} onClick={start} />
 }

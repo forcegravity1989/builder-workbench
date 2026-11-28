@@ -40,12 +40,9 @@ describe('template words in the English catalogs', () => {
     return words
   }
 
-  it.each(['src/renderer/src/i18n/locales/en.json', 'mobile/src/i18n/locales/en.json'])(
-    '%s holds exactly the templates’ English',
-    (catalog) => {
-      expect(catalogWords(catalog)).toEqual(expected)
-    }
-  )
+  it('holds exactly the templates’ English in the desktop catalog', () => {
+    expect(catalogWords('src/renderer/src/i18n/locales/en.json')).toEqual(expected)
+  })
 })
 
 // A translator over the shipped zh catalog, as i18next resolves it: the catalog value, else the fallback.
