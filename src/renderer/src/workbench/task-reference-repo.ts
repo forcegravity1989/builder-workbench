@@ -1,3 +1,5 @@
+import { githubRepoIdentityKey } from '../../../shared/github/repositories/repository-identity-key'
+import { githubTaskLinkIdentities } from '../../../shared/task-item-link'
 import { getRepoTaskSourceContext } from './task-source-context'
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import { normalizeGitRemoteUrl } from '../../../shared/git/remotes/git-remote-identity'
@@ -56,12 +58,25 @@ export function knownGitHubIssueSource(
 
 /** Bare owner/repo is gh's native record form; default it to github.com like the archive status probe does. */
 function gitHubReferenceKey(repository: string): string {
+  // Preserve explicit HTTP ports when the reference pins a GitHub API endpoint.
+  if (/^https?:\/\//i.test(repository) && parseGitHubRemoteUrl(repository, true)) {
+    return repository
+  }
   const normalized = normalizeGitRemoteUrl(repository)
   if (normalized) {
     return normalized
   }
   const bare = repository.trim().replace(/\.git$/i, '')
   return /^[^/\\:\s]+\/[^/\\:\s]+$/.test(bare) ? `github.com/${bare}` : repository
+}
+
+function registeredGitHubEndpoint(repo: Repo, url: string): GitHubOwnerRepo | undefined {
+  const target = parseGitHubRemoteUrl(url, true)
+  if (!target) {
+    return undefined
+  }
+  const key = githubRepoIdentityKey(target)
+  return githubTaskLinkIdentities(repo).find((identity) => githubRepoIdentityKey(identity) === key)
 }
 
 function exactIdentityMatch(repo: Repo, repository: string): boolean {
@@ -113,6 +128,9 @@ function repoMatchesReference(repo: Repo, reference: CycleTaskReference): boolea
     ) {
       return false
     }
+    if (/^https?:\/\//i.test(reference.repository)) {
+      return Boolean(registeredGitHubEndpoint(repo, reference.repository))
+    }
     return (
       Boolean(knownGitHubIssueSource(repo, reference.repository)) ||
       exactIdentityMatch(repo, reference.repository)
@@ -149,6 +167,9 @@ export function gitHubIdentityForTaskReference(
   repository: string
 ): GitHubOwnerRepo | undefined {
   const key = gitHubReferenceKey(repository)
+  if (/^https?:\/\//i.test(key)) {
+    return registeredGitHubEndpoint(repo, key)
+  }
   const known = knownGitHubIssueSource(repo, repository) ?? knownGitHubIssueSource(repo, key)
   if (known) {
     return known

@@ -129,6 +129,25 @@ describe('createTaskPort reads', () => {
     ])
     expect(bare?.kind).toBe('ready')
     expect(bare?.kind === 'ready' && bare.task.source.repoId).toBe('repo-gh')
+    const mixedRemote = {
+      ...githubRepo,
+      gitRemoteIdentity: {
+        ...githubRepo.gitRemoteIdentity!,
+        canonicalKey: 'github.com/Acme/Repo',
+        remoteUrl: 'https://github.com/Acme/Repo.git'
+      }
+    }
+    const mixedRef = {
+      ...ghReference,
+      repository: linkedIssueRepository('https://github.com/Acme/Repo/issues/95', 'github', 95)!
+    }
+    expect(resolveReferenceRepo(makeDeps({ repos: () => [mixedRemote] }), scope, mixedRef)).toBe(
+      mixedRemote
+    )
+    expect(gitHubIdentityForTaskReference(mixedRemote, mixedRef.repository)).toMatchObject({
+      owner: 'Acme',
+      repo: 'Repo'
+    })
     expect(gitHubIdentityForTaskReference(githubRepo, 'acme/repo')).toEqual(
       expect.objectContaining({ provider: 'github', owner: 'acme', repo: 'repo' })
     )
@@ -238,6 +257,23 @@ describe('createTaskPort reads', () => {
         remoteUrl: 'https://github.company.example:8443/acme/repo.git'
       }
     } as Repo
+    const defaultPort = {
+      ...enterprise,
+      id: 'repo-ghes-default',
+      gitRemoteIdentity: {
+        ...enterprise.gitRemoteIdentity!,
+        remoteUrl: 'https://github.company.example/acme/repo.git'
+      }
+    }
+    const defaultRef = { ...ghReference, repository: 'https://github.company.example/acme/repo' }
+    expect(
+      resolveReferenceRepo(
+        makeDeps({ repos: () => [enterprise, defaultPort] }),
+        { ...scope, repoId: enterprise.id },
+        defaultRef
+      )
+    ).toBe(defaultPort)
+    expect(gitHubIdentityForTaskReference(enterprise, defaultRef.repository)).toBeUndefined()
     const enterprisePort = createTaskPort(
       makeDeps({
         repos: () => [enterprise],

@@ -1,4 +1,3 @@
-import { isDefaultGitHubHost } from '../github/repositories/repository-identity-key'
 import type { Repo } from '../repository/repo-types'
 import { parseTaskItemLink, taskItemLinkIdentityKey } from '../task-item-link'
 import { workbenchVersionTaskLabel } from './task-scope'
@@ -35,7 +34,7 @@ export function nextIssueVersionMembership(input: {
 }
 
 /**
- * 已有关联的仓库身份取链接本身。GitHub 是 `host/owner/repo`，CodeHub 是 `host/项目路径`。
+ * 已有关联的仓库身份取链接本身。GitHub 使用保留端口的仓库 URL，CodeHub 是 `host/项目路径`。
  * 链接对不上这条 Issue 时返回空，调用方不得改用工作区登记仓库。
  */
 export function linkedIssueRepository(
@@ -48,11 +47,9 @@ export function linkedIssueRepository(
   if (!link || link.provider !== provider || link.kind !== 'issue' || link.number !== number) {
     return null
   }
-  if (link.provider === 'github' && !isDefaultGitHubHost(link.host)) {
-    // 登记键用主机名，不带 HTTP 端口。带端口的键会被远端解析当成 scp 路径。
-    return `${link.host.replace(/:\d+$/, '')}/${link.repository}`.toLowerCase()
-  }
-  return taskItemLinkIdentityKey(link)
+  return link.provider === 'github'
+    ? `https://${link.host}/${link.repository.toLowerCase()}`
+    : taskItemLinkIdentityKey(link)
 }
 
 /** 读回链接必须和原来的关联是同一条 Issue，同号的另一端仓库不算。 */

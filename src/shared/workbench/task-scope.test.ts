@@ -139,7 +139,7 @@ describe('native task entry filters', () => {
     expect(githubIssueAssignmentTarget('https://github.com/origin/app/issues/12', 13)).toBeNull()
     expect(githubIssueAssignmentTarget('https://github.com/origin/app/pull/12', 12)).toBeNull()
     expect(linkedIssueRepository('https://github.com/upstream/app/issues/12', 'github', 12)).toBe(
-      'upstream/app'
+      'https://github.com/upstream/app'
     )
     expect(
       linkedIssueRepository('https://github.com/upstream/app/issues/12', 'github', 13)
@@ -178,8 +178,17 @@ describe('native task entry filters', () => {
     const enterpriseUrl = 'https://github.example.com:8443/owner/project/issues/8'
     expect(linkedIssueRepository(enterpriseUrl, 'github', 8)).toBeNull()
     expect(linkedIssueRepository(enterpriseUrl, 'github', 8, [enterprise])).toBe(
-      'github.example.com/owner/project'
+      'https://github.example.com:8443/owner/project'
     )
+    const otherUrl = enterpriseUrl.replace(':8443', ':9443')
+    const other = {
+      ...enterprise,
+      gitRemoteIdentity: {
+        ...enterprise.gitRemoteIdentity!,
+        remoteUrl: otherUrl.replace('/issues/8', '.git')
+      }
+    }
+    expect(sameIssueLink(enterpriseUrl, otherUrl, 'github', 8, [enterprise, other])).toBe(false)
     expect(sameIssueLink(enterpriseUrl, enterpriseUrl, 'github', 8, [enterprise])).toBe(true)
     expect(
       sameIssueLink(

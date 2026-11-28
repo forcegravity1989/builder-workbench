@@ -498,6 +498,11 @@ export function VersionTreeBindDialog({
                     <SelectItem key={linkedTreeIssueKey(item)} value={linkedTreeIssueKey(item)}>
                       #{item.number}
                       {item.title ? ` · ${item.title}` : ''}
+                      {' · '}
+                      {item.url ||
+                        repos.find((repo) => repo.id === (item.repoId ?? tree.repoId))?.path ||
+                        item.repoId ||
+                        tree.repoId}
                     </SelectItem>
                   ))}
                 </SelectContent>
