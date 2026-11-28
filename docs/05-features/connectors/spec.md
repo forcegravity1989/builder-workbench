@@ -10,7 +10,7 @@
 
 ## Bots 使用集成
 
-Monica 的 Bot 沿用执行机的集成设置。Monica 宿主停用 Orca Cloud 登录、Bot 连接与重连，保留旧配置、历史和待发记录。
+Monica 的 Bot 沿用执行机的集成设置。Monica 宿主停用 Orca Cloud 登录、Bot 外部连接与重连、原生 Google 与 Composio 接入，以及 Gmail 和 Google Calendar 规则的后台轮询。旧连接卡保留为历史文本，旧配置和待发记录不清理。
 
 从 Bots 模板库打开「WeLink 会议助手」，选择有 WeLink 登录的执行机，在原生对话提供主题、时间和与会人。预览确认后建会并读回会议号、时间和入会链接，结果回到原对话。预订可在没有登记项目的环境完成。缺 WeLink 或登录失效时，前往执行机的集成设置。创建结果未知时先核实候选会议，再决定后续操作。
 
