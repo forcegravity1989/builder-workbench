@@ -97,26 +97,12 @@ export async function runDirectionJourney(
   await click(charter.getByRole('button', { name: '运营看板', exact: true }))
 
   await observer.chapter?.(2)
-  await click(board.getByRole('button', { name: '规划里程碑', exact: true }))
   const milestoneGuide = page.locator('[data-contextual-tour-panel="workbench-milestones"]')
-  const skipMilestoneGuide = milestoneGuide.locator('[data-contextual-tour-skip]')
-  await expect
-    .poll(
-      async () => {
-        if (await skipMilestoneGuide.isVisible()) {
-          return true
-        }
-        return page.evaluate(async () =>
-          (await window.api.ui.get()).contextualToursSeenIds?.includes('workbench-milestones')
-        )
-      },
-      { timeout: 30_000, message: 'Wait for the milestone guide to appear or already be seen' }
-    )
-    .toBe(true)
-  if (await skipMilestoneGuide.isVisible()) {
-    await skipMilestoneGuide.click()
-  }
-  await expect(milestoneGuide).toBeHidden()
+  // The guide can appear after milestone data becomes available, during a later action.
+  await page.addLocatorHandler(milestoneGuide, async (panel) => {
+    await panel.locator('[data-contextual-tour-skip]').click()
+  })
+  await click(board.getByRole('button', { name: '规划里程碑', exact: true }))
   await board.getByLabel('定位日期', { exact: true }).fill('2026-11-23')
   await click(board.getByRole('button', { name: '添加里程碑', exact: true }))
   const milestone = page.getByRole('dialog', { name: '添加里程碑', exact: true })
@@ -147,4 +133,5 @@ export async function runDirectionJourney(
     })
     await observer.result?.('review-submitted')
   }
+  await page.removeLocatorHandler(milestoneGuide)
 }
