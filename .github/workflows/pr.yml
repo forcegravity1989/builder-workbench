@@ -273,6 +273,7 @@ jobs:
           src/main/runtime/rpc/methods/bots-items-waiting-compat.test.ts
           src/main/runtime/rpc/methods/orchestration/federation/paired-server-asks.test.ts
           src/main/automations/bot-trigger-people.test.ts
+          src/main/google/google-trigger-checker.test.ts
           src/renderer/src/components/bots/paired-server-asks.test.tsx
           src/renderer/src/components/bots/items/use-bot-item-question-steps.test.tsx
 

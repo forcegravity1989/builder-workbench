@@ -3,6 +3,7 @@
 import { GOOGLE_OWNER_ONLY } from '../../../bots/bot-google-access'
 import { botOfToken } from '../../../bots/bot-of-caller'
 import { getGoogleConnect, type GoogleConnect } from '../../../google/google-connect'
+import { isWorkbenchProduct } from '../../../startup/workbench-product'
 import type { GoogleStatusView } from '../../../../shared/google/google-connect-types'
 import {
   botAskerKeys,
@@ -186,6 +187,9 @@ export const GOOGLE_METHODS = [
     permission: 'workspace',
     params: GoogleBotAccessSetParams,
     handler: async ({ botToken, botId, on, confirmedAskers }, ctx) => {
+      if (isWorkbenchProduct()) {
+        throw new InvalidArgumentError('Use the integrations on the Monica host.')
+      }
       refuseFromBot(botToken, ctx)
       ctx.runtime.bots.assertEnabled()
       const bot = await ctx.runtime.bots.update(botId, (current) => {

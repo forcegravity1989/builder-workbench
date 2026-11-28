@@ -8,26 +8,34 @@
 
 集成是 W03「构建交付」和 W04「验收成果」的前置能力。W03 使用 GitHub 或 CodeHub 任务、评审入口，W04 可选使用 WeLink 发送报告与诊断。CloudBuild 属于构建入口。IJ01 是旧旅程标识，当前不独立登记用户旅程 E2E。
 
+## Bots 使用集成
+
+Monica 的 Bot 沿用执行机的集成设置。Monica 宿主停用 Orca Cloud 登录、Bot 外部连接与重连、原生 Google 与 Composio 接入，以及 Gmail 和 Google Calendar 规则的后台轮询。旧连接卡保留为历史文本，旧配置和待发记录不清理。
+
+从 Bots 模板库打开「WeLink 会议助手」，选择有 WeLink 登录的执行机，在原生对话提供主题、时间和与会人。预览确认后建会并读回会议号、时间和入会链接，结果回到原对话。预订可在没有登记项目的环境完成。缺 WeLink 或登录失效时，前往执行机的集成设置。创建结果未知时先核实候选会议，再决定后续操作。
+
+验收核对新装和旧档升级后的连接入口、账号网络活动和历史，另在内网用真实 WeLink 账号核对取消预览、预订和结果读回。
+
 ## 四张卡
 
-| CLI | 分组 | 安装 | 登录 | 状态探测 |
-| --- | --- | --- | --- | --- |
-| `gh` | 代码托管 | 打开 [cli.github.com](https://cli.github.com) | `gh auth login` | `gh auth status` |
-| `codehub-cli` | 代码托管 | `npm install -g @codehub/codehub-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false` | `codehub-cli auth login --all` | `codehub-cli auth status` |
-| `welink-cli` | 报告与诊断 | `npm install -g @welink/welink-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false` | `welink-cli auth login` | `welink-cli auth status` |
-| `cb` | 构建 | 先执行 `npm config set @hw-cloudbuild:registry https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/`，再执行 `npm install -g @hw-cloudbuild/cloudbuild-cli` | `cb login` | 存活使用 `cb version`，登录使用 `cb auth status` |
+| CLI           | 分组       | 安装                                                                                                                                                                           | 登录                           | 状态探测                                         |
+| ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ | ------------------------------------------------ |
+| `gh`          | 代码托管   | 打开 [cli.github.com](https://cli.github.com)                                                                                                                                  | `gh auth login`                | `gh auth status`                                 |
+| `codehub-cli` | 代码托管   | `npm install -g @codehub/codehub-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false`                                    | `codehub-cli auth login --all` | `codehub-cli auth status`                        |
+| `welink-cli`  | 报告与诊断 | `npm install -g @welink/welink-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false`                                      | `welink-cli auth login`        | `welink-cli auth status`                         |
+| `cb`          | 构建       | 先执行 `npm config set @hw-cloudbuild:registry https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/`，再执行 `npm install -g @hw-cloudbuild/cloudbuild-cli` | `cb login`                     | 存活使用 `cb version`，登录使用 `cb auth status` |
 
 安装动作只在本机未安装状态出现。CodeHub、WeLink 和 CloudBuild 的安装由应用后台按规格命令执行，CloudBuild 两步中任一步失败都停止并报告失败原因。GitHub 保持现有外链行为。
 
 ## 状态与操作
 
-| 状态 | 含义 | 操作 |
-| --- | --- | --- |
-| 检查中 | 当前探测仍在进行 | 等待本轮结果 |
-| 未安装 | 找不到可执行 CLI | 本机显示安装入口 |
+| 状态   | 含义                       | 操作                           |
+| ------ | -------------------------- | ------------------------------ |
+| 检查中 | 当前探测仍在进行           | 等待本轮结果                   |
+| 未安装 | 找不到可执行 CLI           | 本机显示安装入口               |
 | 未登录 | CLI 可执行但登录探测未通过 | 本机展开卡内终端并填入登录命令 |
-| 已连接 | CLI 可执行且登录探测通过 | 只显示重新检查 |
-| 不可用 | 当前运行时无法得到可靠状态 | 显示原因和重新检查 |
+| 已连接 | CLI 可执行且登录探测通过   | 只显示重新检查                 |
+| 不可用 | 当前运行时无法得到可靠状态 | 显示原因和重新检查             |
 
 登录命令填入复用的卡内终端但不自动回车。Builder 按 CLI 自身提示完成交互。命令结束后卡片自动重新探测，失败或中断时保留输出和失败状态，Builder 可以重新打开登录终端。重新检查只更新所点卡的显示状态，后台探测仍按现有共享机制执行。
 
@@ -49,21 +57,21 @@
 
 ## 验收判据
 
-| 标识 | 场景 | 可观察结果 |
-| --- | --- | --- |
-| I01 | 打开设置 → 集成 | 四张卡按三组显示，收敛的旧 provider 卡不出现 |
-| I02 | `gh` 未安装 | GitHub 卡显示未安装，安装动作打开官方入口 |
-| I03 | `gh` 已安装未登录 | 卡内终端填入 `gh auth login`，等待 Builder 回车 |
-| I04 | `codehub-cli` 未安装 | 后台执行安装命令，显示安装中并在结束后重新探测 |
-| I05 | `codehub-cli` 已安装未登录 | 卡内终端填入 `codehub-cli auth login --all` |
-| I06 | `welink-cli` 未安装 | 后台执行带 registry 的安装命令，结束后重新探测 |
-| I07 | `welink-cli` 已安装未登录 | 卡内终端填入 `welink-cli auth login` |
-| I08 | 任一登录命令结束 | 对应卡自动重新探测，成功时显示已连接 |
-| I09 | 远端运行时 | 只显示状态和重新检查，本机安装与登录动作不出现 |
-| I10 | 四 CLI 已安装并已登录 | 四张卡均显示已连接，重新检查读数一致 |
-| I11 | `cb` 未安装 | 构建卡显示两步安装命令，按序执行并报告失败步骤 |
-| I12 | `cb` 未登录或 token 过期 | 显示未登录，卡内终端填入 `cb login` |
-| I13 | 入门中只连接 GitHub 或只连接 CodeHub | 任一当前环境已登录的代码托管 CLI 可完成对应来源配置，状态随重新探测变化 |
-| I14 | WeLink 未安装、未登录或内网不可用 | 报告与诊断入口可跳过，不影响任务与评审来源配置 |
+| 标识 | 场景                                 | 可观察结果                                                              |
+| ---- | ------------------------------------ | ----------------------------------------------------------------------- |
+| I01  | 打开设置 → 集成                      | 四张卡按三组显示，收敛的旧 provider 卡不出现                            |
+| I02  | `gh` 未安装                          | GitHub 卡显示未安装，安装动作打开官方入口                               |
+| I03  | `gh` 已安装未登录                    | 卡内终端填入 `gh auth login`，等待 Builder 回车                         |
+| I04  | `codehub-cli` 未安装                 | 后台执行安装命令，显示安装中并在结束后重新探测                          |
+| I05  | `codehub-cli` 已安装未登录           | 卡内终端填入 `codehub-cli auth login --all`                             |
+| I06  | `welink-cli` 未安装                  | 后台执行带 registry 的安装命令，结束后重新探测                          |
+| I07  | `welink-cli` 已安装未登录            | 卡内终端填入 `welink-cli auth login`                                    |
+| I08  | 任一登录命令结束                     | 对应卡自动重新探测，成功时显示已连接                                    |
+| I09  | 远端运行时                           | 只显示状态和重新检查，本机安装与登录动作不出现                          |
+| I10  | 四 CLI 已安装并已登录                | 四张卡均显示已连接，重新检查读数一致                                    |
+| I11  | `cb` 未安装                          | 构建卡显示两步安装命令，按序执行并报告失败步骤                          |
+| I12  | `cb` 未登录或 token 过期             | 显示未登录，卡内终端填入 `cb login`                                     |
+| I13  | 入门中只连接 GitHub 或只连接 CodeHub | 任一当前环境已登录的代码托管 CLI 可完成对应来源配置，状态随重新探测变化 |
+| I14  | WeLink 未安装、未登录或内网不可用    | 报告与诊断入口可跳过，不影响任务与评审来源配置                          |
 
 本特性最多登记一条验收点 E2E。当前没有登记到 Workbench 白名单的业务 E2E，未来应由一条真实入口覆盖适用的 I01–I14。该入口不能替代 W03 或 W04 的主旅程证据。

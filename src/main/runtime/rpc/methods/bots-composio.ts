@@ -27,6 +27,7 @@ import {
 } from '../../../composio/composio-key-store'
 import { ComposioSetup } from '../../../composio/composio-setup'
 import { ComposioEvents } from '../../../composio/composio-events'
+import { isWorkbenchProduct } from '../../../startup/workbench-product'
 import { createComposioIngress } from './bots-composio-ingress'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 import { defineMethod, InvalidArgumentError, type RpcContext } from '../core'
@@ -48,6 +49,9 @@ export function webhooksOf(runtime: OrcaRuntimeService) {
 
 /** This runtime's Composio pieces, made on first use. */
 export function instanceOf(runtime: OrcaRuntimeService) {
+  if (isWorkbenchProduct()) {
+    throw new InvalidArgumentError('Use the integrations on the Monica host.')
+  }
   let instance = instances.get(runtime)
   if (!instance) {
     const bots: ComposioBots = new ComposioBots({
