@@ -17,6 +17,8 @@
 
 不新增第二套聊天、任务详情、材料存储、会议系统或发布执行器。页面动作经 Orca 原生发送弹窗递交验收会话，板面只读回材料或 provider 的真实结果。
 
+Bots 的「BW 验收会议助手」模板复用 Orca 原生建 Bot 与技能目录：建 Bot 时从 BW Skill 包正源（`skill-package.json`）解包完整验收 Skill（含 references）进 bot 主目录（`src/main/bots/bot-template-bundle-skills.ts`），bot 会话沿原生 Orca CLI 按版本绑定找验收工作树解析身份，不新增第二套会议或材料通道。
+
 ## 材料契约
 
 验收材料位于固定工作树的 `.bw/planning/<version>/acceptance.json`，使用 `schema_version=3`。当前字段包括 `candidateRef`、`preparedArtifacts`、`demoEnv`、`meeting`、`results[].decision`、`results[].note`、`results[].nextStep`、`results[].issueNotes`、`results[].issueMarks.carry`、`minutes`、`planRef`、`workflow.archivePr` 和 `workflow.release`。

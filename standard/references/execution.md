@@ -21,7 +21,7 @@ Skill 与依赖直接读本安装包文件。产品命令中的 `ORCA` 是实际
 
 不创建名为 ORCA 的 shell 变量，不原样执行占位符。命令不可用报告原错误，不换到另一安装版本；参数不明确读该命令 `--help`，不编造命令。
 
-开工时若终端提供 `ORCA_WORKTREE_ID`，执行 `ORCA worktree show --worktree "id:<ORCA_WORKTREE_ID 的完整值>" --json`；没有时执行 `ORCA worktree current --json` 从当前目录解析。不要拆分或重组工作树 ID；远端 CLI 不支持 current 时报告身份缺口，不按桌面目录猜测。读回原生工作树身份，核对返回的 `worktree.id`、`repoId`、`hostId`、路径与版本绑定，再用本 Skill 的文件或材料工具读实际状态。返回不明确或与当前仓不符时先核对身份，不写材料；不按界面焦点、会话标题、日期或最近访问记录猜版本。
+开工时若终端提供 `ORCA_WORKTREE_ID`，执行 `ORCA worktree show --worktree "id:<ORCA_WORKTREE_ID 的完整值>" --json`；没有时执行 `ORCA worktree current --json` 从当前目录解析。当前目录不在工作树内(如 Bots 会话的工作目录是 bot 主目录)且人已给出版本时，先向人确认版本，再执行 `ORCA worktree list --json`，在返回清单里找版本绑定为该版本验收(优先看 `workbenchVersionBinding`，没有绑定字段时按分支 `bw/<版本>/acceptance`)的工作树，用它的完整 `id` 执行 `ORCA worktree show --worktree "id:<完整 id>" --json` 读回身份；找不到或多个匹配时如实说明并请人指认，不猜。不要拆分或重组工作树 ID；远端 CLI 不支持 current 时报告身份缺口，不按桌面目录猜测。读回原生工作树身份，核对返回的 `worktree.id`、`repoId`、`hostId`、路径与版本绑定，再用本 Skill 的文件或材料工具读实际状态。返回不明确或与当前仓不符时先核对身份，不写材料；不按界面焦点、会话标题、日期或最近访问记录猜版本。
 
 ## 用户可见表达
 

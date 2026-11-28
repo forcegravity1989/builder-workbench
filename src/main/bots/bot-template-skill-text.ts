@@ -1,5 +1,7 @@
-// Our own SKILL.md for each template skill, written into a template bot's home.
-import type { BotTemplateSkill } from '../../shared/bots/bot-templates'
+// Our own SKILL.md for each template skill, written into a template bot's home. Bundle skills
+// (version-acceptance) have no single text: the host unpacks their whole folder from the BW
+// skill package archive instead.
+import type { BotTemplateBundleSkill, BotTemplateSkill } from '../../shared/bots/bot-templates'
 import { SKILL as bugReproduction } from './bot-template-skills/bug-reproduction'
 import { SKILL as ciFailureTriage } from './bot-template-skills/ci-failure-triage'
 import { SKILL as dependencyUpgrade } from './bot-template-skills/dependency-upgrade'
@@ -14,7 +16,10 @@ import { SKILL as specFormat } from './bot-template-skills/spec-format'
 import { SKILL as statusBrief } from './bot-template-skills/status-brief'
 import { SKILL as workspaceHygiene } from './bot-template-skills/workspace-hygiene'
 
-export const BOT_TEMPLATE_SKILL_TEXT: Record<BotTemplateSkill, string> = {
+export const BOT_TEMPLATE_SKILL_TEXT: Record<
+  Exclude<BotTemplateSkill, BotTemplateBundleSkill>,
+  string
+> = {
   'bug-reproduction': bugReproduction,
   'ci-failure-triage': ciFailureTriage,
   'dependency-upgrade': dependencyUpgrade,

@@ -27410,6 +27410,17 @@
           }
         }
       },
+      "bw-meeting": {
+        "name": "BW 验收会议助手",
+        "line": "为 BW 版本预订 WeLink 验收会议，并写回验收材料",
+        "firstChat": "先问是哪个版本，核对本机的验收工作树与材料，预览经你确认后再通过 WeLink 预订会议",
+        "watches": "本机上的 BW 验收工作树及其材料",
+        "does": "准备并通过 WeLink 预订版本验收会议，把会议信息写回验收材料",
+        "reports": "在这里，按你的要求",
+        "needsSetup": "本机已登录 welink-cli；用 welink-cli auth status 检查",
+        "example1": "v1.2 验收会议：周五 10:00–11:30，已通过 WeLink 预订",
+        "example2": "会议 ID 已写回验收材料，板面可见"
+      },
       "incident-notes": {
         "name": "事故记录",
         "line": "在事故频道中维护时间线，并起草事后报告",
@@ -28208,6 +28219,7 @@
       "specFormat": "规格说明格式",
       "incidentTimeline": "事故时间线",
       "workspaceHygiene": "工作区整理规范",
+      "versionAcceptance": "版本验收",
       "lines": {
         "pr-review-checklist": "阅读差异，查找行为变化、缺失的测试和有风险的修改；每项发现都要注明出处",
         "bug-reproduction": "在寻找原因之前，先写下能重现 Bug 的确切步骤",
@@ -28221,7 +28233,8 @@
         "status-brief": "变化、受阻、待决策：十行以内的简报",
         "spec-format": "一页规格说明：问题、决策、范围、待定问题",
         "incident-timeline": "维护带时间戳的时间线，然后起草不追责的事后报告",
-        "workspace-hygiene": "工作区何时算已完成或已废弃，以及移除前要检查什么"
+        "workspace-hygiene": "工作区何时算已完成或已废弃，以及移除前要检查什么",
+        "version-acceptance": "BW 版本验收旅程：准备、预订 WeLink 会议、纪要、归档"
       }
     },
     "firstScreen": {

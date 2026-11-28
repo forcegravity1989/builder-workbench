@@ -29624,6 +29624,17 @@
           }
         }
       },
+      "bw-meeting": {
+        "name": "BW acceptance meeting",
+        "line": "Books the WeLink acceptance meeting for a BW version and writes it back to the acceptance material.",
+        "firstChat": "Asks which version, checks the acceptance worktree and its material on this machine, then books the WeLink meeting after you confirm the preview.",
+        "watches": "The BW acceptance worktree and its material on this machine",
+        "does": "Prepares and books the version acceptance meeting via WeLink, and writes it back to the acceptance material.",
+        "reports": "Here, when you ask",
+        "needsSetup": "welink-cli signed in on this machine; run welink-cli auth status to check.",
+        "example1": "v1.2 acceptance meeting: Friday 10:00–11:30, booked via WeLink.",
+        "example2": "Meeting ID written back to the acceptance material; the board shows it."
+      },
       "incident-notes": {
         "name": "Incident notes",
         "line": "Keeps a timeline in an incident channel and drafts the write-up.",
@@ -30747,6 +30758,7 @@
       "specFormat": "spec-format",
       "incidentTimeline": "incident-timeline",
       "workspaceHygiene": "workspace-hygiene",
+      "versionAcceptance": "version-acceptance",
       "lines": {
         "pr-review-checklist": "Read a diff for behaviour changes, missing tests and risky edits; cite each finding.",
         "bug-reproduction": "Write down the exact steps that show the bug before looking for its cause.",
@@ -30760,7 +30772,8 @@
         "status-brief": "Changed, blocked, needs a decision: a brief in under ten lines.",
         "spec-format": "A one-page spec: problem, decision, scope, open questions.",
         "incident-timeline": "Keep a timestamped timeline, then draft a blameless write-up.",
-        "workspace-hygiene": "When a workspace is done or abandoned, and what to check before removing it."
+        "workspace-hygiene": "When a workspace is done or abandoned, and what to check before removing it.",
+        "version-acceptance": "The BW version acceptance journey: prepare, book the WeLink meeting, minutes, archive."
       }
     },
     "notices": {

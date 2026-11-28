@@ -104,5 +104,26 @@ export const BOT_TEMPLATES_PLANNING: readonly BotTemplate[] = [
     events: [],
     skills: ['issue-triage'],
     example: ['14 issues untouched since August.', 'ORC-511 and ORC-688 look like the same bug.']
+  },
+  {
+    id: 'bw-meeting',
+    category: 'planning',
+    name: 'BW acceptance meeting',
+    line: 'Books the WeLink acceptance meeting for a BW version and writes it back to the acceptance material.',
+    firstChat:
+      'Asks which version, checks the acceptance worktree and its material on this machine, then books the WeLink meeting after you confirm the preview.',
+    mascot: 'Q1',
+    watches: 'The BW acceptance worktree and its material on this machine',
+    does: 'Prepares and books the version acceptance meeting via WeLink, and writes it back to the acceptance material.',
+    reports: 'Here, when you ask',
+    connectors: [],
+    schedules: [],
+    events: [],
+    skills: ['version-acceptance'],
+    needsSetup: 'welink-cli signed in on this machine; run welink-cli auth status to check.',
+    example: [
+      'v1.2 acceptance meeting: Friday 10:00–11:30, booked via WeLink.',
+      'Meeting ID written back to the acceptance material; the board shows it.'
+    ]
   }
 ]
