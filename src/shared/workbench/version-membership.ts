@@ -1,3 +1,4 @@
+import { isDefaultGitHubHost } from '../github/repositories/repository-identity-key'
 import type { Repo } from '../repository/repo-types'
 import { parseTaskItemLink, taskItemLinkIdentityKey } from '../task-item-link'
 import { workbenchVersionTaskLabel } from './task-scope'
@@ -40,11 +41,16 @@ export function nextIssueVersionMembership(input: {
 export function linkedIssueRepository(
   url: string,
   provider: 'github' | 'codehub',
-  number: number
+  number: number,
+  repos: readonly Repo[] = []
 ): string | null {
-  const link = parseTaskItemLink(url)
+  const link = parseTaskItemLink(url, repos)
   if (!link || link.provider !== provider || link.kind !== 'issue' || link.number !== number) {
     return null
+  }
+  if (link.provider === 'github' && !isDefaultGitHubHost(link.host)) {
+    // 登记键用主机名，不带 HTTP 端口。带端口的键会被远端解析当成 scp 路径。
+    return `${link.host.replace(/:\d+$/, '')}/${link.repository}`.toLowerCase()
   }
   return taskItemLinkIdentityKey(link)
 }
@@ -54,10 +60,11 @@ export function sameIssueLink(
   expectedUrl: string,
   actualUrl: string,
   provider: 'github' | 'codehub',
-  number: number
+  number: number,
+  repos: readonly Repo[] = []
 ): boolean {
-  const expected = linkedIssueRepository(expectedUrl, provider, number)
-  const actual = linkedIssueRepository(actualUrl, provider, number)
+  const expected = linkedIssueRepository(expectedUrl, provider, number, repos)
+  const actual = linkedIssueRepository(actualUrl, provider, number, repos)
   return expected !== null && expected === actual
 }
 

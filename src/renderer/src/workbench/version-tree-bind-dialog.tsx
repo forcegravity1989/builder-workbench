@@ -49,6 +49,7 @@ import {
   goalOrdinal
 } from './version-labels'
 import {
+  linkedTreeIssueKey,
   parseVersionFlowBranch,
   suggestedBindWorkflow,
   treeBindMode,
@@ -137,9 +138,14 @@ export function VersionTreeBindDialog({
     currentBinding?.workflow ?? 'goal'
   )
   const workflow: BindWorkflow =
-    mode.kind === 'flow' ? mode.workflow : mode.kind === 'linked-issue' ? 'issue' : manualWorkflow
+    mode.kind === 'flow'
+      ? mode.workflow
+      : mode.kind === 'linked-issue' || mode.kind === 'choose-issue'
+        ? 'issue'
+        : manualWorkflow
   const [goalId, setGoalId] = useState(currentBinding?.goalId ?? '')
   const [issueKey, setIssueKey] = useState<string | null>(null)
+  const [attachmentKey, setAttachmentKey] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const taskDeps = useMemo(() => ({ ...nativeTaskPortDeps(), repos: () => repos }), [repos])
@@ -177,7 +183,15 @@ export function VersionTreeBindDialog({
   const selectedIssueKey = issueKey ?? (existingIssue ? taskRefKey(existingIssue) : null)
   const goalMissing =
     (workflow === 'goal' || workflow === 'issue') && !goals.some((goal) => goal.goalId === goalId)
-  const issueMissing = workflow === 'issue' && mode.kind !== 'linked-issue' && !selectedIssueKey
+  const chosenAttachment =
+    mode.kind === 'linked-issue'
+      ? mode.item
+      : mode.kind === 'choose-issue'
+        ? (mode.items.find((item) => linkedTreeIssueKey(item) === attachmentKey) ?? null)
+        : null
+  const issueMissing =
+    (mode.kind === 'choose-issue' && !chosenAttachment) ||
+    (workflow === 'issue' && mode.kind === 'manual' && !selectedIssueKey)
   const instanceMissing = !tree.instanceId
   const flowMismatch =
     (workflow === 'plan' || workflow === 'acceptance') &&
@@ -224,16 +238,18 @@ export function VersionTreeBindDialog({
       if (workflow === 'goal') {
         binding = { ...binding, goalId }
       }
-      if (workflow === 'issue' && mode.kind === 'linked-issue') {
+      if (workflow === 'issue' && chosenAttachment) {
         if (!scope) {
           throw new Error('项目工作区尚未就绪，无法核对 Issue 归属')
         }
-        const item = mode.item
+        const item = chosenAttachment
         const listed = repos.find((repo) => repo.id === (item.repoId || tree.repoId))
         if (!listed) {
           throw new Error('未在已登记项目中找到该 Issue 对应的项目')
         }
-        const pinned = item.url ? linkedIssueRepository(item.url, item.provider, item.number) : null
+        const pinned = item.url
+          ? linkedIssueRepository(item.url, item.provider, item.number, repos)
+          : null
         if (item.url && !pinned) {
           throw new Error('这条关联没有指向一个 GitHub 或 CodeHub Issue，绑定没有写入。')
         }
@@ -254,8 +270,8 @@ export function VersionTreeBindDialog({
         }
         const snapshot = await readReference(taskDeps, ownerScope, reference)
         const identityMatches = item.url
-          ? sameIssueLink(item.url, snapshot.url, item.provider, item.number)
-          : linkedIssueRepository(snapshot.url, item.provider, item.number) !== null
+          ? sameIssueLink(item.url, snapshot.url, item.provider, item.number, repos)
+          : linkedIssueRepository(snapshot.url, item.provider, item.number, repos) !== null
         if (!identityMatches) {
           throw new Error('读回的 Issue 和这条工作区关联不是同一条，绑定没有写入。')
         }
@@ -467,7 +483,28 @@ export function VersionTreeBindDialog({
               </p>
             </div>
           ) : null}
-          {workflow === 'issue' && mode.kind !== 'linked-issue' ? (
+          {mode.kind === 'choose-issue' ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="wb-bind-attachment">对应 Issue</Label>
+              <Select
+                value={attachmentKey ?? ''}
+                onValueChange={(value) => setAttachmentKey(value || null)}
+              >
+                <SelectTrigger id="wb-bind-attachment" className="w-full">
+                  <SelectValue placeholder="选择已关联的 Issue" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mode.items.map((item) => (
+                    <SelectItem key={linkedTreeIssueKey(item)} value={linkedTreeIssueKey(item)}>
+                      #{item.number}
+                      {item.title ? ` · ${item.title}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+          {workflow === 'issue' && mode.kind === 'manual' ? (
             <div className="flex flex-col gap-2">
               <Label htmlFor="wb-bind-issue">对应 Issue</Label>
               <Select

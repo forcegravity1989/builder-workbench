@@ -18,7 +18,10 @@ vi.mock('@/workbench/is-workbench-shell', () => ({ isWorkbenchShell: () => true 
 
 import { createTaskPort } from './task-port'
 import { createTaskReferenceReader } from './task-reference-reader'
+import { linkedIssueRepository } from '../../../shared/workbench/version-membership'
 import { gitHubIdentityForTaskReference, resolveReferenceRepo } from './task-reference-repo'
+import { treeBindMode } from './version-tree-bind-mode'
+import type { Worktree } from '../../../shared/worktree/types'
 
 const githubRepo = {
   id: 'repo-gh',
@@ -297,6 +300,66 @@ describe('createTaskPort reads', () => {
     mocks.viewTask.mockResolvedValueOnce({ ...chDetail, state: 'unrecognized' })
     const [unknown] = await createTaskPort(makeDeps()).listVersion(scope, [chReference])
     expect(unknown?.kind).toBe('unavailable')
+    const mixed = {
+      ...codehubRepo,
+      id: 'repo-mixed',
+      gitRemoteIdentity: {
+        canonicalKey: 'codehub-g.huawei.com/Org/Group/repo',
+        remoteUrl: 'https://codehub-g.huawei.com/Org/Group/repo.git'
+      }
+    } as Repo
+    const mixedKey = linkedIssueRepository(
+      'https://codehub-g.huawei.com/Org/Group/repo/issues/12',
+      'codehub',
+      12
+    )
+    expect(mixedKey).toBe('codehub-g.huawei.com/org/group/repo')
+    expect(
+      resolveReferenceRepo(
+        makeDeps({ repos: () => [mixed] }),
+        { ...scope, repoId: mixed.id },
+        { provider: 'codehub', repository: mixedKey ?? '', number: 12 }
+      )?.id
+    ).toBe('repo-mixed')
+    const selected = {
+      branch: 'feature',
+      linkedIssue: null,
+      linkedWorkItem: {
+        provider: 'github',
+        type: 'issue',
+        number: 22,
+        title: 'current',
+        url: 'https://github.com/acme/repo/issues/22'
+      },
+      linkedItems: [
+        {
+          provider: 'github',
+          type: 'issue',
+          number: 11,
+          title: 'first',
+          url: 'https://github.com/acme/repo/issues/11'
+        },
+        {
+          provider: 'github',
+          type: 'issue',
+          number: 22,
+          title: 'current',
+          url: 'https://github.com/acme/repo/issues/22'
+        }
+      ]
+    } as Worktree
+    expect(treeBindMode(selected)).toMatchObject({ kind: 'linked-issue', item: { number: 22 } })
+    expect(treeBindMode({ ...selected, linkedWorkItem: undefined } as Worktree).kind).toBe(
+      'choose-issue'
+    )
+    expect(
+      treeBindMode({
+        branch: 'feature',
+        linkedIssue: 12,
+        linkedWorkItem: null,
+        linkedItems: []
+      } as unknown as Worktree)
+    ).toMatchObject({ kind: 'linked-issue', item: { number: 12, provider: 'github' } })
   })
 
   it('reads codehub as issue first, then mr, and derives the web url when the CLI omits it', async () => {

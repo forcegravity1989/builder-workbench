@@ -21,7 +21,12 @@ export type LinkedTreeIssue = {
 export type TreeBindMode =
   | { kind: 'flow'; workflow: VersionFlowWorkflow }
   | { kind: 'linked-issue'; item: LinkedTreeIssue }
+  | { kind: 'choose-issue'; items: LinkedTreeIssue[] }
   | { kind: 'manual' }
+
+export function linkedTreeIssueKey(item: LinkedTreeIssue): string {
+  return [item.provider, item.repoId ?? '', String(item.number), item.url ?? ''].join(':')
+}
 
 const FLOW_BRANCH = /^bw\/([^/]+)\/(plan|acceptance)$/
 
@@ -47,31 +52,74 @@ export function parseVersionFlowBranch(
   return versionFlowBranch(version, workflow) === name ? { version, workflow } : null
 }
 
+function asLinkedTreeIssue(item: {
+  provider: 'github' | 'codehub'
+  number: number
+  title?: string
+  url?: string
+  repoId?: string
+}): LinkedTreeIssue {
+  return {
+    provider: item.provider,
+    type: 'issue',
+    number: item.number,
+    ...(item.title ? { title: item.title } : {}),
+    ...(item.url ? { url: item.url } : {}),
+    ...(item.repoId ? { repoId: item.repoId } : {})
+  }
+}
+
+function isBindableIssue(item: {
+  provider: string
+  type: string
+  number: number
+}): item is {
+  provider: 'github' | 'codehub'
+  type: 'issue'
+  number: number
+  title?: string
+  url?: string
+  repoId?: string
+} {
+  return (
+    (item.provider === 'github' || item.provider === 'codehub') &&
+    item.type === 'issue' &&
+    Number.isInteger(item.number) &&
+    item.number > 0
+  )
+}
+
 export function treeBindMode(tree: Worktree): TreeBindMode {
   const parsed = parseVersionFlowBranch(tree.branch)
   if (parsed) {
     return { kind: 'flow', workflow: parsed.workflow }
   }
-  const linked = getWorkspaceAttachments(tree).find(
-    (item) =>
-      (item.provider === 'github' || item.provider === 'codehub') &&
-      item.type === 'issue' &&
-      item.number > 0
-  )
-  if (!linked || (linked.provider !== 'github' && linked.provider !== 'codehub')) {
-    return { kind: 'manual' }
+  const selected = tree.linkedWorkItem
+  if (selected && isBindableIssue(selected)) {
+    return { kind: 'linked-issue', item: asLinkedTreeIssue(selected) }
   }
-  return {
-    kind: 'linked-issue',
-    item: {
-      provider: linked.provider,
-      type: 'issue',
-      number: linked.number,
-      ...(linked.title ? { title: linked.title } : {}),
-      ...(linked.url ? { url: linked.url } : {}),
-      ...(linked.repoId ? { repoId: linked.repoId } : {})
+  const issues: LinkedTreeIssue[] = []
+  const seen = new Set<string>()
+  for (const item of getWorkspaceAttachments(tree)) {
+    if (!isBindableIssue(item)) {
+      continue
     }
+    const linked = asLinkedTreeIssue(item)
+    const key = linkedTreeIssueKey(linked)
+    if (seen.has(key)) {
+      continue
+    }
+    seen.add(key)
+    issues.push(linked)
   }
+  const only = issues[0]
+  if (issues.length === 1 && only) {
+    return { kind: 'linked-issue', item: only }
+  }
+  if (issues.length > 1) {
+    return { kind: 'choose-issue', items: issues }
+  }
+  return { kind: 'manual' }
 }
 
 export function suggestedBindWorkflow(tree: Worktree, version: string): BindWorkflow | null {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { Repo } from '../repository/repo-types'
 import { parseTaskQuery } from '../work-items/task-query'
 import {
   matchesWorkbenchTaskQuery,
@@ -162,5 +163,32 @@ describe('native task entry filters', () => {
     expect(
       linkedIssueRepository('https://codehub-g.huawei.com/Org/Group/repo/issues/12', 'codehub', 12)
     ).toBe('codehub-g.huawei.com/org/group/repo')
+    const enterprise = {
+      id: 'ghes',
+      path: '/projects/ghes',
+      displayName: 'ghes',
+      badgeColor: '',
+      addedAt: 0,
+      gitRemoteIdentity: {
+        canonicalKey: 'github.example.com/owner/project',
+        remoteName: 'origin',
+        remoteUrl: 'https://github.example.com:8443/owner/project.git'
+      }
+    } as Repo
+    const enterpriseUrl = 'https://github.example.com:8443/owner/project/issues/8'
+    expect(linkedIssueRepository(enterpriseUrl, 'github', 8)).toBeNull()
+    expect(linkedIssueRepository(enterpriseUrl, 'github', 8, [enterprise])).toBe(
+      'github.example.com/owner/project'
+    )
+    expect(sameIssueLink(enterpriseUrl, enterpriseUrl, 'github', 8, [enterprise])).toBe(true)
+    expect(
+      sameIssueLink(
+        enterpriseUrl,
+        'https://github.example.com:8443/other/project/issues/8',
+        'github',
+        8,
+        [enterprise]
+      )
+    ).toBe(false)
   })
 })

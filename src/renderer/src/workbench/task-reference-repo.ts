@@ -78,6 +78,14 @@ function exactIdentityMatch(repo: Repo, repository: string): boolean {
   return candidates.some((candidate) => candidate === repository)
 }
 
+function codeHubMatchKey(value: string): string {
+  return value
+    .trim()
+    .replace(/\.git$/i, '')
+    .replace(/^\/+/, '')
+    .toLowerCase()
+}
+
 /** CodeHub prefers its own project path, falling back to identity-key equality. */
 function codeHubIdentityMatches(repo: Repo, repository: string): boolean {
   const remote =
@@ -86,11 +94,9 @@ function codeHubIdentityMatches(repo: Repo, repository: string): boolean {
   if (!remote) {
     return false
   }
-  const wanted = repository
-    .trim()
-    .replace(/\.git$/i, '')
-    .replace(/^\/+/, '')
-  return wanted === remote.project || wanted === `${remote.host}/${remote.project}`
+  const wanted = codeHubMatchKey(repository)
+  const project = codeHubMatchKey(remote.project)
+  return wanted === project || wanted === codeHubMatchKey(`${remote.host}/${remote.project}`)
 }
 
 function repoMatchesReference(repo: Repo, reference: CycleTaskReference): boolean {
