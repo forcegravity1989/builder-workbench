@@ -182,6 +182,13 @@
     "count": 1
   },
   {
+    "filePath": "src/renderer/src/components/bots/templates/BotTemplateDetail.tsx",
+    "kind": "jsx-expression",
+    "text": "Builders’ Workbench",
+    "dynamic": false,
+    "count": 1
+  },
+  {
     "filePath": "src/renderer/src/components/settings/bots/BotMemoryList.tsx",
     "kind": "jsx-text",
     "text": "MEMORY.md",

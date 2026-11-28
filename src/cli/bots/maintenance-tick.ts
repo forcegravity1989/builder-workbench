@@ -1,7 +1,7 @@
 import { deliverMaintenanceResult } from './maintenance-result'
 import { randomUUID } from 'node:crypto'
 import type { WorkerShowResult } from '../orchestration/workers/worker-view-results'
-import type { BotItemShowView } from './bot-items-format'
+import type { BotItemListView, BotItemShowView, BotItemWriteView } from './bot-items-format'
 import { authorized, discover, findExistingWork, type Issue } from './maintenance-issues'
 import type { OrchestrationMutationRequestShowResult } from '../../shared/orchestration/orchestration-mutation-request'
 import { RuntimeClientError } from '../runtime/connection/types'
@@ -13,7 +13,6 @@ import type { CommandHandler } from '../dispatch/dispatch'
 import { isDevCliInvocation } from '../orchestration/recovery/runtime-compatibility'
 import type { WorkerStartAgentReceipt } from '../orchestration/workers/worker-start-agent-view'
 import { findBot, type BotsListResult } from './bot'
-import type { BotItemListView, BotItemWriteView } from './bot-items-format'
 import { withMaintenanceQueue } from './maintenance-queue'
 
 function dispatchFromReceipt(receipt: unknown): string | undefined {
