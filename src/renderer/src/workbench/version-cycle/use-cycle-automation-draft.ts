@@ -47,7 +47,7 @@ export function useCycleAutomationDraft({
         draft: {
           name: cycleScope.workflow === 'plan' ? '每周版本计划' : '每周版本验收',
           prompt,
-          projectId: cycleScope.projectId,
+          projectId: cycleScope.repoId,
           workspaceId: fixedId,
           workspaceMode: 'existing',
           reuseSession: false,

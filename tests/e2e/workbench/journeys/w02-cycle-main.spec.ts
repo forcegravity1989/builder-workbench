@@ -392,15 +392,18 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     expect(await readCycleAutomations(workbenchPage)).toEqual([])
 
     await enterCycleScreen(workbenchPage, '计划')
-    const planWorktreeId = await workbenchPage.evaluate(
-      () => window.__store?.getState().activeWorktreeId
-    )
+    const planWorktree = await workbenchPage.evaluate(() => {
+      const state = window.__store?.getState()
+      return state?.allWorktrees().find((tree) => tree.id === state.activeWorktreeId)
+    })
+    expect(planWorktree).toBeDefined()
     await configure.click()
     expect(await readCycleAutomations(workbenchPage)).toEqual([])
     const name = 'W02 manually configured plan'
     const existing = await createPlanAutomation(workbenchPage, name)
     expect(existing).toMatchObject({
-      workspaceId: planWorktreeId,
+      projectId: planWorktree?.repoId,
+      workspaceId: planWorktree?.id,
       workspaceMode: 'existing',
       reuseSession: false,
       prompt: expect.stringContaining('v9.9')
@@ -438,7 +441,7 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     const replacement = await createPlanAutomation(workbenchPage, `${name} recreated`)
     expect(replacement.id).not.toBe(existing.id)
     expect(replacement.creationKey).toBe(existing.creationKey)
-    expect(replacement.workspaceId).toBe(planWorktreeId)
+    expect(replacement.workspaceId).toBe(planWorktree?.id)
     writeFileSync(
       testInfo.outputPath('bw-cycle-automation-readback.json'),
       JSON.stringify({ existing, replacement }, null, 2)
