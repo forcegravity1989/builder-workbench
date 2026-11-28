@@ -1,0 +1,19 @@
+src/shared/workbench/skill-package.json
+  s_91af594814062b::t_ee5e9f0e17818c 4-7,9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "ce11037498f2d9578f54be92df5c716d6b50be80",
+  "prompts": {},
+  "sessions": {
+    "s_91af594814062b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "230d2283-96d4-4f09-8124-2fd3bbb80d94",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
