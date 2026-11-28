@@ -1,12 +1,14 @@
 import { LoaderCircle, UsersRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { TeamGroupSpaceCombobox } from './TeamGroupSpaceCombobox'
+import {
+  useTeamGroupPicker,
+  type TeamBindingSelection
+} from './use-team-group-picker'
 
 type TeamBindingFormProps = {
-  groupId: string
-  spaceId: string
-  onGroupIdChange: (value: string) => void
-  onSpaceIdChange: (value: string) => void
+  selection: TeamBindingSelection | null
+  onSelectionChange: (next: TeamBindingSelection | null) => void
   switching: boolean
   editedLocally: boolean
   loading: boolean
@@ -15,11 +17,13 @@ type TeamBindingFormProps = {
   onSubmit: () => void
 }
 
+/**
+ * Bind a team by picking its WeLink group by name. Both IDs the team directory
+ * is keyed by are derived from the pick, so neither is ever typed by hand.
+ */
 export function TeamBindingForm({
-  groupId,
-  spaceId,
-  onGroupIdChange,
-  onSpaceIdChange,
+  selection,
+  onSelectionChange,
   switching,
   editedLocally,
   loading,
@@ -27,7 +31,8 @@ export function TeamBindingForm({
   onCancel,
   onSubmit
 }: TeamBindingFormProps): React.JSX.Element {
-  const canSubmit = Boolean(groupId.trim() && spaceId.trim()) && !loading
+  const picker = useTeamGroupPicker(onSelectionChange)
+  const canSubmit = selection !== null && !loading && !picker.resolving
   const action = switching ? '读取并切换' : '绑定团队'
   return (
     <form
@@ -39,27 +44,26 @@ export function TeamBindingForm({
         }
       }}
     >
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="grid min-w-0 gap-1">
-          <span className="text-sm">WeLink 群 ID</span>
-          <Input
-            value={groupId}
-            onChange={(event) => onGroupIdChange(event.target.value)}
-            inputMode="numeric"
-            disabled={loading}
-            autoFocus
-          />
-        </label>
-        <label className="grid min-w-0 gap-1">
-          <span className="text-sm">群空间 ID</span>
-          <Input
-            value={spaceId}
-            onChange={(event) => onSpaceIdChange(event.target.value)}
-            inputMode="numeric"
-            disabled={loading}
-          />
-        </label>
+      <div className="grid min-w-0 gap-1">
+        <span className="text-sm">WeLink 群名称</span>
+        <TeamGroupSpaceCombobox
+          listState={picker.listState}
+          options={picker.options}
+          selection={selection}
+          resolving={picker.resolving}
+          resolveFailure={picker.resolveFailure}
+          disabled={loading}
+          onQueryChange={picker.setQuery}
+          onChoose={picker.choose}
+          onRetry={picker.reload}
+        />
       </div>
+      {selection && (
+        <p className="text-xs text-muted-foreground">
+          群 ID <span className="font-mono">{selection.groupId}</span> · 群空间 ID{' '}
+          <span className="font-mono">{selection.spaceId}</span>
+        </p>
+      )}
       {switching && (
         <p className="text-sm text-muted-foreground">
           已保存的远程主机会保留，可在「管理远程主机」移除。
@@ -68,7 +72,7 @@ export function TeamBindingForm({
       {switching && editedLocally && <p className="text-sm">切换后将丢弃未保存的修改。</p>}
       {failed && (
         <p className="text-sm text-destructive" role="alert">
-          未能读取新团队，当前团队保持不变。核对两个 ID 后重试。
+          未能读取新团队，当前团队保持不变。重新选择群后重试。
         </p>
       )}
       <div className="flex justify-end gap-2">
@@ -78,7 +82,11 @@ export function TeamBindingForm({
           </Button>
         )}
         <Button type="submit" disabled={!canSubmit}>
-          {loading ? <LoaderCircle className="animate-spin" /> : !switching ? <UsersRound /> : null}
+          {loading || picker.resolving ? (
+            <LoaderCircle className="animate-spin" />
+          ) : !switching ? (
+            <UsersRound />
+          ) : null}
           {loading && switching ? '正在读取团队…' : action}
         </Button>
       </div>

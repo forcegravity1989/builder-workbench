@@ -1,5 +1,11 @@
-import { app, ipcMain } from 'electron'
+import { app, ipcMain, session } from 'electron'
 import { resolveWelinkRoute } from '../workbench/reporting/report-submission'
+import {
+  ONEBOX_ORIGIN,
+  listTeamGroupSpaces,
+  resolveTeamGroupId,
+  type OneboxGroupSpaceDeps
+} from '../workbench/team-collaboration/onebox-group-space-client'
 import {
   readTeamDirectory,
   writeTeamDirectory,
@@ -10,11 +16,39 @@ import {
   loadTeamIdentity,
   rememberTeamIdentity
 } from '../workbench/team-collaboration/team-identity'
+import { isTrustedBrowserRenderer } from './browser/browser-renderer-trust'
 import { markRuntimeEnvironmentManuallyDisconnected } from './runtime-environments/connectivity/runtime-environment-manual-disconnect'
 import { invalidateRuntimeEnvironmentTransport } from './runtime-environments/runtime-environments'
+import { resolveSignedInW3Partition } from './w3-account-ipc'
 
 const NUMERIC_ID = /^\d{1,32}$/
 const TEXT_ID = /^.{1,256}$/u
+
+// Why the W3 partition: OneBox accepts the passwordless SSO the user already
+// configured there, so group discovery needs no second login and no credential
+// of its own. The fetch/cookie pair mirrors the wiring in w3-account-ipc.ts.
+const oneboxDeps: OneboxGroupSpaceDeps = {
+  resolvePartition: resolveSignedInW3Partition,
+  fetch: async (partition, url, init) => {
+    try {
+      const response = await session.fromPartition(partition).fetch(url, init)
+      const textPromise = response.text().catch(() => '')
+      return { status: response.status, url: response.url, text: () => textPromise }
+    } catch {
+      return { status: 0, url: '', networkError: true, text: async () => '' }
+    }
+  },
+  readCsrfCookie: async (partition, cookieName) => {
+    try {
+      const cookies = await session
+        .fromPartition(partition)
+        .cookies.get({ name: cookieName, url: ONEBOX_ORIGIN })
+      return cookies[0]?.value ?? null
+    } catch {
+      return null
+    }
+  }
+}
 
 function requireId(value: unknown, name: string): string {
   if (typeof value !== 'string' || !NUMERIC_ID.test(value)) {
@@ -164,4 +198,24 @@ export function registerTeamCollaborationHandlers(): void {
       })
     }
   )
+
+  // Why the trust gate: these two enumerate every group the signed-in W3
+  // account can see, which is broader than the bound team the sibling handlers
+  // already expose. Only the main app window may ask. A refused caller gets a
+  // plain "no usable W3 session" failure rather than a partial list.
+  ipcMain.handle('teamCollaboration:listGroupSpaces', async (event) => {
+    if (!isTrustedBrowserRenderer(event.sender)) {
+      return { ok: false, reason: 'w3-not-signed-in' } as const
+    }
+    return listTeamGroupSpaces(oneboxDeps)
+  })
+
+  ipcMain.handle('teamCollaboration:resolveGroupSpace', async (event, args: { spaceId: string }) => {
+    if (!isTrustedBrowserRenderer(event.sender)) {
+      return { ok: false, reason: 'w3-not-signed-in' } as const
+    }
+    // Why no requireId throw here: this handler answers with a typed result, so
+    // a malformed id is reported the same way as any other unusable space.
+    return resolveTeamGroupId(oneboxDeps, typeof args?.spaceId === 'string' ? args.spaceId : '')
+  })
 }
