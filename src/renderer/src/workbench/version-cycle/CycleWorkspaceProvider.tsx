@@ -58,20 +58,16 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const taskPort = useMemo(() => nativeTaskPort(), [])
   const archivePort = useMemo(() => nativeArchivePrPort(owner), [owner])
   const releasePort = useMemo(() => nativeReleaseStatusPort(owner), [owner])
-  const automation = useEnsureCycleAutomation({
+  useEnsureCycleAutomation({
     cycleScope: scope,
     fixedId,
-    workflow: workflow ?? 'plan',
-    agent,
     onNotice: setNotice,
     version
   })
   const configure = useCycleAutomationDraft({
     cycleScope: scope,
     fixedId,
-    workflow: workflow ?? 'plan',
-    existingId: automation.automationId,
-    creationKey: automation.creationKey,
+    version,
     onError: (error) => notifyWorkbenchError('无法打开自动化配置', error, '检查项目工作区后重试。')
   })
   const start = useCallback(

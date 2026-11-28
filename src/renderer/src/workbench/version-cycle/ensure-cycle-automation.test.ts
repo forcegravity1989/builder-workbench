@@ -86,7 +86,7 @@ it('refreshes a stale BW-owned prompt in place and never recreates the entry', a
       workspaceId: null
     } as Automation
   ])
-  await expect(ensureCycleAutomation(scope, FIXED_ID, 'claude')).resolves.toEqual({
+  await expect(ensureCycleAutomation(scope, FIXED_ID)).resolves.toEqual({
     status: 'exists',
     automationId: 'a1'
   })
@@ -107,7 +107,7 @@ it('keeps an up-to-date entry untouched', async () => {
       workspaceId: null
     } as Automation
   ])
-  await expect(ensureCycleAutomation(scope, FIXED_ID, 'claude')).resolves.toEqual({
+  await expect(ensureCycleAutomation(scope, FIXED_ID)).resolves.toEqual({
     status: 'exists',
     automationId: 'a1'
   })
@@ -125,7 +125,7 @@ it('reports a failed prompt sync without blocking the registered entry', async (
     }
     throw new Error(`unexpected ${method}`)
   })
-  const result = await ensureCycleAutomation(scope, FIXED_ID, 'claude')
+  const result = await ensureCycleAutomation(scope, FIXED_ID)
   expect(result).toMatchObject({ status: 'exists', automationId: 'a1' })
   expect((result as { syncError?: string }).syncError).toBeTruthy()
 })
@@ -135,77 +135,58 @@ it('falls back to the same-name entry on the same fixed tree, not another tree',
     { id: 'elsewhere', name: '每周版本计划', workspaceId: 'another-tree' },
     { id: 'a2', name: '每周版本计划', prompt: 'CYCLE-PROMPT', workspaceId: FIXED_ID }
   ] as unknown as Automation[])
-  await expect(ensureCycleAutomation(scope, FIXED_ID, 'claude')).resolves.toEqual({
+  await expect(ensureCycleAutomation(scope, FIXED_ID)).resolves.toEqual({
     status: 'exists',
     automationId: 'a2'
   })
   expect(createCalls()).toHaveLength(0)
 })
 
-it.each([
-  ['plan', '每周版本计划（BW）', 'FREQ=WEEKLY;BYDAY=MO;BYHOUR=9;BYMINUTE=0'],
-  ['acceptance', '每周版本验收（BW）', 'FREQ=WEEKLY;BYDAY=FR;BYHOUR=16;BYMINUTE=0']
-] as const)('creates the %s automation disabled by default', async (workflow, name, rrule) => {
-  rpcWith([])
-  const before = Date.now()
-  const workflowScope: CycleScope = { ...scope, workflow }
-  await expect(ensureCycleAutomation(workflowScope, FIXED_ID, 'claude')).resolves.toEqual({
-    status: 'created',
-    automationId: 'auto-new'
-  })
-  const [params] = createCalls()
-  expect(params).toMatchObject({
-    creationKey: cycleAutomationCreationKey(workflowScope),
-    name,
-    prompt: 'CYCLE-PROMPT',
-    precheck: null,
-    agentId: 'claude',
-    repo: 'id:repo',
-    workspace: `id:${FIXED_ID}`,
-    workspaceMode: 'existing',
-    reuseSession: false,
-    rrule,
-    enabled: false,
-    destination: { selector: { kind: 'self' } }
-  })
-  expect(params.runContext).toMatchObject({
-    kind: 'workspace-run',
-    projectId: 'project',
-    repoId: 'repo',
-    projectHostSetupId: 'setup-1'
-  })
-  expect(params.timezone).toBeTruthy()
-  // dtstart 是下一次触发时刻：严格晚于创建时刻。
-  expect(params.dtstart).toBeGreaterThan(before)
-  // sourceContext 在 schema 上可选，周期自动化不传。
-  expect(params).not.toHaveProperty('sourceContext')
-})
+it.each(['plan', 'acceptance'] as const)(
+  'does not create a %s automation when the version has none',
+  async (workflow) => {
+    rpcWith([])
+    const workflowScope: CycleScope = { ...scope, workflow }
+    await expect(ensureCycleAutomation(workflowScope, FIXED_ID, 'v0.7')).resolves.toEqual({
+      status: 'absent'
+    })
+    expect(createCalls()).toHaveLength(0)
+    expect(cycleAutomationCreationKey(workflowScope, 'v0.7')).toContain(':v0.7')
+  }
+)
 
-it('does not create when the host setup is not ready', async () => {
+it('does not create when host setup is missing', async () => {
   setState({ projectHostSetups: [] })
   rpcWith([])
-  const result = await ensureCycleAutomation(scope, FIXED_ID, 'claude')
-  expect(result.status).toBe('skipped')
-  expect(result).toHaveProperty('reason')
-  expect((result as { reason: string }).reason).toBeTruthy()
+  await expect(ensureCycleAutomation(scope, FIXED_ID, 'v0.7')).resolves.toEqual({
+    status: 'absent'
+  })
   expect(createCalls()).toHaveLength(0)
 })
 
-it('does not create without a detected session agent', async () => {
-  rpcWith([])
-  const result = await ensureCycleAutomation(scope, FIXED_ID, null)
-  expect(result.status).toBe('skipped')
-  expect((result as { reason: string }).reason).toBeTruthy()
+it('matches a versioned name on the same tree and does not create another', async () => {
+  rpcWith([
+    {
+      id: 'a-ver',
+      name: 'v0.7 每周版本计划（BW）',
+      prompt: 'CYCLE-PROMPT',
+      workspaceId: FIXED_ID
+    }
+  ] as Automation[])
+  await expect(ensureCycleAutomation(scope, FIXED_ID, 'v0.7')).resolves.toEqual({
+    status: 'exists',
+    automationId: 'a-ver'
+  })
   expect(createCalls()).toHaveLength(0)
 })
 
-it('creates once when concurrent callers share one identity', async () => {
+it('does not create when concurrent callers share one identity', async () => {
   rpcWith([])
   const [first, second] = await Promise.all([
-    ensureCycleAutomation(scope, FIXED_ID, 'claude'),
-    ensureCycleAutomation(scope, FIXED_ID, 'claude')
+    ensureCycleAutomation(scope, FIXED_ID, 'v0.7'),
+    ensureCycleAutomation(scope, FIXED_ID, 'v0.7')
   ])
-  expect(first).toEqual({ status: 'created', automationId: 'auto-new' })
+  expect(first).toEqual({ status: 'absent' })
   expect(second).toEqual(first)
-  expect(createCalls()).toHaveLength(1)
+  expect(createCalls()).toHaveLength(0)
 })
