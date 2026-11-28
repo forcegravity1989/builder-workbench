@@ -1,47 +1,54 @@
 import { notifyWorkbenchError } from '../error-feedback'
 /**
- * BW 周期自动化注册：每个 workflow（绑定树再按版本）恰有一条 BW 标识的自动化，
- * 默认关闭。
+ * 周期自动化进屏核对：不自动新建。
  *
- * 身份是 creationKey（旧无绑定固定树 `bw-cycle:<scopeKey>:<workflow>`；G2 绑定
- * 流程树加版本维度 `bw-cycle:<scopeKey>:<workflow>:<version>`——每版独立登记，
- * 不复用旧版条目、不落错执行树）。字段按归属分治：
- * BW 所有的提示词每次进屏覆盖同步为当前 BW 版本（定时执行沿用当前流程入口）；人所有的字段（启用、时间、模型、会话复用）注册
- * 后永不触碰。四铁律：定时任务真实到点触发，且由人启用后才到点，BW 不代启。
+ * 身份是 creationKey（旧无绑定固定树 `bw-cycle:<scopeKey>:<workflow>`；绑定流程树
+ * `bw-cycle:<scopeKey>:<workflow>:<version>`）。同固定树上的旧名字只用于认出早于
+ * creationKey 的条目。找到后只覆盖同步 BW 所有的提示词；人所有的字段（启用、时间、
+ * 模型、会话复用）不触碰。没有条目就停，由人从「配置自动化」预填创建。
+ * 四铁律：定时任务由人启用后才到点，BW 不代启，也不按版本补登记。
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useAppStore } from '@/store'
-import { LOCAL_EXECUTION_HOST_ID, parseExecutionHostId } from '../../../../shared/execution-host/execution-host'
-import type { Automation, AutomationCreateInput } from '../../../../shared/automations/automation-definition'
+import {
+  LOCAL_EXECUTION_HOST_ID,
+  parseExecutionHostId
+} from '../../../../shared/execution-host/execution-host'
+import type { Automation } from '../../../../shared/automations/automation-definition'
 import type {
   AutomationAuthorityRef,
   AutomationOwnerRef,
   StableAutomationHostRef
 } from '../../../../shared/automations/ownership/automation-owner-ref'
 import type { AutomationDestination } from '../../../../shared/automations/ownership/automation-owner-precondition'
-import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
-import {
-  buildAutomationRrule,
-  nextAutomationOccurrenceAfter
-} from '../../../../shared/automations/scheduling/automation-schedule-occurrences'
 import {
   getAutomationAuthorityTarget,
   listAutomationsForTarget
 } from '@/components/automations/hosts/automation-host-client'
-import {
-  createAutomationForDestination,
-  updateAutomationForOwner
-} from '@/components/automations/hosts/automation-scoped-list-client'
+import { updateAutomationForOwner } from '@/components/automations/hosts/automation-scoped-list-client'
 import { automationRuntimePairingRevision } from '@/components/automations/hosts/automation-authority-identity'
-import { buildAutomationRunContextForRepo } from '@/components/automations/authoring/automation-run-context'
 import type { CycleScope } from './ports'
 import { cycleScopeKey } from './native-cycle-workspace'
 import { buildCyclePrompt } from './cycle-prompt'
-import { cycleAutomationHost } from './use-cycle-automation-draft'
 
-/** 首项是 BW 现在创建用的名字；其余是本特性之前预填路径用过的名字，仅参与去重。 */
+/** Automation ownership follows the worktree's native host identity, never the current focus. */
+export function cycleAutomationHost(scope: CycleScope): StableAutomationHostRef {
+  if (scope.runtimeOwnerEnvironmentId) {
+    return {
+      authority: { kind: 'runtime', environmentId: scope.runtimeOwnerEnvironmentId },
+      selector: { kind: 'self' }
+    }
+  }
+  const host = parseExecutionHostId(scope.hostId)
+  if (host?.kind === 'ssh') {
+    return { authority: { kind: 'desktop' }, selector: { kind: 'ssh', targetId: host.targetId } }
+  }
+  return { authority: { kind: 'desktop' }, selector: { kind: 'self' } }
+}
+
+/** 首项是此前自动登记用的名字；其余是更早的预填名字。进屏只用来认出已有条目。 */
 const AUTOMATION_NAMES: Record<VersionWorkflow, readonly string[]> = {
   plan: ['每周版本计划（BW）', '每周版本计划'],
   acceptance: ['每周版本验收（BW）', '每周版本验收']
@@ -53,14 +60,8 @@ function automationNames(workflow: VersionWorkflow, version: string | null): rea
   return version ? [`${version} ${base[0]}`, ...base] : base
 }
 
-/** 本地周频节奏：计划周一 09:00、验收周五 16:00；改时间由人在原生编辑器确认。 */
-const SCHEDULES: Record<VersionWorkflow, { dayOfWeek: number; hour: number; minute: number }> = {
-  plan: { dayOfWeek: 1, hour: 9, minute: 0 },
-  acceptance: { dayOfWeek: 5, hour: 16, minute: 0 }
-}
-
 export function cycleAutomationCreationKey(scope: CycleScope, version?: string | null): string {
-  // G2（P5）：绑定树加版本维度，每版流程树独立登记；旧无绑定树沿旧 key（旧上下文保留）。
+  // 绑定树的身份含版本，用来认出该版已有条目；旧无绑定树沿旧 key。
   const ownerScope = ownerSpelledCycleScope(scope)
   return version
     ? `bw-cycle:${cycleScopeKey(ownerScope)}:${ownerScope.workflow}:${version}`
@@ -79,7 +80,7 @@ function ownerSpelledCycleScope(scope: CycleScope): CycleScope {
 
 export type EnsureCycleAutomationResult =
   | { status: 'exists'; automationId: string; syncError?: string }
-  | { status: 'created'; automationId: string }
+  | { status: 'absent' }
   | { status: 'skipped'; reason: string }
 
 /**
@@ -135,33 +136,37 @@ export function cycleAutomationOwner(scope: CycleScope): AutomationOwnerRef {
   return { authority, selector: destination.selector }
 }
 
-// 同一身份并发只发一次创建；后到者共享在途结果（仿 native-workspace.ts）。
-const creating = new Map<string, Promise<EnsureCycleAutomationResult>>()
+// 进屏和手动配置可以共享同一工作区的在途核对。
+const pendingChecks = new Map<string, Promise<EnsureCycleAutomationResult>>()
 
 export async function ensureCycleAutomation(
   scope: CycleScope,
   fixedId: string,
-  agent: TuiAgent | null,
   version?: string | null
 ): Promise<EnsureCycleAutomationResult> {
   const creationKey = cycleAutomationCreationKey(scope, version)
-  const pending = creating.get(creationKey)
+  const pendingKey = JSON.stringify([
+    creationKey,
+    scope.hostId,
+    scope.runtimeOwnerEnvironmentId,
+    fixedId
+  ])
+  const pending = pendingChecks.get(pendingKey)
   if (pending) {
     return await pending
   }
-  const task = runEnsure(scope, fixedId, agent, creationKey, version ?? null)
-  creating.set(creationKey, task)
+  const task = runEnsure(scope, fixedId, creationKey, version ?? null)
+  pendingChecks.set(pendingKey, task)
   try {
     return await task
   } finally {
-    creating.delete(creationKey)
+    pendingChecks.delete(pendingKey)
   }
 }
 
 async function runEnsure(
   scope: CycleScope,
   fixedId: string,
-  agent: TuiAgent | null,
   creationKey: string,
   version: string | null
 ): Promise<EnsureCycleAutomationResult> {
@@ -171,7 +176,7 @@ async function runEnsure(
   if (!authority) {
     return {
       status: 'skipped',
-      reason: '宿主登记未就绪（缺运行时配对版本或 SSH 注册代次），未注册周期自动化。'
+      reason: '宿主登记未就绪（缺运行时配对版本或 SSH 注册代次），未核对周期自动化。'
     }
   }
   // 列表目标按工作树的宿主身份取（getAutomationAuthorityTarget），不随当前焦点环境。
@@ -184,12 +189,11 @@ async function runEnsure(
   if (existing) {
     // BW 持续演进：提示词是 BW 所有字段，每次进屏覆盖同步为当前版本；
     // 人所有字段（启用开关、触发时间、模型、会话复用）永不触碰。
-    const prompt = await buildCyclePrompt(scope, fixedId)
-    if (existing.prompt === prompt) {
-      return { status: 'exists', automationId: existing.id }
-    }
     try {
-      await updateAutomationForOwner(cycleAutomationOwner(scope), existing.id, { prompt })
+      const prompt = await buildCyclePrompt(scope, fixedId)
+      if (existing.prompt !== prompt) {
+        await updateAutomationForOwner(cycleAutomationOwner(scope), existing.id, { prompt })
+      }
       return { status: 'exists', automationId: existing.id }
     } catch (reason) {
       // 同步失败不阻断：已有条目仍可手动运行，如实提示让人核对。
@@ -200,88 +204,29 @@ async function runEnsure(
       }
     }
   }
-  if (!agent) {
-    return { status: 'skipped', reason: '未检测到可用会话工具，未注册周期自动化。' }
-  }
-  const state = useAppStore.getState()
-  const runContext = buildAutomationRunContextForRepo({
-    repoId: scope.repoId,
-    repos: state.repos,
-    projectHostSetups: state.projectHostSetups
-  })
-  if (!runContext) {
-    return { status: 'skipped', reason: '宿主 setup 未就绪，未注册周期自动化。' }
-  }
-  const destination = destinationFor(host)
-  if (!destination) {
-    return { status: 'skipped', reason: '宿主登记未就绪（缺 SSH 注册代次），未注册周期自动化。' }
-  }
-  const rrule = buildAutomationRrule({ preset: 'weekly', ...SCHEDULES[scope.workflow] })
-  const now = Date.now()
-  const input: AutomationCreateInput = {
-    creationKey,
-    name: names[0],
-    prompt: await buildCyclePrompt(scope, fixedId),
-    precheck: null,
-    agentId: agent,
-    runContext,
-    // 遗留 repo 字段与 runContext 成对：机器选择器由它推导（id:<repoId>）。
-    projectId: scope.repoId,
-    workspaceMode: 'existing',
-    workspaceId: fixedId,
-    baseBranch: null,
-    reuseSession: false,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    rrule,
-    dtstart: nextAutomationOccurrenceAfter(rrule, now, now),
-    missedRunGraceMinutes: 720,
-    enabled: false
-    // sourceContext 在 automation-params.ts 的 schema 与 AutomationCreateInput 类型上
-    // 均可选可空（TaskSourceContext.optional().nullable()），周期自动化没有任务源，不传。
-  }
-  const created = await createAutomationForDestination(authority, input, destination)
-  return { status: 'created', automationId: created.id }
+  return { status: 'absent' }
 }
 
-/**
- * 壳层接线：固定树就绪后按身份注册，已有条目覆盖同步 BW 所有的提示词；
- * 返回已存在/新建条目的 id 与身份键，供「配置自动化」按钮决定编辑还是预填。
- * 跳过与失败都非致命，失败通过全局通知报告。
- */
 export function useEnsureCycleAutomation({
   cycleScope,
   fixedId,
-  workflow,
-  agent,
   onNotice,
   version = null
 }: {
   cycleScope: CycleScope | null
   fixedId: string | null
-  workflow: VersionWorkflow
-  agent: TuiAgent | null
   onNotice(message: string): void
-  /**
-   * G2（P5）：绑定树的版本——进 creationKey/条目名/提示词（提示词由
-   * resolveWorkbenchPromptAssets 按树绑定自检，此处只负责身份与命名）。
-   */
+  /** 绑定树的版本，只进入身份与命名；提示词由 resolveWorkbenchPromptAssets 按树绑定自检。 */
   version?: string | null
-}): { automationId: string | null; creationKey: string | null } {
-  const [registered, setRegistered] = useState<{ key: string; id: string } | null>(null)
-  const scopeKey =
-    cycleScope && fixedId ? `${cycleScopeKey(cycleScope)}:${fixedId}:${version ?? ''}` : null
+}): void {
   useEffect(() => {
-    if (!cycleScope || !fixedId || !scopeKey) {
-      return
-    }
-    if (!agent) {
-      // 工具检测未完成时先不注册；agent 就绪后本 effect 重跑再试（未标记尝试）。
+    if (!cycleScope || !fixedId) {
       return
     }
     let active = true
     void (async () => {
       try {
-        const result = await ensureCycleAutomation(cycleScope, fixedId, agent, version)
+        const result = await ensureCycleAutomation(cycleScope, fixedId, version)
         if (!active) {
           return
         }
@@ -289,30 +234,17 @@ export function useEnsureCycleAutomation({
           onNotice(result.reason)
           return
         }
-        setRegistered({ key: scopeKey, id: result.automationId })
-        if (result.status === 'created') {
-          onNotice(
-            workflow === 'plan'
-              ? `已注册${version ? ` ${version} ` : '每周版本'}计划自动化（默认关闭）：在自动化页启用后，每周一 09:00 触发。`
-              : `已注册${version ? ` ${version} ` : '每周版本'}验收自动化（默认关闭）：在自动化页启用后，每周五 16:00 触发。`
-          )
-        }
         if (result.status === 'exists' && result.syncError) {
           notifyWorkbenchError('周期自动化未更新', result.syncError, '可从配置自动化入口重试。')
         }
       } catch (reason) {
-        // 注册失败不打断本页：会话与看板照常，「配置自动化」仍可手工预填创建。
         if (active) {
-          notifyWorkbenchError('周期自动化未注册', reason, '可从配置自动化入口重试。')
+          notifyWorkbenchError('周期自动化未核对', reason, '可从配置自动化入口重试。')
         }
       }
     })()
     return () => {
       active = false
     }
-  }, [scopeKey, cycleScope, fixedId, workflow, agent, onNotice, version])
-  return {
-    automationId: registered?.key === scopeKey ? registered.id : null,
-    creationKey: cycleScope ? cycleAutomationCreationKey(cycleScope, version) : null
-  }
+  }, [cycleScope, fixedId, onNotice, version])
 }
