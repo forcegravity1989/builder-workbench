@@ -1,5 +1,4 @@
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { botTemplateAvailable } from '../../../../../shared/bots/bot-templates'
 // Bot templates: a large dialog over the app with the Setup guide's frame. One list in category order
 // (search, category chips, sticky headings) beside the selected template's detail; when the dialog is
 // narrow the detail opens in place of the list. Use opens New bot over it, prefilled: nothing is made
@@ -34,6 +33,7 @@ import { openBotShareLink } from '../sharing/bot-share-receive-open'
 import { templateProposal } from '../../../../../shared/bots/bot-proposal'
 import {
   BOT_TEMPLATE_CATEGORIES,
+  botTemplateAvailable,
   type BotTemplate,
   type BotTemplateCategory
 } from '../../../../../shared/bots/bot-templates'
