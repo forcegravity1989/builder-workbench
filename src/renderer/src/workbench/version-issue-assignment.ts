@@ -51,21 +51,30 @@ export async function writeIssueVersionAssignment(args: {
     if (!repository) {
       throw new IssueAssignmentError('没有读回 Issue 所在仓库，不能改标题和计划标签')
     }
-    try {
-      await runIssueUpdate({
-        repoPath: args.repo.path,
-        repoId: args.repo.id,
-        sourceContext: args.source,
-        projectOrigin: undefined,
-        issueRepo: repository,
-        number: args.number,
-        updates: {
-          ...(result.titleChanged ? { title: next.title } : {}),
-          ...(next.addedLabel ? { addLabels: [next.addedLabel] } : {})
-        }
-      })
-    } catch (reason) {
-      throw new IssueAssignmentError('Issue 标题和计划标签没有更新', { cause: reason })
+    const target = {
+      repoPath: args.repo.path,
+      repoId: args.repo.id,
+      sourceContext: args.source,
+      projectOrigin: undefined,
+      issueRepo: repository,
+      number: args.number
+    }
+    if (next.addedLabel) {
+      try {
+        await runIssueUpdate({ ...target, updates: { addLabels: [next.addedLabel] } })
+      } catch (reason) {
+        throw new IssueAssignmentError('未能确认计划标签已加上，Issue 标题未改', { cause: reason })
+      }
+    }
+    if (result.titleChanged) {
+      try {
+        await runIssueUpdate({ ...target, updates: { title: next.title } })
+      } catch (reason) {
+        throw new IssueAssignmentError(
+          next.addedLabel ? '计划标签已加上，未能确认标题更新' : '未能确认 Issue 标题更新',
+          { cause: reason }
+        )
+      }
     }
     return result
   }
@@ -95,7 +104,7 @@ export async function writeIssueVersionAssignment(args: {
         throw new Error('计划标签没有出现在读回结果里')
       }
     } catch (reason) {
-      throw new IssueAssignmentError('计划标签没有加上，Issue 标题未改', { cause: reason })
+      throw new IssueAssignmentError('未能确认计划标签已加上，Issue 标题未改', { cause: reason })
     }
   }
   if (result.titleChanged) {

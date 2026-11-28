@@ -360,10 +360,14 @@ export function VersionTreeBindDialog({
       onClose()
     } catch (reason) {
       if (reason instanceof IssueAssignmentError) {
-        notifyWorkbenchError(reason.message, reason.cause ?? reason, '工作区尚未绑定，可重新保存。')
+        notifyWorkbenchError(
+          reason.message,
+          reason.cause ?? reason,
+          '本次工作区绑定未保存，可重试。'
+        )
       } else if (remoteIssueUpdated) {
         notifyWorkbenchError(
-          'Issue 已写上该版本的计划标签和标题，工作区还没有绑定',
+          'Issue 已写上该版本的计划标签和标题，未能确认本次工作区绑定',
           reason,
           '可重新保存。'
         )
