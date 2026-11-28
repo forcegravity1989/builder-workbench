@@ -2,7 +2,8 @@ import { isIP } from 'node:net'
 import { networkInterfaces } from 'node:os'
 import {
   isVirtualBridgeInterface,
-  selectAutoAdvertisedPairingAddress
+  selectAutoAdvertisedPairingAddress,
+  type PairingNetworkInterface
 } from '../../../../../../shared/remote-runtime/pairing/pairing-address-auto-selection'
 import { isLinkLocalAddress } from '../../../../../../shared/network/link-local-address'
 import { isTailnetIPv4Address } from '../../../../../../shared/network/tailnet-address'
@@ -32,15 +33,17 @@ function isProxyFakeIpIPv4Address(address: string): boolean {
 /** `listenerHost` is the WS listener's network bind; only addresses of a family it accepts are offered. */
 export async function getPairingNetworkInterfaces(
   listenerHost: string,
-  getDefaultRouteInterfaceNames: DefaultRouteInterfaceLookup = getWindowsDefaultRouteInterfaceNames
+  getDefaultRouteInterfaceNames: DefaultRouteInterfaceLookup = getWindowsDefaultRouteInterfaceNames,
+  preferDefaultRoute = false
 ): Promise<NetworkInterface[]> {
   const result: NetworkInterface[] = []
   const interfaces = networkInterfaces()
   const hasHyperVInterface = Object.keys(interfaces).some((name) => /^vEthernet /i.test(name))
   // Unknown default route cannot attest vEthernet reachability.
-  const defaultRouteInterfaceNames = hasHyperVInterface
-    ? await getDefaultRouteInterfaceNames()
-    : new Set<string>()
+  const defaultRouteInterfaceNames =
+    hasHyperVInterface || preferDefaultRoute
+      ? await getDefaultRouteInterfaceNames()
+      : new Set<string>()
   const normalizedDefaultRouteInterfaceNames =
     defaultRouteInterfaceNames === null
       ? null
@@ -69,26 +72,38 @@ export async function getPairingNetworkInterfaces(
       })
     }
   }
-  return result.sort((a, b) => rankInterface(a) - rankInterface(b))
+  return result.sort(
+    (a, b) => rankInterface(a, hasHyperVInterface) - rankInterface(b, hasHyperVInterface)
+  )
 }
 
-function rankInterface({ name, address, hasDefaultRoute }: NetworkInterface): number {
+function rankInterface(
+  { name, address, hasDefaultRoute }: NetworkInterface,
+  useDefaultRouteInRanking: boolean
+): number {
   if (isTailnetIPv4Address(address)) {
     return 0
   }
   const bridgePenalty = isVirtualBridgeInterface(name, hasDefaultRoute) ? 2 : 0
   // The default-route adapter is the one the LAN reaches; it wins ties with idle or VPN adapters.
-  const defaultRouteBonus = hasDefaultRoute ? 0.5 : 0
+  const defaultRouteBonus = useDefaultRouteInRanking && hasDefaultRoute ? 0.5 : 0
   return (address.includes(':') ? 2 : 1) + bridgePenalty - defaultRouteBonus
 }
 
 export async function getDefaultPairingAddress(
   listenerHost: string,
-  getDefaultRouteInterfaceNames: DefaultRouteInterfaceLookup = getWindowsDefaultRouteInterfaceNames
+  getDefaultRouteInterfaceNames: DefaultRouteInterfaceLookup = getWindowsDefaultRouteInterfaceNames,
+  selectAddress: (
+    interfaces: readonly PairingNetworkInterface[]
+  ) => string | undefined = selectAutoAdvertisedPairingAddress
 ): Promise<string | null> {
   return (
-    selectAutoAdvertisedPairingAddress(
-      await getPairingNetworkInterfaces(listenerHost, getDefaultRouteInterfaceNames)
+    selectAddress(
+      await getPairingNetworkInterfaces(
+        listenerHost,
+        getDefaultRouteInterfaceNames,
+        selectAddress !== selectAutoAdvertisedPairingAddress
+      )
     ) ?? null
   )
 }

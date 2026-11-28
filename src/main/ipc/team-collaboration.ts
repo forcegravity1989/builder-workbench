@@ -1,4 +1,8 @@
 import { BrowserWindow, app, ipcMain, session } from 'electron'
+import { removeEnvironment } from '../../shared/remote-runtime/host-store/runtime-environment-store'
+import type { Store } from '../persistence/loading-store/store'
+import { retireRemovedRuntimeEnvironment } from './runtime-environments/catalog/runtime-environment-removal-cleanup'
+import { runBeforeRuntimeEnvironmentRemoval } from './runtime-environments/catalog/runtime-environment-removal-hooks'
 import { resolveWelinkRoute } from '../workbench/reporting/report-submission'
 import {
   CSRF_COOKIE_NAME,
@@ -221,7 +225,7 @@ function requireDirectory(value: unknown): TeamDirectory {
   }
 }
 
-export function registerTeamCollaborationHandlers(): void {
+export function registerTeamCollaborationHandlers(store: Store): void {
   const userDataPath = app.getPath('userData')
   loadTeamIdentity(userDataPath)
   let activeBinding: { groupId: string; spaceId: string; initializedByRead: boolean } | undefined
@@ -271,7 +275,7 @@ export function registerTeamCollaborationHandlers(): void {
         previousBinding &&
         (previousBinding.groupId !== groupId || previousBinding.spaceId !== spaceId)
       ) {
-        return { added: 0, updated: 0 }
+        return { added: 0, updated: 0, failed: 0 }
       }
       const { directory, currentMemberId } = await readTeamDirectory({
         route: await resolveWelinkRoute(),
@@ -279,14 +283,36 @@ export function registerTeamCollaborationHandlers(): void {
         spaceId
       })
       if (activeBinding !== previousBinding) {
-        return { added: 0, updated: 0 }
+        return { added: 0, updated: 0, failed: 0 }
       }
       rememberTeamIdentity(userDataPath, directory.hosts, currentMemberId)
       return syncTeamHosts(directory.hosts, currentMemberId, {
         userDataPath,
         isCurrentBinding: () => activeBinding === previousBinding,
         holdDisconnected: markRuntimeEnvironmentManuallyDisconnected,
-        invalidateTransport: invalidateRuntimeEnvironmentTransport
+        invalidateTransport: invalidateRuntimeEnvironmentTransport,
+        removeStaleHost: async (environmentId, expectedPairingRevision) => {
+          if (store.getSettings().activeRuntimeEnvironmentId === environmentId) {
+            return false
+          }
+          await runBeforeRuntimeEnvironmentRemoval(environmentId)
+          if (
+            activeBinding !== previousBinding ||
+            store.getSettings().activeRuntimeEnvironmentId === environmentId
+          ) {
+            return false
+          }
+          await removeEnvironment(userDataPath, environmentId, { expectedPairingRevision })
+          await retireRemovedRuntimeEnvironment(
+            environmentId,
+            invalidateRuntimeEnvironmentTransport,
+            store,
+            userDataPath
+          ).catch((error: unknown) => {
+            console.warn('[workbench-team-hosts] Failed to retire removed host transport:', error)
+          })
+          return true
+        }
       })
     }
   )
@@ -314,12 +340,15 @@ export function registerTeamCollaborationHandlers(): void {
     return listTeamGroupSpaces(oneboxDeps)
   })
 
-  ipcMain.handle('teamCollaboration:resolveGroupSpace', async (event, args: { spaceId: string }) => {
-    if (!isTrustedBrowserRenderer(event.sender)) {
-      return { ok: false, reason: 'w3-not-signed-in' } as const
+  ipcMain.handle(
+    'teamCollaboration:resolveGroupSpace',
+    async (event, args: { spaceId: string }) => {
+      if (!isTrustedBrowserRenderer(event.sender)) {
+        return { ok: false, reason: 'w3-not-signed-in' } as const
+      }
+      // Why no requireId throw here: this handler answers with a typed result, so
+      // a malformed id is reported the same way as any other unusable space.
+      return resolveTeamGroupId(oneboxDeps, typeof args?.spaceId === 'string' ? args.spaceId : '')
     }
-    // Why no requireId throw here: this handler answers with a typed result, so
-    // a malformed id is reported the same way as any other unusable space.
-    return resolveTeamGroupId(oneboxDeps, typeof args?.spaceId === 'string' ? args.spaceId : '')
-  })
+  )
 }

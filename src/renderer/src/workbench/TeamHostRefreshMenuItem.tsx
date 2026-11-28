@@ -10,6 +10,12 @@ export function TeamHostRefreshMenuItem(): React.JSX.Element | null {
   const refresh = async (): Promise<void> => {
     try {
       const result = await syncTeamHosts()
+      if (result?.failed) {
+        toast.warning(
+          `有 ${result.failed} 位成员的主机未能同步。请在「管理远程主机」核对现有记录后重试。`
+        )
+        return
+      }
       const changed = (result?.added ?? 0) + (result?.updated ?? 0)
       toast.success(
         changed > 0

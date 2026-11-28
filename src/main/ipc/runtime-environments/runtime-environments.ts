@@ -114,16 +114,16 @@ export async function invalidateRuntimeEnvironmentTransport(environmentId: strin
   closeSubscriptionsForEnvironment(environmentId)
   retireMobileDesktopRelayEnvironment(environmentId)
   resetDesktopBrowserBridgeEnvironment(environmentId)
-  await reactivateRuntimeEnvironmentStatus(environmentId)
-  return retirePairedRuntimeBrowserClientHostEnvironment(
-    environmentId,
-    new Error('Runtime environment transport was invalidated')
-  ).then(
-    () => undefined,
-    (error) => {
+  try {
+    await reactivateRuntimeEnvironmentStatus(environmentId)
+  } finally {
+    await retirePairedRuntimeBrowserClientHostEnvironment(
+      environmentId,
+      new Error('Runtime environment transport was invalidated')
+    ).catch((error: unknown) => {
       console.warn('[runtime-environments] browser client host retirement failed:', error)
-    }
-  )
+    })
+  }
 }
 
 /** CLI update/rollback re-pairing needs a new status owner to publish the saved revision to renderers. */

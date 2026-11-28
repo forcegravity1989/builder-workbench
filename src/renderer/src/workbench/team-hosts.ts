@@ -1,4 +1,5 @@
 import { useAppStore } from '@/store'
+import type { TeamHostSyncResult } from '../../../shared/team-directory'
 
 const TEAM_GROUP_STORAGE_KEY = 'bw:team-group-id'
 const TEAM_SPACE_STORAGE_KEY = 'bw:team-space-id'
@@ -29,7 +30,7 @@ export function hasTeamBinding(): boolean {
 }
 
 /** Saves the other members' published links as disconnected remote hosts; null without a binding. */
-export async function syncTeamHosts(): Promise<{ added: number; updated: number } | null> {
+export async function syncTeamHosts(): Promise<TeamHostSyncResult | null> {
   const { groupId, spaceId } = rememberedTeamBinding()
   if (!groupId || !spaceId) {
     return null

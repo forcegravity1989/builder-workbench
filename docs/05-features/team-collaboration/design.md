@@ -42,13 +42,13 @@
 
 ## 关键代码落点
 
-| 能力 | 现有落点 | G1 适配 |
-| --- | --- | --- |
-| 群发现 | `src/main/workbench/team-collaboration/onebox-group-space-client.ts`、`src/renderer/src/workbench/TeamGroupSpaceCombobox.tsx`、`use-team-group-picker.ts` | W3 分区隐藏窗口预热 SSO、分页列表本地匹配、选定后按需解析群 ID |
-| 团队目录 | `src/main/workbench/team-collaboration/team-directory-client.ts`、`src/main/ipc/team-collaboration.ts`、`src/renderer/src/workbench/TeamSettingsDialog.tsx` | 群成员/群主读回、`BW/team.json` 读写、登记即标为团队项目、地址一键填入 |
-| 项目聚合 | `ProjectWallPage`、项目来源与仓库身份读取 | 以 `repoId` 聚合团队来源，保留现有卡片和未连接状态 |
-| Orca 连接 | `SshStatusSegment`、`RuntimePairingUrlGenerator`、`DeviceRegistry` | 默认 `team-read`，共享访问列表按成员显示，保留来源身份 |
-| 只读路由 | `runtime-rpc-team-read-policy.ts`、WebSocket dispatch | 默认放行，只拒绝四类动作的核心入口 |
-| 日志 | `runtime-access-audit.ts`、`RuntimeAccessAuditLog.tsx` | 14 天轮转、筛选/清理、抑制成功常规读取 |
+| 能力      | 现有落点                                                                                                                                                                         | G1 适配                                                                                                                                                                                                                     |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 群发现    | `src/main/workbench/team-collaboration/onebox-group-space-client.ts`、`src/renderer/src/workbench/TeamGroupSpaceCombobox.tsx`、`use-team-group-picker.ts`                        | W3 分区隐藏窗口预热 SSO、分页列表本地匹配、选定后按需解析群 ID                                                                                                                                                              |
+| 团队目录  | `src/main/workbench/team-collaboration/team-directory-client.ts`、`team-host-sync.ts`、`src/main/ipc/team-collaboration.ts`、`src/renderer/src/workbench/TeamSettingsDialog.tsx` | 群成员/群主读回、`BW/team.json` 读写、登记即标为团队项目。`mobile:getRuntimePairingUrl` 生成团队链接时优先选择合适的办公网 `10.x`，无候选时复用原生自动选择。刷新时按配对公钥或已记住的成员写回原主机，旧团队地址不另存一台 |
+| 项目聚合  | `ProjectWallPage`、项目来源与仓库身份读取                                                                                                                                        | 以 `repoId` 聚合团队来源，保留现有卡片和未连接状态                                                                                                                                                                          |
+| Orca 连接 | `SshStatusSegment`、`RuntimePairingUrlGenerator`、`DeviceRegistry`                                                                                                               | 默认 `team-read`，共享访问列表按成员显示，保留来源身份                                                                                                                                                                      |
+| 只读路由  | `runtime-rpc-team-read-policy.ts`、WebSocket dispatch                                                                                                                            | 默认放行，只拒绝四类动作的核心入口                                                                                                                                                                                          |
+| 日志      | `runtime-access-audit.ts`、`RuntimeAccessAuditLog.tsx`                                                                                                                           | 14 天轮转、筛选/清理、抑制成功常规读取                                                                                                                                                                                      |
 
 原型 [prototype.html](prototype.html) 只表达上述入口、状态和旅程；不另造生产组件或协议。生产实现必须回查原生组件与本设计，不能把原型中的示例头像、地址或目录数据当作真实事实。

@@ -242,7 +242,7 @@ export function TeamSettingsDialog({
   }, [open])
 
   const saveDirectory = async (): Promise<void> => {
-    if (!directory || !directory.team_group_id || !directory.team_space_id) {
+    if (!directory?.team_group_id || !directory.team_space_id) {
       notifyWorkbenchError('团队信息不完整', null, '重新绑定团队后再保存。')
       return
     }
@@ -308,7 +308,11 @@ export function TeamSettingsDialog({
           : current
       )
     } catch (cause) {
-      notifyWorkbenchError('Orca 共享地址生成失败', cause, '检查共享主机配置后重试。')
+      notifyWorkbenchError(
+        'Orca 共享地址生成失败',
+        cause,
+        '检查网络和共享主机配置后重试。仍无法生成时，可以问 Monica。'
+      )
     } finally {
       setGeneratingHostId(null)
     }

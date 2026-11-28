@@ -6,6 +6,7 @@ import type {
 } from '../../../../../shared/remote-runtime/pairing/pairing-create-offer-contract'
 import { classifyRemotePairingHostname } from '../../../../../shared/remote-runtime/pairing/remote-pairing-address'
 import type { RuntimePairingReach } from '../../../../../shared/remote-runtime/pairing/runtime-pairing-reach'
+import { selectTeamOfficeAddress } from '../../../../../shared/team-host-address'
 import { renderServePairingQr } from '../../../../server/serve-pairing-output'
 import { NETWORK_EXPOSURE_FAILED_GUIDANCE } from './network/network-exposure-guidance'
 import { resolveAdvertisedPairingHostname } from './network/pairing-endpoint'
@@ -52,10 +53,14 @@ function servesThisComputerOnly(reach: RuntimePairingReach | undefined, address:
 async function pairingAddress(
   server: PairingOfferServer,
   address: string | undefined,
-  lookup: DefaultRouteInterfaceLookup
+  lookup: DefaultRouteInterfaceLookup,
+  selectAddress?: Parameters<typeof getDefaultPairingAddress>[2]
 ): Promise<string | null> {
   // Explicit interfaces support overlay networks unreachable through the default LAN candidate.
-  return address ?? (await getDefaultPairingAddress(server.getNetworkExposureBindHost(), lookup))
+  return (
+    address ??
+    (await getDefaultPairingAddress(server.getNetworkExposureBindHost(), lookup, selectAddress))
+  )
 }
 
 export async function requestMobilePairingOffer(
@@ -115,7 +120,12 @@ export async function requestRuntimePairingOffer(
   },
   lookup: DefaultRouteInterfaceLookup = getWindowsDefaultRouteInterfaceNames
 ): Promise<ReturnType<PairingOfferServer['createPairingOffer']>> {
-  const ip = await pairingAddress(server, args.address, lookup)
+  const ip = await pairingAddress(
+    server,
+    args.address,
+    lookup,
+    args.teamBinding ? selectTeamOfficeAddress : undefined
+  )
   if (!ip) {
     return pairingUnavailable('invalid_advertised_endpoint', NO_PAIRING_ADDRESS_GUIDANCE)
   }

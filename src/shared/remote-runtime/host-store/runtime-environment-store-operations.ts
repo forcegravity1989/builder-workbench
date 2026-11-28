@@ -144,11 +144,24 @@ export function parseRemotePairingCode(userDataPath: string, pairingCode: string
   return offer
 }
 
-export function removeEnvironment(userDataPath: string, selector: string): KnownRuntimeEnvironment {
+export function removeEnvironment(
+  userDataPath: string,
+  selector: string,
+  options?: { expectedPairingRevision?: number }
+): KnownRuntimeEnvironment {
   const environment = resolveEnvironmentFromStore(readEnvironmentStore(userDataPath), selector)
   assertNoIndependentSshAccess(environment)
   const store = readPersistedEnvironmentStore(userDataPath)
   const persisted = resolveEnvironmentFromStore(store, environment.id)
+  if (
+    options?.expectedPairingRevision !== undefined &&
+    (persisted.pairingRevision ?? persisted.createdAt) !== options.expectedPairingRevision
+  ) {
+    throw new RuntimeEnvironmentStoreError(
+      'runtime_error',
+      'The saved pairing changed before removal.'
+    )
+  }
   const remaining = store.environments.filter((entry) => entry.id !== environment.id)
   writeEnvironmentStore(userDataPath, { version: 1, environments: remaining })
   // A leftover entry would read as stale anyway; dropping it keeps the sidecar from growing.
@@ -189,7 +202,13 @@ export function setEnvironmentReconnectOnLaunch(
 export function updateEnvironmentFromPairingCode(
   userDataPath: string,
   selector: string,
-  args: { pairingCode: string; now?: number; runtimeId?: string; expectedPairingRevision?: number }
+  args: {
+    pairingCode: string
+    now?: number
+    runtimeId?: string
+    expectedPairingRevision?: number
+    rejectDuplicateHostKey?: boolean
+  }
 ): KnownRuntimeEnvironment {
   const offer = parseRemotePairingCode(userDataPath, args.pairingCode)
   const current = resolveEnvironmentFromStore(readEnvironmentStore(userDataPath), selector)
@@ -206,7 +225,8 @@ export function updateEnvironmentFromPairingCode(
   return replaceEnvironmentPairing(userDataPath, selector, offer, {
     now: args.now ?? Date.now(),
     runtimeId: args.runtimeId,
-    connectionDependency: current.connectionDependency
+    connectionDependency: current.connectionDependency,
+    rejectDuplicateHostKey: args.rejectDuplicateHostKey
   })
 }
 
@@ -215,10 +235,24 @@ export function replaceEnvironmentPairing(
   userDataPath: string,
   selector: string,
   offer: PairingOffer,
-  args: { now: number; runtimeId?: string; connectionDependency?: 'ssh-tunnel' }
+  args: {
+    now: number
+    runtimeId?: string
+    connectionDependency?: 'ssh-tunnel'
+    rejectDuplicateHostKey?: boolean
+  }
 ): KnownRuntimeEnvironment {
   const store = readPersistedEnvironmentStore(userDataPath)
   const existing = resolveEnvironmentFromStore(store, selector)
+  if (args.rejectDuplicateHostKey) {
+    const duplicate = findEnvironmentWithHostKey(
+      store.environments.filter((entry) => entry.id !== existing.id),
+      offer.publicKeyB64
+    )
+    if (duplicate) {
+      throw remoteServerPairingStoreError('alreadyPairedAddAgain', { name: duplicate.name })
+    }
+  }
   const previousPairingRevision = existing.pairingRevision ?? existing.createdAt
   const environment = createEnvironmentFromPairingOffer({
     id: existing.id,
