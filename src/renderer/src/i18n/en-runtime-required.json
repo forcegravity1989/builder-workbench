@@ -1900,6 +1900,7 @@
     },
     "templateSkills": {
       "lines": {
+        "welink-meeting": "Book a WeLink meeting and read back its details.",
         "bug-reproduction": "Write down the exact steps that show the bug before looking for its cause.",
         "ci-failure-triage": "Tell a flaky check from a real failure or broken infrastructure, and find the commit that started it.",
         "dependency-upgrade": "Upgrade one group at a time, read the changelog, run the tests, one pull request each.",
@@ -1979,6 +1980,17 @@
         "name": "Bug investigation",
         "reports": "Here, when it has a repro and a cause",
         "watches": "Bug reports you hand it, and Linear issues assigned to you"
+      },
+      "bw-meeting": {
+        "does": "Books a WeLink meeting and reads back the meeting number and join link.",
+        "example1": "Project discussion: Friday 10:00–10:30, booked via WeLink.",
+        "example2": "The meeting number and join link are ready.",
+        "firstChat": "Checks WeLink on this computer, then previews the subject, time and attendees before booking.",
+        "line": "Books a WeLink meeting after you confirm the details.",
+        "name": "WeLink meeting assistant",
+        "needsSetup": "welink-cli signed in on this machine; run welink-cli auth status to check.",
+        "reports": "Here, when you ask",
+        "watches": "Your meeting request"
       },
       "ci-failures": {
         "does": "Tells flaky checks from real failures, explains each failure, and keeps a list of flaky checks.",

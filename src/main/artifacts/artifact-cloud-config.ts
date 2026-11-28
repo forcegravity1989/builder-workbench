@@ -1,4 +1,5 @@
 import { app } from 'electron'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 
 const PRODUCTION_ARTIFACTS_API_URL = 'https://share.onorca.dev'
 
@@ -37,5 +38,5 @@ export function allowsArtifactCloudAuthOverride(
   env: NodeJS.ProcessEnv = process.env,
   packaged = isPackaged()
 ): boolean {
-  return env.NODE_ENV !== 'production' && !packaged
+  return !isWorkbenchProduct(env) && env.NODE_ENV !== 'production' && !packaged
 }

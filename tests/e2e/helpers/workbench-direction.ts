@@ -97,8 +97,12 @@ export async function runDirectionJourney(
   await click(charter.getByRole('button', { name: '运营看板', exact: true }))
 
   await observer.chapter?.(2)
+  const milestoneGuide = page.locator('[data-contextual-tour-panel="workbench-milestones"]')
+  // The guide can appear after milestone data becomes available, during a later action.
+  await page.addLocatorHandler(milestoneGuide, async (panel) => {
+    await panel.locator('[data-contextual-tour-skip]').click()
+  })
   await click(board.getByRole('button', { name: '规划里程碑', exact: true }))
-  await dismissGuide()
   await board.getByLabel('定位日期', { exact: true }).fill('2026-11-23')
   await click(board.getByRole('button', { name: '添加里程碑', exact: true }))
   const milestone = page.getByRole('dialog', { name: '添加里程碑', exact: true })
@@ -129,4 +133,5 @@ export async function runDirectionJourney(
     })
     await observer.result?.('review-submitted')
   }
+  await page.removeLocatorHandler(milestoneGuide)
 }

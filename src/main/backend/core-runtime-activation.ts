@@ -32,6 +32,7 @@ import { restoreOrcadTerminalAuthority } from '../orcad/host-runtime/orcad-resto
 import { installOrcadFeatureReadiness } from '../runtime/rpc/startup/orcad-readiness'
 import { isAgentStatusHooksEnabled } from '../../shared/agent-hook-listener/configuration/agent-status-hooks-setting'
 import { installOrcadConnectorHost, installOrcadRelayAndAccount } from '../orcad/orcad-orca-account'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 
 export async function activateBackendRuntime(
   host: BackendCoreHost,
@@ -217,9 +218,11 @@ export async function activateBackendRuntime(
   const { installOrcadEmulatorBridge } = await import('../orcad/host-runtime/orcad-emulator-bridge')
   installOrcadEmulatorBridge(runtime, registerCleanup)
   const relay = await installOrcadRelayAndAccount(runtime, registerCleanup)
-  // Agents here set Google up through a paired desktop's browser; their key and secret stay here.
-  const { installGoogleSetupHostWatch } = await import('../google/google-setup-host-watch')
-  registerCleanup(installGoogleSetupHostWatch(runtime))
+  if (!isWorkbenchProduct()) {
+    // Agents here set Google up through a paired desktop's browser; their key and secret stay here.
+    const { installGoogleSetupHostWatch } = await import('../google/google-setup-host-watch')
+    registerCleanup(installGoogleSetupHostWatch(runtime))
+  }
 
   // Restore prior desktop-pushed account selection before automations or CLI launches.
   const { restoreOrcadHostAccountLaunchEnv } =
