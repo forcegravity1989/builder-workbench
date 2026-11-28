@@ -1,4 +1,5 @@
 // The settings view's root: the bot's card, then Agent, Schedule, Soul and memory, Access and Notifications, then Delete.
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useContext, useState } from 'react'
 import {
   Activity,
@@ -300,26 +301,28 @@ export function BotSettingsRoot({
             </fieldset>
             <BotSharedFromLine bot={bot} />
           </div>
-          <div data-slot="bot-settings-actions" className="flex shrink-0 items-center gap-0.5">
-            <Tooltip>
-              {/* The span keeps the tooltip on hover while the button is off (its host is offline). */}
-              <TooltipTrigger asChild>
-                <span className="inline-flex">
-                  <Button
-                    variant="muted-field-icon"
-                    size="icon-sm"
-                    className="size-7"
-                    aria-label={shareLabel}
-                    disabled={controlsOff}
-                    onClick={() => setSharing(true)}
-                  >
-                    <Share2 className="size-3.5" />
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">{shareLabel}</TooltipContent>
-            </Tooltip>
-          </div>
+          {!isWorkbenchShell() ? (
+            <div data-slot="bot-settings-actions" className="flex shrink-0 items-center gap-0.5">
+              <Tooltip>
+                {/* The span keeps the tooltip on hover while the button is off (its host is offline). */}
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <Button
+                      variant="muted-field-icon"
+                      size="icon-sm"
+                      className="size-7"
+                      aria-label={shareLabel}
+                      disabled={controlsOff}
+                      onClick={() => setSharing(true)}
+                    >
+                      <Share2 className="size-3.5" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{shareLabel}</TooltipContent>
+              </Tooltip>
+            </div>
+          ) : null}
         </div>
       </div>
       <SettingsInsetGroup title={t('settings.bots.agent', 'Agent')}>
@@ -362,7 +365,7 @@ export function BotSettingsRoot({
       <BotItemsSettingsGroup bot={bot} update={update} />
       {home ? <SoulAndMemoryGroup home={home} open={open} /> : null}
       <AccessGroup bot={bot} open={open} />
-      <BotSharingGroup bot={bot} open={open} />
+      {!isWorkbenchShell() ? <BotSharingGroup bot={bot} open={open} /> : null}
       <NotificationsGroup bot={bot} update={update} />
       <div>
         <Button

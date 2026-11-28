@@ -1,4 +1,5 @@
 // One drill-in of the settings view: each mounts the section component that owns it.
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useTranslate } from '@/i18n/use-translate'
 import type { Bot } from '../../../../../shared/bot-types'
 import type { BotUpdateParams } from '../../../../../shared/rpc-contract/bots-params'
@@ -86,6 +87,6 @@ export function BotSettingsSubpage({
         <BotSkillsSection bot={bot} onChange={(skillProjects) => void update({ skillProjects })} />
       )
     case 'sharing':
-      return <BotSharingPage bot={bot} />
+      return isWorkbenchShell() ? null : <BotSharingPage bot={bot} />
   }
 }

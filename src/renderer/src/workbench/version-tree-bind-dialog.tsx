@@ -22,6 +22,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { getRepoTaskSourceContext } from './task-source-context'
+import { parseCodeHubRemote } from '../../../shared/codehub'
 import type { Repo } from '../../../shared/repository/repo-types'
 import type { Worktree, WorkspaceLinkedItem } from '../../../shared/worktree/types'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
@@ -47,16 +48,23 @@ import {
   WORKFLOW_SCREEN_LABELS,
   goalOrdinal
 } from './version-labels'
+import {
+  linkedTreeIssueKey,
+  parseVersionFlowBranch,
+  suggestedBindWorkflow,
+  treeBindMode,
+  type BindWorkflow
+} from './version-tree-bind-mode'
+import { linkedIssueRepository, sameIssueLink } from '../../../shared/workbench/version-membership'
+import { IssueAssignmentError, writeIssueVersionAssignment } from './version-issue-assignment'
+import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'
 
 /**
- * 原生单树右键菜单共用的绑定选择器。Issue 用途由人
- * 从本版计划材料中选定任务引用（零猜测）：taskSource 与 Start/Open 解析查询端
- * 同一构造函数，且须补写原生 linkedWorkItem——解析核要求绑定与 linked 双标记
- * 同时成立。先读后写：解析引用与读回 Issue 任一失败即不写任何数据；绑定写入
- * 走 P1 绑定服务同一 RPC（instanceId 必填围栏、归属宿主路由、读回确认）。
+ * 原生单树右键菜单共用的绑定选择器。流程树和已关联 Issue 的工作区只补树上
+ * 还不能确定的项；尚未关联 Issue 时仍从本版计划引用选择，不凭分支名猜编号。
+ * 先读后写：Issue 的计划标签只追加、标题改为所选版本和目标；这一步没写上就不写绑定。
+ * 绑定与 linkedWorkItem 同一次保存，instanceId 围栏不变。
  */
-
-type BindWorkflow = 'plan' | 'acceptance' | 'goal' | 'issue'
 
 const WORKFLOW_ORDER: readonly BindWorkflow[] = ['plan', 'acceptance', 'goal', 'issue']
 
@@ -79,15 +87,24 @@ function taskRefKey(task: CycleTaskReference): string {
   return `${task.provider}:${task.repository}:${task.number}`
 }
 
-function suggestedWorkflow(tree: Worktree, version: string): BindWorkflow | null {
-  const branch = tree.branch ? branchName(tree.branch) : null
-  if (branch && branch === versionFlowBranch(version, 'plan')) {
-    return 'plan'
+function taskRepository(repo: Repo, provider: 'github' | 'codehub'): string {
+  if (provider === 'codehub') {
+    const remote =
+      parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ??
+      parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey)
+    if (remote) {
+      return `${remote.host}/${remote.project}`
+    }
   }
-  if (branch && branch === versionFlowBranch(version, 'acceptance')) {
-    return 'acceptance'
+  const key = repo.gitRemoteIdentity?.canonicalKey
+  if (key) {
+    return key
   }
-  return null
+  const upstream = repo.upstream
+  if (upstream?.owner && upstream.repo) {
+    return `${upstream.host ?? 'github.com'}/${upstream.owner}/${upstream.repo}`
+  }
+  return repo.id
 }
 
 function worktreeLabel(tree: Worktree): string {
@@ -110,13 +127,25 @@ export function VersionTreeBindDialog({
   onClose(): void
 }): React.JSX.Element {
   const currentBinding = normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding)
-  const [version, setVersion] = useState(currentBinding?.version ?? '')
+  const mode = treeBindMode(tree)
+  const [version, setVersion] = useState(
+    () => currentBinding?.version ?? parseVersionFlowBranch(tree.branch)?.version ?? ''
+  )
   const entry = entries.find((item) => item.version === version) ?? null
   const goals = entry?.goals ?? []
   const membership = useVersionMembership(scope, entry)
-  const [workflow, setWorkflow] = useState<BindWorkflow>(currentBinding?.workflow ?? 'goal')
+  const [manualWorkflow, setManualWorkflow] = useState<BindWorkflow>(
+    currentBinding?.workflow ?? 'goal'
+  )
+  const workflow: BindWorkflow =
+    mode.kind === 'flow'
+      ? mode.workflow
+      : mode.kind === 'linked-issue' || mode.kind === 'choose-issue'
+        ? 'issue'
+        : manualWorkflow
   const [goalId, setGoalId] = useState(currentBinding?.goalId ?? '')
   const [issueKey, setIssueKey] = useState<string | null>(null)
+  const [attachmentKey, setAttachmentKey] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const taskDeps = useMemo(() => ({ ...nativeTaskPortDeps(), repos: () => repos }), [repos])
@@ -154,11 +183,19 @@ export function VersionTreeBindDialog({
   const selectedIssueKey = issueKey ?? (existingIssue ? taskRefKey(existingIssue) : null)
   const goalMissing =
     (workflow === 'goal' || workflow === 'issue') && !goals.some((goal) => goal.goalId === goalId)
-  const issueMissing = workflow === 'issue' && !selectedIssueKey
+  const chosenAttachment =
+    mode.kind === 'linked-issue'
+      ? mode.item
+      : mode.kind === 'choose-issue'
+        ? (mode.items.find((item) => linkedTreeIssueKey(item) === attachmentKey) ?? null)
+        : null
+  const issueMissing =
+    (mode.kind === 'choose-issue' && !chosenAttachment) ||
+    (workflow === 'issue' && mode.kind === 'manual' && !selectedIssueKey)
   const instanceMissing = !tree.instanceId
   const flowMismatch =
     (workflow === 'plan' || workflow === 'acceptance') &&
-    suggestedWorkflow(tree, version) !== workflow
+    suggestedBindWorkflow(tree, version) !== workflow
   const versions = [
     ...new Set([
       ...entries.map((item) => item.version),
@@ -186,12 +223,78 @@ export function VersionTreeBindDialog({
       workflow
     }
     let linkedWorkItem: WorkspaceLinkedItem | undefined
+    let issueAssignment: {
+      provider: 'github' | 'codehub'
+      repo: Repo
+      source: TaskSourceContext
+      number: number
+      url: string
+      title: string
+      labels?: readonly string[]
+    } | null = null
+    let remoteIssueUpdated = false
     try {
       const ownerScope = nativeWorkspaceScope(tree)
       if (workflow === 'goal') {
         binding = { ...binding, goalId }
       }
-      if (workflow === 'issue') {
+      if (workflow === 'issue' && chosenAttachment) {
+        if (!scope) {
+          throw new Error('项目工作区尚未就绪，无法核对 Issue 归属')
+        }
+        const item = chosenAttachment
+        const listed = repos.find((repo) => repo.id === (item.repoId || tree.repoId))
+        if (!listed) {
+          throw new Error('未在已登记项目中找到该 Issue 对应的项目')
+        }
+        const pinned = item.url
+          ? linkedIssueRepository(item.url, item.provider, item.number, repos)
+          : null
+        if (item.url && !pinned) {
+          throw new Error('这条关联没有指向一个 GitHub 或 CodeHub Issue，绑定没有写入。')
+        }
+        const reference: BindableTaskRef = {
+          provider: item.provider,
+          repository: pinned ?? taskRepository(listed, item.provider),
+          number: item.number,
+          goalId,
+          kind: 'issue'
+        }
+        const repo = resolveReferenceRepo(taskDeps, ownerScope, reference)
+        if (!repo) {
+          throw new Error('未在已登记项目中找到该 Issue 对应的项目')
+        }
+        const taskSource = getRepoTaskSourceContext(repo, item.provider)
+        if (!taskSource) {
+          throw new Error(`项目 ${repo.displayName || repo.id} 解析不出任务来源`)
+        }
+        const snapshot = await readReference(taskDeps, ownerScope, reference)
+        const identityMatches = item.url
+          ? sameIssueLink(item.url, snapshot.url, item.provider, item.number, repos)
+          : linkedIssueRepository(snapshot.url, item.provider, item.number, repos) !== null
+        if (!identityMatches) {
+          throw new Error('读回的 Issue 和这条工作区关联不是同一条，绑定没有写入。')
+        }
+        const issueUrl = item.url ?? snapshot.url
+        issueAssignment = {
+          provider: item.provider,
+          repo,
+          source: taskSource,
+          number: item.number,
+          url: issueUrl,
+          title: snapshot.title,
+          labels: snapshot.labels
+        }
+        linkedWorkItem = {
+          provider: item.provider,
+          type: 'issue',
+          number: item.number,
+          title: snapshot.title,
+          url: issueUrl,
+          repoId: repo.id
+        }
+        binding = { ...binding, goalId, taskSource }
+      } else if (workflow === 'issue') {
         if (!scope) {
           throw new Error('项目工作区尚未就绪，无法核对 Issue 归属')
         }
@@ -208,6 +311,15 @@ export function VersionTreeBindDialog({
           throw new Error(`项目 ${repo.displayName || repo.id} 解析不出任务来源`)
         }
         const snapshot = await readReference(taskDeps, ownerScope, reference)
+        issueAssignment = {
+          provider: reference.provider,
+          repo,
+          source: taskSource,
+          number: reference.number,
+          url: snapshot.url,
+          title: snapshot.title,
+          labels: snapshot.labels
+        }
         linkedWorkItem = {
           provider: reference.provider,
           type: 'issue',
@@ -217,6 +329,17 @@ export function VersionTreeBindDialog({
           repoId: repo.id
         }
         binding = { ...binding, goalId, taskSource }
+      }
+      if (issueAssignment) {
+        const assigned = await writeIssueVersionAssignment({
+          ...issueAssignment,
+          version,
+          goalId
+        })
+        remoteIssueUpdated = assigned.titleChanged || assigned.labelAdded
+        if (linkedWorkItem) {
+          linkedWorkItem = { ...linkedWorkItem, title: assigned.title }
+        }
       }
       await nativeVersionBindingPort(ownerScope).set(
         {
@@ -229,14 +352,32 @@ export function VersionTreeBindDialog({
         binding,
         linkedWorkItem
       )
-      toast.success(`已把工作区 ${label} 纳入 ${version}。`)
+      toast.success(
+        remoteIssueUpdated
+          ? `已把工作区 ${label} 纳入 ${version}，并写上该版本的计划标签和标题。`
+          : `已把工作区 ${label} 纳入 ${version}。`
+      )
       onClose()
     } catch (reason) {
-      notifyWorkbenchError(
-        `无法把工作区 ${label} 纳入 ${version}`,
-        reason,
-        '可重新选择版本后重试。'
-      )
+      if (reason instanceof IssueAssignmentError) {
+        notifyWorkbenchError(
+          reason.message,
+          reason.cause ?? reason,
+          '本次工作区绑定未保存，可重试。'
+        )
+      } else if (remoteIssueUpdated) {
+        notifyWorkbenchError(
+          'Issue 已写上该版本的计划标签和标题，未能确认本次工作区绑定',
+          reason,
+          '可重新保存。'
+        )
+      } else {
+        notifyWorkbenchError(
+          `无法把工作区 ${label} 纳入 ${version}`,
+          reason,
+          '可重新选择版本后重试。'
+        )
+      }
     } finally {
       setBusy(false)
     }
@@ -258,7 +399,9 @@ export function VersionTreeBindDialog({
                 setVersion(value)
                 setGoalId('')
                 setIssueKey(null)
-                setWorkflow(suggestedWorkflow(tree, value) ?? 'goal')
+                if (mode.kind === 'manual') {
+                  setManualWorkflow(suggestedBindWorkflow(tree, value) ?? 'goal')
+                }
               }}
             >
               <SelectTrigger id="wb-bind-version" className="w-full">
@@ -276,27 +419,37 @@ export function VersionTreeBindDialog({
               <p className="text-xs text-muted-foreground">暂无版本，请先创建版本。</p>
             ) : null}
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="wb-bind-workflow">用途</Label>
-            <Select value={workflow} onValueChange={(value) => setWorkflow(value as BindWorkflow)}>
-              <SelectTrigger id="wb-bind-workflow" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {WORKFLOW_ORDER.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {WORKFLOW_LABELS[item]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {version && flowMismatch ? (
-              <span className="text-xs text-destructive">
-                {WORKFLOW_LABELS[workflow]}工作区需要分支{' '}
-                {versionFlowBranch(version, workflow as 'plan' | 'acceptance')}。
-              </span>
-            ) : null}
-          </div>
+          {mode.kind === 'manual' ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="wb-bind-workflow">用途</Label>
+              <Select
+                value={workflow}
+                onValueChange={(value) => setManualWorkflow(value as BindWorkflow)}
+              >
+                <SelectTrigger id="wb-bind-workflow" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {WORKFLOW_ORDER.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {WORKFLOW_LABELS[item]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <Label>用途</Label>
+              <p className="text-sm">{WORKFLOW_LABELS[workflow]}</p>
+            </div>
+          )}
+          {version && flowMismatch ? (
+            <span className="text-xs text-destructive">
+              {WORKFLOW_LABELS[workflow]}工作区需要分支{' '}
+              {versionFlowBranch(version, workflow as 'plan' | 'acceptance')}。
+            </span>
+          ) : null}
           {workflow === 'goal' || workflow === 'issue' ? (
             <div className="flex flex-col gap-2">
               <Label htmlFor="wb-bind-goal">所属目标</Label>
@@ -325,7 +478,42 @@ export function VersionTreeBindDialog({
               ) : null}
             </div>
           ) : null}
-          {workflow === 'issue' ? (
+          {mode.kind === 'linked-issue' ? (
+            <div className="flex flex-col gap-2">
+              <Label>对应 Issue</Label>
+              <p className="text-sm">
+                #{mode.item.number}
+                {mode.item.title ? ` · ${mode.item.title}` : ''}
+              </p>
+            </div>
+          ) : null}
+          {mode.kind === 'choose-issue' ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="wb-bind-attachment">对应 Issue</Label>
+              <Select
+                value={attachmentKey ?? ''}
+                onValueChange={(value) => setAttachmentKey(value || null)}
+              >
+                <SelectTrigger id="wb-bind-attachment" className="w-full">
+                  <SelectValue placeholder="选择已关联的 Issue" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mode.items.map((item) => (
+                    <SelectItem key={linkedTreeIssueKey(item)} value={linkedTreeIssueKey(item)}>
+                      #{item.number}
+                      {item.title ? ` · ${item.title}` : ''}
+                      {' · '}
+                      {item.url ||
+                        repos.find((repo) => repo.id === (item.repoId ?? tree.repoId))?.path ||
+                        item.repoId ||
+                        tree.repoId}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+          {workflow === 'issue' && mode.kind === 'manual' ? (
             <div className="flex flex-col gap-2">
               <Label htmlFor="wb-bind-issue">对应 Issue</Label>
               <Select
@@ -351,6 +539,11 @@ export function VersionTreeBindDialog({
                 </span>
               ) : null}
             </div>
+          ) : null}
+          {workflow === 'issue' ? (
+            <p className="text-xs text-muted-foreground">
+              保存后为这张 Issue 加上所选版本的计划标签，已有版本标签保留，标题改为当前版本和目标。
+            </p>
           ) : null}
           {instanceMissing ? (
             <p className="text-sm text-destructive">

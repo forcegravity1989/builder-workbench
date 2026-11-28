@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Share2, Trash2 } from 'lucide-react'
 import { readIpcErrorDetail } from '@/runtime/errors/ipc-error'
@@ -94,7 +95,8 @@ export default function SkillsPage(): React.JSX.Element {
   const [managementOpen, setManagementOpen] = useState(false)
   const [filters, setFilters] = useState<SkillsFilterState>(NO_FILTERS)
   const [view, setView] = useState<SkillsPageView>('skills')
-  const ownedShares = useOwnedSkillShares()
+  const sharingEnabled = !isWorkbenchShell()
+  const ownedShares = useOwnedSkillShares(sharingEnabled)
   const mountedRef = useMountedRef()
   const scanGenerationRef = useRef(0)
   // Keep selection mode in a ref so changing modes cannot trigger discovery; mode changes already clear selection.
@@ -159,11 +161,11 @@ export default function SkillsPage(): React.JSX.Element {
 
   useEffect(() => {
     if (pendingSkillsSharedView) {
-      setView('shared')
+      setView(sharingEnabled ? 'shared' : 'skills')
       setFilters(NO_FILTERS)
       clearPendingSkillsSharedView()
     }
-  }, [clearPendingSkillsSharedView, pendingSkillsSharedView])
+  }, [clearPendingSkillsSharedView, pendingSkillsSharedView, sharingEnabled])
 
   useEffect(() => {
     if (!pendingSkillShareId) {
@@ -280,10 +282,14 @@ export default function SkillsPage(): React.JSX.Element {
           scannedSourceCount={scannedSkillSourceCount(sourceEntries)}
           hostLabel={hostLabel}
           onClose={closeSkillsPage}
-          onStartShare={() => {
-            setSelectionMode('share')
-            setSelectedSkillIds(new Set())
-          }}
+          onStartShare={
+            sharingEnabled
+              ? () => {
+                  setSelectionMode('share')
+                  setSelectedSkillIds(new Set())
+                }
+              : undefined
+          }
           deleteSupported={deleteFlow.supported}
           deleteUnsupportedReason={deleteFlow.unsupportedReason}
           onStartDelete={() => {
@@ -292,7 +298,7 @@ export default function SkillsPage(): React.JSX.Element {
           }}
           onInstallFromLink={openInstallDialog}
           onManageInstalls={() => setManagementOpen(true)}
-          onOpenSharedLinks={openSharedLinks}
+          onOpenSharedLinks={sharingEnabled ? openSharedLinks : undefined}
         />
       )}
       <SkillsFilterToolbar
@@ -303,6 +309,7 @@ export default function SkillsPage(): React.JSX.Element {
         totalCount={skills.length}
         resultCount={visibleSkills.length}
         linkCount={ownedShares.shares.length}
+        sharingEnabled={sharingEnabled}
         loading={view === 'shared' ? ownedShares.loading : loading}
         onViewChange={(next) => (next === 'shared' ? openSharedLinks() : exitSharedLinks())}
         onFiltersChange={setFilters}
@@ -335,7 +342,9 @@ export default function SkillsPage(): React.JSX.Element {
             <SkillSharedLinksView query={filters.query} shares={ownedShares} />
           ) : (
             <>
-              {hostLabel && !local ? <SkillsRemoteShareNotice hostLabel={hostLabel} /> : null}
+              {sharingEnabled && hostLabel && !local ? (
+                <SkillsRemoteShareNotice hostLabel={hostLabel} />
+              ) : null}
               {loading && skills.length === 0 ? (
                 <SkillsListSkeleton />
               ) : visibleSkills.length > 0 ? (
@@ -364,7 +373,7 @@ export default function SkillsPage(): React.JSX.Element {
                   onSelectResults={(results) =>
                     setSelectedSkillIds((current) => addSelected(current, results))
                   }
-                  onShare={(skill) => setShareSkills([skill])}
+                  onShare={sharingEnabled ? (skill) => setShareSkills([skill]) : undefined}
                   onDelete={(skill) => void deleteFlow.requestDelete([skill])}
                 />
               ) : skills.length > 0 ? (

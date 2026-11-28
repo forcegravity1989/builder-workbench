@@ -1,5 +1,8 @@
 import React from 'react'
 import { ExternalLink, KanbanSquare, Map as MapIcon, Table as TableIcon } from 'lucide-react'
+import { useAppStore } from '@/store'
+import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { Button } from '@/components/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { cn } from '@/lib/class-names'
@@ -49,6 +52,7 @@ function ProjectViewTab({
   onPick: (viewId: string) => void
 }): React.JSX.Element {
   const t = useTranslate()
+  const workbench = isWorkbenchShell()
   const supported = isRenderableProjectViewLayout(view.layout)
   const layoutLabel =
     view.layout === 'BOARD_LAYOUT'
@@ -58,6 +62,17 @@ function ProjectViewTab({
         : view.layout === 'TABLE_LAYOUT'
           ? t('projectViews.layout.table', 'Table')
           : formatUnknownLayout(view.layout)
+  const message = workbench
+    ? t(
+        'projectViews.unsupported.workbenchLayoutNotSupported',
+        'BW does not support {{layout}} project views yet.',
+        { layout: layoutLabel }
+      )
+    : t(
+        'projectViews.unsupported.layoutNotSupported',
+        "Orca doesn't support {{layout}} project views yet.",
+        { layout: layoutLabel }
+      )
   const Icon =
     view.layout === 'BOARD_LAYOUT'
       ? KanbanSquare
@@ -72,11 +87,13 @@ function ProjectViewTab({
       title={
         supported
           ? view.name
-          : t(
-              'auto.components.github.project.ProjectViewWrapper.2edf5e7e77',
-              "{{value0}} — Orca doesn't support {{value1}} project views yet. File a feature request at {{value2}}.",
-              { value0: view.name, value1: layoutLabel, value2: ORCA_FEATURE_REQUEST_URL }
-            )
+          : workbench
+            ? `${view.name}. ${message}`
+            : t(
+                'auto.components.github.project.ProjectViewWrapper.2edf5e7e77',
+                "{{value0}} — Orca doesn't support {{value1}} project views yet. File a feature request at {{value2}}.",
+                { value0: view.name, value1: layoutLabel, value2: ORCA_FEATURE_REQUEST_URL }
+              )
       }
       className={cn(
         'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-t-md border-x border-t px-3 py-1.5 text-xs',
@@ -94,21 +111,20 @@ function ProjectViewTab({
   if (supported) {
     return tab
   }
-  const message = t(
-    'projectViews.unsupported.layoutNotSupported',
-    "Orca doesn't support {{layout}} project views yet.",
-    { layout: layoutLabel }
-  )
   return (
     <HoverCard openDelay={200} closeDelay={100}>
       <HoverCardTrigger asChild>
         <span
           tabIndex={0}
-          aria-label={t(
-            'auto.components.github.project.ProjectViewWrapper.55de4fb57a',
-            '{{value0}}. {{value1}} File a feature request at {{value2}}.',
-            { value0: view.name, value1: message, value2: ORCA_FEATURE_REQUEST_URL }
-          )}
+          aria-label={
+            workbench
+              ? `${view.name}. ${message}`
+              : t(
+                  'auto.components.github.project.ProjectViewWrapper.55de4fb57a',
+                  '{{value0}}. {{value1}} File a feature request at {{value2}}.',
+                  { value0: view.name, value1: message, value2: ORCA_FEATURE_REQUEST_URL }
+                )
+          }
           className="inline-flex shrink-0 cursor-not-allowed rounded-t-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           {tab}
@@ -118,23 +134,46 @@ function ProjectViewTab({
         <div className="space-y-2">
           <p className="text-xs leading-5 text-muted-foreground">
             {message}{' '}
-            {t(
-              'projectViews.unsupported.switchLayout',
-              'Switch to a Table, Board, or Roadmap view to work with this project in Orca.'
-            )}
+            {workbench
+              ? t(
+                  'projectViews.unsupported.workbenchSwitchLayout',
+                  'Switch to a Table, Board, or Roadmap view to work with this project in BW.'
+                )
+              : t(
+                  'projectViews.unsupported.switchLayout',
+                  'Switch to a Table, Board, or Roadmap view to work with this project in Orca.'
+                )}
           </p>
-          <Button
-            type="button"
-            size="xs"
-            variant="outline"
-            onClick={(event) => openAppHttpLink(ORCA_FEATURE_REQUEST_URL, { event })}
-          >
-            {t(
-              'auto.components.github.project.ProjectViewWrapper.4d2a77a119',
-              'File feature request'
-            )}
-            <ExternalLink className="size-3" />
-          </Button>
+          {workbench && isWebClientLocation() ? (
+            <p className="text-xs text-muted-foreground">
+              {t(
+                'guidance.feedbackOnDesktop',
+                'To send feedback, open Help in the BW desktop app.'
+              )}
+            </p>
+          ) : workbench ? (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={() => useAppStore.getState().openModal('feedback')}
+            >
+              {t('auto.components.sidebar.SidebarSettingsHelpMenu.4cf5b868d7', 'Send Feedback')}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={(event) => openAppHttpLink(ORCA_FEATURE_REQUEST_URL, { event })}
+            >
+              {t(
+                'auto.components.github.project.ProjectViewWrapper.4d2a77a119',
+                'File feature request'
+              )}
+              <ExternalLink className="size-3" />
+            </Button>
+          )}
         </div>
       </HoverCardContent>
     </HoverCard>

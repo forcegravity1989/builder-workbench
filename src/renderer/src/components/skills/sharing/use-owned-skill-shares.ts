@@ -24,14 +24,17 @@ export type OwnedSkillShares = {
   revoke: (share: SkillCloudOwnedShare) => Promise<void>
 }
 
-export function useOwnedSkillShares(): OwnedSkillShares {
+export function useOwnedSkillShares(enabled = true): OwnedSkillShares {
   const [shares, setShares] = useState<SkillCloudOwnedShare[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(enabled)
   const [busyShareId, setBusyShareId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const generation = useRef(0)
 
   const load = useCallback(async (): Promise<void> => {
+    if (!enabled) {
+      return
+    }
     const current = ++generation.current
     setLoading(true)
     setError(null)
@@ -54,7 +57,7 @@ export function useOwnedSkillShares(): OwnedSkillShares {
         setLoading(false)
       }
     }
-  }, [])
+  }, [enabled])
 
   useEffect(() => {
     void load()

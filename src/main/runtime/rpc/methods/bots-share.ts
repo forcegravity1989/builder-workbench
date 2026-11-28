@@ -1,6 +1,11 @@
 // Sharing a bot by link: build the candidate, publish it, move or stop the bot's one link.
 import type { Bot } from '../../../../shared/bot-types'
 import {
+  SharingUnavailableOnHostError,
+  WORKBENCH_PUBLISHING_UNAVAILABLE_MESSAGE
+} from '../../../../shared/remote-runtime/host-status/sharing-unavailable-on-host'
+import { isWorkbenchProduct } from '../../../startup/workbench-product'
+import {
   BotSharePartView,
   BotSharePublish,
   BotSharePrepare,
@@ -17,13 +22,33 @@ export const BOT_SHARE_UNKNOWN_CALLER = 'Share a bot from Orca or its `orca` CLI
  *  client with no proven identity is refused. */
 export function assertTrustedCaller(context: RpcContext): void {
   context.runtime.bots.assertEnabled()
+  assertIdentifiedCaller(context)
+}
+
+function assertIdentifiedCaller(context: RpcContext): void {
   if (!context.caller) {
     throw new InvalidArgumentError(BOT_SHARE_UNKNOWN_CALLER)
   }
 }
 
-function authorizedBot(context: RpcContext, botId: string): Bot {
+function assertLegacyShareManagementAllowed(context: RpcContext): void {
+  if (isWorkbenchProduct()) {
+    // Existing cloud links can outlive the local Bots feature and its bot records.
+    assertIdentifiedCaller(context)
+    return
+  }
   assertTrustedCaller(context)
+}
+
+function assertPublishingAllowed(context: RpcContext): void {
+  if (isWorkbenchProduct()) {
+    throw new SharingUnavailableOnHostError(WORKBENCH_PUBLISHING_UNAVAILABLE_MESSAGE, [])
+  }
+  assertTrustedCaller(context)
+}
+
+function authorizedBot(context: RpcContext, botId: string): Bot {
+  assertPublishingAllowed(context)
   return botOf(context.runtime, botId)
 }
 
@@ -79,7 +104,7 @@ export const BOT_SHARE_METHODS = [
     permission: 'workspace',
     params: BotShareStop,
     handler: async ({ shareId, botId }, context) => {
-      assertTrustedCaller(context)
+      assertLegacyShareManagementAllowed(context)
       return context.runtime.botShares().stop(shareId, botId)
     }
   }),
@@ -89,7 +114,7 @@ export const BOT_SHARE_METHODS = [
     params: BotShareStatusParams,
     // Every live bot link the owner has; botShareStatusOf reads one bot's from it.
     handler: async ({ botId }, context) => {
-      assertTrustedCaller(context)
+      assertLegacyShareManagementAllowed(context)
       return context.runtime.botShares().list(context.runtime.bots.list(), botId)
     }
   })

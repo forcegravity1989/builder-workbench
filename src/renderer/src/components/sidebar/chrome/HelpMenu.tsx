@@ -12,7 +12,7 @@ import {
   type SetupMilestones
 } from './help-menu-controller'
 
-/** Help's dropdown around an existing controller; the controller's owner renders `controller.dialog` once. */
+/** Help's dropdown around an existing controller. */
 export function HelpMenuView({
   controller,
   trigger,
@@ -60,10 +60,5 @@ export function HelpMenu({
   milestones: SetupMilestones | null
 }): React.JSX.Element {
   const controller = useHelpMenuController(milestones)
-  return (
-    <>
-      <HelpMenuView controller={controller} trigger={trigger} side={side} align={align} />
-      {controller.dialog}
-    </>
-  )
+  return <HelpMenuView controller={controller} trigger={trigger} side={side} align={align} />
 }

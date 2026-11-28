@@ -81,6 +81,16 @@ export function useWorkbenchScreenGuide(
   }, [enabled, id, source])
 }
 
+export function cancelWorkbenchGuide(id: WorkbenchGuideId): void {
+  if (pendingGuide === id) {
+    cancelPendingGuide?.()
+  }
+  const state = useAppStore.getState()
+  if (state.activeContextualTourId === id) {
+    state.cancelContextualTour(id)
+  }
+}
+
 export function replayWorkbenchGuide(id: WorkbenchGuideId): void {
   const state = useAppStore.getState()
   cancelPendingGuide?.()

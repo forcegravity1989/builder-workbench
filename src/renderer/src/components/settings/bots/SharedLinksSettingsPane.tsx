@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useTranslate } from '@/i18n/use-translate'
 import { BotSharedLinksList } from '../../bots/sharing/BotSharedLinksList'
 import { SkillSharedLinksView } from '../../skills/sharing/SkillSharedLinksView'
@@ -6,6 +7,7 @@ import { useOwnedSkillShares } from '../../skills/sharing/use-owned-skill-shares
 /** Settings → Shared links: every link the owner published, bots beside skills. */
 export function SharedLinksSettingsPane(): React.JSX.Element {
   const t = useTranslate()
+  const withdrawalOnly = isWorkbenchShell()
   const skillShares = useOwnedSkillShares()
   return (
     <div className="space-y-6">
@@ -13,13 +15,13 @@ export function SharedLinksSettingsPane(): React.JSX.Element {
         <h3 className="text-xs font-medium text-muted-foreground">
           {t('settings.sharedLinks.bots', 'Bots')}
         </h3>
-        <BotSharedLinksList />
+        <BotSharedLinksList withdrawalOnly={withdrawalOnly} />
       </section>
       <section className="space-y-2">
         <h3 className="text-xs font-medium text-muted-foreground">
           {t('settings.sharedLinks.skills', 'Skills')}
         </h3>
-        <SkillSharedLinksView query="" shares={skillShares} />
+        <SkillSharedLinksView query="" shares={skillShares} withdrawalOnly={withdrawalOnly} />
       </section>
     </div>
   )
