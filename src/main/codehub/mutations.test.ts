@@ -9,6 +9,7 @@ vi.mock('./cli', () => ({
 }))
 
 import {
+  addCodeHubIssueLabels,
   assignCodeHubIssue,
   closeCodeHubMr,
   createCodeHubIssue,
@@ -127,6 +128,28 @@ describe('codehub mutations', () => {
       '-H',
       'codehub-g.huawei.com'
     ])
+    await addCodeHubIssueLabels({
+      remote,
+      execOptions: { cwd: '/repo' },
+      iid: 4,
+      labels: ['bw:plan:v1.2']
+    })
+    expect(runCodeHubCliMock.mock.calls[4][0]).toEqual([
+      'api',
+      'PUT',
+      '/projects/:id/issues/:iid',
+      '--field',
+      'id=Org/Group/repo',
+      '--field',
+      'iid=4',
+      '--field',
+      'add_labels=bw:plan:v1.2',
+      '-H',
+      'codehub-g.huawei.com',
+      '-f',
+      'json'
+    ])
+    expect(runCodeHubCliMock.mock.calls[4][1]).toEqual({ cwd: '/repo' })
   })
 
   it('assigns, sets reviewers, and merges without gh', async () => {
