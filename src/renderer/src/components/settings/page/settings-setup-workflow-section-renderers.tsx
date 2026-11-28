@@ -35,21 +35,16 @@ export function renderOrcaAccountSettingsSection(
       ? (model.runtimeEnvironments.find((entry) => entry.id === target.environmentId)?.name ??
         t('components.settings.notifications.server.fallbackHost', 'this server'))
       : null
-  return model.showDesktopOnlySettings ? (
+  return model.showDesktopOnlySettings && !isWorkbenchShell() ? (
     <SettingsSection
       id="orca-account"
       title={t('auto.components.settings.orcaAccount.title', 'Orca Account')}
       description={
         serverName === null
-          ? isWorkbenchShell()
-            ? t(
-                'auto.components.settings.orcaAccount.workbenchDescription',
-                'This account is used by Orca cloud connectors on the bot host.'
-              )
-            : t(
-                'auto.components.settings.orcaAccount.description',
-                'Share work instantly and reach your desktop from Orca Mobile wherever you are.'
-              )
+          ? t(
+              'auto.components.settings.orcaAccount.description',
+              'Share work instantly and reach your desktop from Orca Mobile wherever you are.'
+            )
           : t(
               'components.settings.orcaAccount.server.sectionDescription',
               'The Orca account {{host}} runs as, for its bots’ Slack, GitHub, Linear and webhooks.',

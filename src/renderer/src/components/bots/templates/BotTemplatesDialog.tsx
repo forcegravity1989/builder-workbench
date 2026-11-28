@@ -1,3 +1,5 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { botTemplateAvailable } from '../../../../../shared/bots/bot-templates'
 // Bot templates: a large dialog over the app with the Setup guide's frame. One list in category order
 // (search, category chips, sticky headings) beside the selected template's detail; when the dialog is
 // narrow the detail opens in place of the list. Use opens New bot over it, prefilled: nothing is made
@@ -89,6 +91,7 @@ function BotTemplatesDialogContent({ onClose }: { onClose: () => void }): React.
   const label = (category: BotTemplateCategory) => botTemplateCategoryLabel(category, t)
   const groups = botTemplateGroups(
     (template) =>
+      botTemplateAvailable(template, isWorkbenchShell()) &&
       (!category || template.category === category) &&
       botTemplateMatches(template, query, label, (english) => botTemplateText(english, t))
   )
@@ -180,17 +183,19 @@ function BotTemplatesDialogContent({ onClose }: { onClose: () => void }): React.
           <DialogTitle className="min-w-0 flex-1">
             {t('bots.templates.title', 'Bot templates')}
           </DialogTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              onClose()
-              openBotShareLink(null)
-            }}
-          >
-            <Link2 className="size-4" />
-            {t('bots.templates.fromLink', 'From a link')}
-          </Button>
+          {!isWorkbenchShell() && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onClose()
+                openBotShareLink(null)
+              }}
+            >
+              <Link2 className="size-4" />
+              {t('bots.templates.fromLink', 'From a link')}
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => openNewBot({ template: null })}>
             <Plus className="size-4" />
             {t('bots.templates.blank', 'Blank bot')}

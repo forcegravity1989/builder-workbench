@@ -29,6 +29,7 @@ export function BotTemplateDetail({
   const t = useTranslate()
   const [scrolled, setScrolled] = useState(false)
   const name = botTemplateWord(template, 'name', t)
+  const workbenchTemplate = template.id === 'bw-maintenance' || template.id === 'bw-meeting'
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div
@@ -48,15 +49,15 @@ export function BotTemplateDetail({
               <span>{botTemplateCategoryLabel(template.category, t)}</span>
               <span className="inline-flex items-center gap-1">
                 <span aria-hidden="true">·</span>
-                {template.id === 'bw-maintenance'
+                {workbenchTemplate
                   ? 'Builders’ Workbench'
                   : t('bots.templates.publisher', 'by Orca')}
                 <BadgeCheck
                   className="size-3.5 shrink-0 text-callout-note"
                   role="img"
-                  aria-hidden={template.id === 'bw-maintenance' || undefined}
+                  aria-hidden={workbenchTemplate || undefined}
                   aria-label={
-                    template.id === 'bw-maintenance'
+                    workbenchTemplate
                       ? undefined
                       : t('bots.templates.official', 'Official Orca template')
                   }

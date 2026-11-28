@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useMemo } from 'react'
 import {
   matchPaletteExtraFields,
@@ -6,7 +7,7 @@ import {
 } from '@/components/cmd-j/palette-extra-results'
 import { useTranslate } from '@/i18n/use-translate'
 import { useBotsEnabled } from '@/lib/bot-catalog'
-import { BOT_TEMPLATES } from '../../../../../shared/bots/bot-templates'
+import { BOT_TEMPLATES, botTemplateAvailable } from '../../../../../shared/bots/bot-templates'
 import { botTemplateWord } from '../../../../../shared/bots/bot-template-text'
 import { BotTemplateMascot } from './BotTemplateMascot'
 import { openBotTemplates } from './bot-templates-open'
@@ -26,6 +27,9 @@ export function useBotTemplatePaletteSource({
       return []
     }
     return BOT_TEMPLATES.flatMap((template, order): PaletteExtraResult[] => {
+      if (!botTemplateAvailable(template, isWorkbenchShell())) {
+        return []
+      }
       const id = `bot-template:${template.id}`
       const name = botTemplateWord(template, 'name', t)
       const line = botTemplateWord(template, 'line', t)
