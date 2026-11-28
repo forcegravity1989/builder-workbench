@@ -1,7 +1,10 @@
-import { app, ipcMain, session } from 'electron'
+import { BrowserWindow, app, ipcMain, session } from 'electron'
 import { resolveWelinkRoute } from '../workbench/reporting/report-submission'
 import {
+  CSRF_COOKIE_NAME,
+  ONEBOX_ENTRY_URL,
   ONEBOX_ORIGIN,
+  SSO_LOGIN_MARKER,
   listTeamGroupSpaces,
   resolveTeamGroupId,
   type OneboxGroupSpaceDeps
@@ -24,11 +27,68 @@ import { resolveSignedInW3Partition } from './w3-account-ipc'
 const NUMERIC_ID = /^\d{1,32}$/
 const TEXT_ID = /^.{1,256}$/u
 
+/** How long the hidden warm-up page may take to seed the CSRF cookie. */
+const ONEBOX_WARMUP_TIMEOUT_MS = 8_000
+const ONEBOX_WARMUP_POLL_INTERVAL_MS = 250
+
+/**
+ * Why a hidden window instead of session.fetch: the OneBox entry page is an
+ * SPA shell whose JS performs the SSO handshake and seeds the CSRF cookie; a
+ * plain fetch never runs that JS. Hardening mirrors the W3 login window.
+ */
+async function warmOneboxSession(partition: string): Promise<{
+  finalUrl: string
+  networkError?: boolean
+}> {
+  const window = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      preload: undefined,
+      // Hidden windows throttle timers by default; the SPA handshake must run at full speed.
+      backgroundThrottling: false,
+      session: session.fromPartition(partition)
+    }
+  })
+  // The warm-up is a background session bootstrap, not a browsing surface.
+  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  try {
+    await window.loadURL(ONEBOX_ENTRY_URL)
+    const deadline = Date.now() + ONEBOX_WARMUP_TIMEOUT_MS
+    for (;;) {
+      const cookies = await session
+        .fromPartition(partition)
+        .cookies.get({ name: CSRF_COOKIE_NAME, url: ONEBOX_ORIGIN })
+      if (cookies[0]?.value) {
+        break
+      }
+      // The SSO login bounce never seeds the cookie; bail early instead of
+      // waiting out the full timeout.
+      if (window.webContents.getURL().includes(SSO_LOGIN_MARKER)) {
+        break
+      }
+      if (Date.now() >= deadline) {
+        break
+      }
+      await new Promise((resolve) => setTimeout(resolve, ONEBOX_WARMUP_POLL_INTERVAL_MS))
+    }
+    return { finalUrl: window.webContents.getURL() }
+  } catch {
+    return { finalUrl: '', networkError: true }
+  } finally {
+    window.destroy()
+  }
+}
+
 // Why the W3 partition: OneBox accepts the passwordless SSO the user already
 // configured there, so group discovery needs no second login and no credential
-// of its own. The fetch/cookie pair mirrors the wiring in w3-account-ipc.ts.
+// of its own. The warm-up window mirrors the login window in w3-account-ipc.ts;
+// the fetch/cookie pair mirrors its service wiring.
 const oneboxDeps: OneboxGroupSpaceDeps = {
   resolvePartition: resolveSignedInW3Partition,
+  warmSession: warmOneboxSession,
   fetch: async (partition, url, init) => {
     try {
       const response = await session.fromPartition(partition).fetch(url, init)

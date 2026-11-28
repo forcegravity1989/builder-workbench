@@ -98,6 +98,8 @@
   // 空间，没有 WeLink 群；groupId 为空代表空间还在但群已解散，选中后报无关联群。
   const demoRawSpaces = [
     { spaceId: demoSpaceId, groupId: demoGroup, name: '神盾局项目群', curNumbers: 12, ownedByUserName: '韩岚' },
+    // 排在「交付看板协作群」之前，用来演示搜索时前缀命中会插到包含命中前面。
+    { spaceId: '24170355', groupId: '1030194633998627511', name: '星图交付保障群', curNumbers: 6, ownedByUserName: '陈远' },
     { spaceId: alternateSpaceId, groupId: alternateGroup, name: '交付看板协作群', curNumbers: 5, ownedByUserName: '林安' },
     { spaceId: '24160277', groupId: '1030194633998627497', name: '星图服务发布群', curNumbers: 8, ownedByUserName: '陈远' },
     { spaceId: '24190113', groupId: '', name: '临时对齐（群已解散）', curNumbers: 4, ownedByUserName: '林安' },
@@ -1753,8 +1755,9 @@
   })
 
   surface.addEventListener('input', (event) => {
-    if (event.target.matches('#team-lookup input[name]')) {
-      current().bindingDraft[event.target.name] = event.target.value
+    if (event.target.hasAttribute('data-group-search')) {
+      current().groupPicker.query = event.target.value
+      renderGroupOptions()
     }
     if (event.target.dataset.auditFilter === 'search') {
       updateAuditFilter(event.target)
@@ -1794,11 +1797,11 @@
       if (desktop.bindingPending) {
         return
       }
-      const group = String(data.get('group')).trim()
-      const space = String(data.get('space')).trim()
-      const valid =
-        (group === demoGroup && space === demoSpaceId) ||
-        (group === alternateGroup && space === alternateSpaceId)
+      const selection = desktop.groupPicker.selection
+      // 提交键在没有选出群时就是 disabled，这里只挡直接回车提交。
+      if (!selection || desktop.groupPicker.resolving) {
+        return
+      }
       const fail = document.querySelector('#switch-result').value === 'failure'
       desktop.bindingPending = true
       desktop.bindingError = ''
@@ -1817,19 +1820,22 @@
           return
         }
         desktop.bindingPending = false
-        if (!valid || fail) {
-          desktop.bindingError = desktop.switchingTeam
-            ? '未能读取新团队，当前团队保持不变。核对两个 ID 后重试。'
-            : '未能读取团队目录，核对两个 ID 后重试。'
+        if (fail) {
+          // 切换失败是弹窗内的内联错误；首次绑定失败在产品里走通知。
+          if (desktop.switchingTeam) {
+            desktop.bindingError = '未能读取新团队，当前团队保持不变。重新选择群后重试。'
+          } else if (actor.value === person) {
+            notify('未能读取团队目录。重新选择 WeLink 群后重试。')
+          }
           if (actor.value === person) {
             render()
           }
           return
         }
-        state.bindings[person] = bindingKey(group, space)
+        state.bindings[person] = bindingKey(selection.groupId, selection.spaceId)
         if (!activeDirectory(person)) {
-          const directory = blankDirectory(group, space)
-          if (group === alternateGroup) {
+          const directory = blankDirectory(selection.groupId, selection.spaceId)
+          if (selection.spaceId === alternateSpaceId) {
             directory.projects = [
               {
                 repo_id: 'board',
@@ -1900,6 +1906,18 @@
 
   actor.addEventListener('change', () => {
     notify('')
+    render()
+  })
+  // 评审工具区换注入结果：清掉已缓存的群列表，下一次打开面板按新结果重读。
+  document.querySelector('#group-list-result').addEventListener('change', () => {
+    for (const person of Object.keys(desktops)) {
+      const picker = desktops[person].groupPicker
+      if (picker.phase === 'ready' || picker.phase === 'failed') {
+        picker.phase = 'idle'
+        picker.listFailure = ''
+        picker.truncated = false
+      }
+    }
     render()
   })
   dialog.addEventListener('cancel', render)

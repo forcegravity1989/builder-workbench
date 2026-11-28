@@ -6,6 +6,10 @@
 // reused; no credential is stored or logged here.
 //
 // Probed facts this module encodes (onebox.huawei.com, 2026-11-28):
+// - the entry route answers 200 with an SPA shell and no HTTP redirects: its
+//   JavaScript performs the SSO handshake and only then seeds the
+//   `WAPCSRFTOKEN` cookie, so the session warm-up must run in a real browser
+//   context — a plain fetch never executes that JS and never sees the cookie;
 // - the only required request header is `csrftoken`, byte-identical to the
 //   `WAPCSRFTOKEN` cookie; without it both APIs answer 403 "CSRF check failed";
 // - `teamSpaceList` paging metadata is unusable (`totalElements` and
@@ -25,14 +29,14 @@ import type {
 } from '../../../shared/team-group-discovery'
 
 export const ONEBOX_ORIGIN = 'https://onebox.huawei.com'
-/** Entry route whose SSO redirect chain seeds the WAPCSRFTOKEN cookie. */
-const ONEBOX_ENTRY_URL = `${ONEBOX_ORIGIN}/`
+/** Entry route whose page JS seeds the WAPCSRFTOKEN cookie via the SSO handshake. */
+export const ONEBOX_ENTRY_URL = `${ONEBOX_ORIGIN}/`
 const TEAM_SPACE_LIST_PATH = '/perfect/teamspace/teamSpaceList'
 const TEAM_INFO_PATH = '/perfect/teamspace/openGetTeamInfo'
-const CSRF_COOKIE_NAME = 'WAPCSRFTOKEN'
+export const CSRF_COOKIE_NAME = 'WAPCSRFTOKEN'
 const CSRF_HEADER_NAME = 'csrftoken'
 /** Landing here instead of OneBox means the W3 SSO cookies did not carry over. */
-const SSO_LOGIN_MARKER = 'login.huawei.com'
+export const SSO_LOGIN_MARKER = 'login.huawei.com'
 /** Auto-created eMeeting spaces have no WeLink group, so they are never bindable. */
 const MEETING_SPACE_NAME_PREFIX = 'emeeting-'
 const NUMERIC_ID = /^\d{1,32}$/
@@ -60,6 +64,12 @@ export type OneboxGroupSpaceDeps = {
   resolvePartition: () => Promise<
     { partition: string } | { failure: 'w3-unconfigured' | 'w3-not-signed-in' }
   >
+  /**
+   * Load the entry page in a real (hidden) browser context on the partition and
+   * hold it until the CSRF cookie appears or a bounded wait expires. A plain
+   * fetch cannot stand in: the page's JS performs the SSO handshake.
+   */
+  warmSession: (partition: string) => Promise<{ finalUrl: string; networkError?: boolean }>
   fetch: (partition: string, url: string, init?: OneboxFetchInit) => Promise<OneboxFetchResponse>
   /** The CSRF cookie value for the OneBox origin, or null when the session never got one. */
   readCsrfCookie: (partition: string, cookieName: string) => Promise<string | null>
@@ -183,9 +193,10 @@ export function parseTeamGroupId(body: string): TeamGroupIdParse {
 }
 
 /**
- * Walk the huawei.com SSO chain once so OneBox issues its CSRF cookie, then
- * read it back. The cookie is host-scoped to OneBox, so it is absent from a
- * freshly harvested W3 partition until this first request runs.
+ * Run the entry page once in a real browser context so its JS completes the
+ * SSO handshake and seeds the CSRF cookie, then read the cookie back. The
+ * cookie is host-scoped to OneBox, so it is absent from a freshly harvested
+ * W3 partition until this first page load runs.
  */
 async function acquireSession(
   deps: ResolvedDeps
@@ -194,13 +205,13 @@ async function acquireSession(
   if ('failure' in resolved) {
     return { failure: resolved.failure }
   }
-  // The status itself is ignored: what matters is whether the redirect chain
-  // ended on OneBox and left a CSRF cookie behind.
-  const warm = await deps.fetch(resolved.partition, ONEBOX_ENTRY_URL)
+  // The status itself is ignored: what matters is whether the page ended up on
+  // OneBox (not the SSO login page) and left a CSRF cookie behind.
+  const warm = await deps.warmSession(resolved.partition)
   if (warm.networkError) {
     return { failure: 'unreachable' }
   }
-  if (warm.url.includes(SSO_LOGIN_MARKER)) {
+  if (warm.finalUrl.includes(SSO_LOGIN_MARKER)) {
     return { failure: 'onebox-unauthorized' }
   }
   const csrf = await deps.readCsrfCookie(resolved.partition, CSRF_COOKIE_NAME)
