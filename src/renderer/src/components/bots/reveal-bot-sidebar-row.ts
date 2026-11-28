@@ -1,4 +1,6 @@
 import { useAppStore } from '@/store'
+import { isBotSidebarHostVisible } from '../../../../shared/bots/bot-sidebar-view'
+import type { ExecutionHostId } from '../../../../shared/execution-host/execution-host'
 import { BOTS_GROUP_KEY } from '../../../../shared/sidebar-list/sections/group-keys'
 import { readBotsEnabled } from '@/lib/bot-catalog'
 import { botSidebarVirtualScrollers } from './bot-sidebar-virtual-scroll'
@@ -110,16 +112,16 @@ export function setBotSidebarSearchHasQuery(hasQuery: boolean): void {
  * Whether Cmd+K may reveal this entry: the sidebar shows an unfolded Bots section, the entry is listed under
  * the current view options, and the sidebar's own search isn't showing results. When false, nothing changes.
  */
-export function canRevealBotSidebarEntry(entry: {
-  kind: 'bot' | 'group'
-  paused: boolean
-}): boolean {
+type RevealableBotEntry = { kind: 'bot' | 'group'; paused: boolean; hostId: ExecutionHostId }
+
+export function canRevealBotSidebarEntry(entry: RevealableBotEntry): boolean {
   const state = useAppStore.getState()
   return (
     state.sidebarOpen &&
     !state.collapsedGroups.has(BOTS_GROUP_KEY) &&
     (state.sidebarBody ?? 'workspaces') !== 'agents' &&
     readBotsEnabled() &&
+    isBotSidebarHostVisible(entry.hostId, state.botSidebarView.visibleHostIds) &&
     !(entry.kind === 'bot' && entry.paused && state.botSidebarView.hidePausedBots) &&
     !sidebarSearchHasQuery
   )
@@ -164,7 +166,7 @@ export function revealBotSidebarRowAfterOpen({
 }: {
   sidebarKey: string
   /** The entry as it is now: null once removed. */
-  readEntry: () => { kind: 'bot' | 'group'; paused: boolean } | null
+  readEntry: () => RevealableBotEntry | null
   generation: number
   /** The tab the open showed: the bot's chat, the group's room, or the home's active tab. */
   destinationTabId: string

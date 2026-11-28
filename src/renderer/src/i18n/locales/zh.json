@@ -23688,7 +23688,7 @@
       "fullPageView": "此页面在侧边栏中没有对应的行",
       "archived": "已归档的工作区不会列在侧边栏中",
       "botsOff": "Bots 已关闭，因此不会列出此 bot",
-      "botHidden": "此 bot 已暂停，并被 Bot 选项隐藏",
+      "botHidden": "此项已被 Bots 选项隐藏",
       "renameBotPage": "bot 或群组的页面不是工作树。要重命名，请使用其行菜单中的“重命名”。",
       "renameUnlisted": "此工作区当前未列在侧边栏中，因此无法在那里重命名"
     },
@@ -29251,7 +29251,8 @@
       "hidePaused": "隐藏已暂停的 bots",
       "hideSleepingWorkers": "隐藏休眠的工作者",
       "hideSleepingWorkersAria": "隐藏没有任何内容在运行的 bot 工作者工作区",
-      "allHidden": "所有 bots 均已暂停并隐藏"
+      "allHidden": "所有 bots 均已暂停并隐藏",
+      "noBotsOnSelectedHosts": "所选主机没有 Bots"
     },
     "lookSteps": {
       "slackThread": "Slack 话题",

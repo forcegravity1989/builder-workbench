@@ -10,7 +10,8 @@ import { openBotGroup } from '@/lib/bot-group-catalog'
 import type { Bot } from '../../../../shared/bot-types'
 import type { BotGroup } from '../../../../shared/bots/bot-group'
 import type { FolderWorkspace } from '../../../../shared/folder-workspaces/folder-workspace-types'
-import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host/execution-host'
+import { useBotHostOffline } from '@/lib/bot-host-views'
+import { WorktreeHostContextBadge } from '@/components/sidebar/workspace-card/host/WorktreeHostContextBadge'
 import { folderWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import { BotAvatar } from './BotAvatar'
 import { botRowLineAge, BotHoverLatestLine, BotRowLineView } from './BotRowActivityLine'
@@ -31,7 +32,8 @@ export function BotGroupRow({
   onOpen,
   onManageMembers,
   onDelete,
-  dragHandle = false
+  dragHandle = false,
+  visibleHostLabel
 }: {
   group: BotGroup
   home: FolderWorkspace
@@ -42,9 +44,11 @@ export function BotGroupRow({
   onManageMembers: () => void
   onDelete: () => void
   dragHandle?: boolean
+  visibleHostLabel?: string
 }): React.JSX.Element {
   const t = useTranslate()
   const workspaceId = folderWorkspaceKey(home.id)
+  const offline = useBotHostOffline(group.hostId)
   const now = useNow(60_000)
   // Rerun on every store change, so a freshness epoch bump re-reads the clock.
   const status = useAppStore((state) =>
@@ -66,11 +70,13 @@ export function BotGroupRow({
       }
       name={group.name}
       workspaceId={workspaceId}
-      hostId={LOCAL_EXECUTION_HOST_ID}
-      status={status}
-      isUnread={home.isUnread}
+      hostId={group.hostId}
+      status={offline ? null : status}
+      isUnread={home.isUnread && !offline}
+      dimmed={offline}
+      actionsDisabled={offline}
       isActive={isActive}
-      dragHandle={dragHandle}
+      dragHandle={dragHandle && !offline}
       onOpen={() => {
         void openBotGroup(group)
           .then(onOpen)
@@ -87,8 +93,20 @@ export function BotGroupRow({
           throw new Error(botErrorMessage(error))
         }
       }}
-      age={botRowLineAge(line, now)}
-      line={<BotRowLineView line={line} unread={home.isUnread} now={now} />}
+      age={offline ? null : botRowLineAge(line, now)}
+      line={
+        <BotRowLineView
+          line={line}
+          unread={home.isUnread && !offline}
+          now={now}
+          disconnected={offline}
+          leading={
+            visibleHostLabel ? (
+              <WorktreeHostContextBadge label={visibleHostLabel} title={visibleHostLabel} />
+            ) : null
+          }
+        />
+      }
       hoverDetails={() => (
         <BotGroupHoverDetails
           group={group}
@@ -97,7 +115,7 @@ export function BotGroupRow({
         />
       )}
       menuItems={
-        <ContextMenuItem onSelect={onManageMembers}>
+        <ContextMenuItem disabled={offline} onSelect={onManageMembers}>
           <Users className="size-3.5" />
           {t('bots.groups.manageMembersMenu', 'Manage members…')}
         </ContextMenuItem>
@@ -105,7 +123,7 @@ export function BotGroupRow({
       menuFooter={
         <>
           <ContextMenuSeparator />
-          <ContextMenuItem variant="destructive" onSelect={onDelete}>
+          <ContextMenuItem variant="destructive" disabled={offline} onSelect={onDelete}>
             <Trash2 className="size-3.5" />
             {t('bots.groups.deleteGroupMenu', 'Delete group…')}
           </ContextMenuItem>

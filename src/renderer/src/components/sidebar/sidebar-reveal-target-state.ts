@@ -27,6 +27,7 @@ import { readBotGroups, subscribeToBotGroupChanges } from '@/lib/bot-group-catal
 import { withKeptBotHomes } from '@/lib/bot-host-kept-homes'
 import { getHostKeyedBotSidebarEntries } from '@/components/bots/bot-sidebar-entry-keys'
 import { getKnownSidebarWorktreeById } from '@/components/sidebar/worktree-list/navigation/folder-reveal'
+import { isBotSidebarHostVisible } from '../../../../shared/bots/bot-sidebar-view'
 import type { Bot } from '../../../../shared/bot-types'
 import type { BotGroup } from '../../../../shared/bots/bot-group'
 import type { ExecutionHostId } from '../../../../shared/execution-host/execution-host'
@@ -131,7 +132,9 @@ function ownerInputs(
     kind: entry.kind,
     entryKey: entry.entryKey,
     home: entry.home,
-    hidden: hidePausedBots && entry.paused,
+    hidden:
+      (hidePausedBots && entry.paused) ||
+      !isBotSidebarHostVisible(entry.hostId, state.botSidebarView?.visibleHostIds),
     hostDown: readBotHostState(entry.hostId) === 'offline'
   }))
   return {
