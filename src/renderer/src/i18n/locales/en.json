@@ -29317,6 +29317,7 @@
       "stateNotConnected": "Not connected",
       "needsSetup": "Needs setup",
       "publisher": "by Orca",
+      "monicaPublisher": "by Monica",
       "official": "Official Orca template",
       "useTemplate": "Use template…",
       "inItsChat": "in its chat",

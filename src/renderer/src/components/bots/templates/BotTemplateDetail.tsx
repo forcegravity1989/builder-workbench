@@ -50,7 +50,7 @@ export function BotTemplateDetail({
               <span className="inline-flex items-center gap-1">
                 <span aria-hidden="true">·</span>
                 {workbenchTemplate
-                  ? 'Builders’ Workbench'
+                  ? t('bots.templates.monicaPublisher', 'by Monica')
                   : t('bots.templates.publisher', 'by Orca')}
                 <BadgeCheck
                   className="size-3.5 shrink-0 text-callout-note"

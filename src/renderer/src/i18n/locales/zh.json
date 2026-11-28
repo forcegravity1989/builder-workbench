@@ -27108,6 +27108,7 @@
       "stateNotConnected": "未连接",
       "needsSetup": "需要设置",
       "publisher": "由 Orca 提供",
+      "monicaPublisher": "由 Monica 提供",
       "official": "Orca 官方模板",
       "useTemplate": "使用模板…",
       "inItsChat": "在它的聊天中",
