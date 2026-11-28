@@ -195,7 +195,7 @@ export function TeamSettingsDialog({
       notifyWorkbenchError(
         '团队目录读取失败',
         cause,
-        '检查 WeLink 连接；若接口限流，稍后手动重试。'
+        '重新打开团队设置并重新选择 WeLink 群后重试。'
       )
       return false
     } finally {

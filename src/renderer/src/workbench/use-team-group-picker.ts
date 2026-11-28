@@ -73,7 +73,9 @@ export function useTeamGroupPicker(
     }
     // Why an in-flight latch rather than reading the phase: the popover calls
     // this on every open, and a second concurrent walk would double the OneBox
-    // paging requests for the same list.
+    // paging requests for the same list. The latch is per hook instance only;
+    // a remount before the walk finishes starts a second one, which is
+    // harmless — both walks read the same list and the cache converges.
     if (inFlight.current) {
       return
     }

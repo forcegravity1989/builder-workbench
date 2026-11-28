@@ -168,6 +168,17 @@ export function TeamGroupSpaceCombobox({
     [onQueryChange, onRetry]
   )
 
+  const handleChoose = useCallback(
+    (space: TeamGroupSpaceOption) => {
+      // Close on choose like the approved prototype: the read-only ID line
+      // underneath is what the user reads next, and the panel would cover it.
+      setOpen(false)
+      onQueryChange('')
+      onChoose(space)
+    },
+    [onChoose, onQueryChange]
+  )
+
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
@@ -210,7 +221,7 @@ export function TeamGroupSpaceCombobox({
             options={options}
             selection={selection}
             resolveFailure={resolveFailure}
-            onChoose={onChoose}
+            onChoose={handleChoose}
           />
         </Command>
       </PopoverContent>

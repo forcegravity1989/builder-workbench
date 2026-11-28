@@ -55,7 +55,25 @@ async function warmOneboxSession(partition: string): Promise<{
   // The warm-up is a background session bootstrap, not a browsing surface.
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   try {
-    await window.loadURL(ONEBOX_ENTRY_URL)
+    // loadURL only settles on did-finish/did-fail-load; a host that accepts
+    // the connection but never answers would hang it forever, so race a
+    // bounded timeout and report it like any other unreachable network path.
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error('onebox warm-up timed out')),
+        ONEBOX_WARMUP_TIMEOUT_MS
+      )
+      window.loadURL(ONEBOX_ENTRY_URL).then(
+        () => {
+          clearTimeout(timer)
+          resolve()
+        },
+        (error) => {
+          clearTimeout(timer)
+          reject(error)
+        }
+      )
+    })
     const deadline = Date.now() + ONEBOX_WARMUP_TIMEOUT_MS
     for (;;) {
       const cookies = await session
