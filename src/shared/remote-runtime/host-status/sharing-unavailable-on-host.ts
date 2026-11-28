@@ -8,12 +8,19 @@ export const SHARING_UNAVAILABLE_ON_HOST_NEXT_STEPS: readonly string[] = [
   'Open the Orca desktop app, sign in, and run the command from an Orca terminal there.'
 ]
 
+export const WORKBENCH_PUBLISHING_UNAVAILABLE_MESSAGE =
+  'Publishing to Orca Cloud is unavailable in Workbench.'
+
 export class SharingUnavailableOnHostError extends Error {
   readonly code = SHARING_UNAVAILABLE_ON_HOST_CODE
-  readonly data = { nextSteps: [...SHARING_UNAVAILABLE_ON_HOST_NEXT_STEPS] }
+  readonly data: { nextSteps: string[] }
 
-  constructor() {
-    super(SHARING_UNAVAILABLE_ON_HOST_MESSAGE)
+  constructor(
+    message = SHARING_UNAVAILABLE_ON_HOST_MESSAGE,
+    nextSteps = SHARING_UNAVAILABLE_ON_HOST_NEXT_STEPS
+  ) {
+    super(message)
+    this.data = { nextSteps: [...nextSteps] }
     this.name = 'SharingUnavailableOnHostError'
   }
 }

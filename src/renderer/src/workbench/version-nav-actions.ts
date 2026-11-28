@@ -87,6 +87,7 @@ export function navigateVersionWorkflow(args: {
   version: string
   workflow: VersionWorkflow
   projectKey: string | null
+  onOpened?: () => void
 }): void {
   const { catalog, version, workflow, projectKey } = args
   const bound = findVersionFlowWorktrees(args.worktrees ?? catalog?.worktrees ?? [], {
@@ -97,6 +98,7 @@ export function navigateVersionWorkflow(args: {
     const only = bound[0]
     if (activateVersionWorktree(only)) {
       setBrowsedVersion(projectKey, version)
+      args.onOpened?.()
     }
     return
   }
@@ -104,7 +106,14 @@ export function navigateVersionWorkflow(args: {
   if (bound.length > 1) {
     openWorkbenchWorkspaceChoice({
       title: `${version} ${WORKFLOW_SCREEN_LABELS[workflow]}工作区`,
-      candidates: [...bound]
+      candidates: [...bound],
+      ...(args.onOpened && {
+        onChoose: (tree: Worktree) => {
+          if (activateVersionWorktree(tree)) {
+            args.onOpened?.()
+          }
+        }
+      })
     })
     return
   }
@@ -117,6 +126,7 @@ export function navigateVersionWorkflow(args: {
   }
   setCycleView(workflow)
   openCycleProject(catalog.scope, version)
+  args.onOpened?.()
 }
 
 /**

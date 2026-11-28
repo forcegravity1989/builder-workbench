@@ -5,6 +5,7 @@ import { useAppStore } from '../../../store/index'
 import { CliSection } from '../cli/install/CliSection'
 import { GeneralEditorSettingsSection } from '../editor/GeneralEditorSettingsSection'
 import { GeneralAutoSaveSetting } from '../editor/GeneralAutoSaveSetting'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { GeneralSupportSection } from './GeneralSupportSection'
 import { GeneralUpdateSettingsSection } from '../updates/GeneralUpdateSettingsSection'
 import {
@@ -304,7 +305,9 @@ function GeneralRootSettings({
       ) : null}
       {aboutMatches ? (
         <GeneralUpdateSettingsSection>
-          <GeneralSupportSection hasPrecedingSections={false} inline />
+          {isWorkbenchShell() ? null : (
+            <GeneralSupportSection hasPrecedingSections={false} inline />
+          )}
         </GeneralUpdateSettingsSection>
       ) : null}
     </>

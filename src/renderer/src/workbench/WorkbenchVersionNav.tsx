@@ -1,7 +1,10 @@
+import { getRepoRowIdentity } from '@/store/repos/repo-host-identity'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
-import { versionMaterialSelection, versionTreeKey } from './version-material-selection'
-import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
-import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
+import { versionTreeKey } from './version-material-selection'
+import {
+  openOverviewFromCatalog,
+  openOverviewFromWorktree
+} from './version-overview/open-version-overview'
 import type { Worktree } from '../../../shared/worktree/types'
 import { notifyWorkbenchError } from './error-feedback'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -30,14 +33,15 @@ import { VersionSidebarPreview } from './VersionSidebarPreview'
 import { NewVersionDialog } from './NewVersionDialog'
 import { openGoalWorkspace } from './scoped-task-workspace'
 import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
-import { openVersionOverview, useProjectPage } from './project-page-state'
-import {
-  getRepoExecutionHostId,
-  toRuntimeExecutionHostId
-} from '../../../shared/execution-host/execution-host'
+import { useProjectPage } from './project-page-state'
+import { toRuntimeExecutionHostId } from '../../../shared/execution-host/execution-host'
 import type { Repo } from '../../../shared/repository/repo-types'
 import { versionRepoIdentity } from '../../../shared/workbench/version-repo-identity'
-import { replayWorkbenchGuide, useWorkbenchScreenGuide } from './WorkbenchScreenGuide'
+import {
+  cancelWorkbenchGuide,
+  replayWorkbenchGuide,
+  useWorkbenchScreenGuide
+} from './WorkbenchScreenGuide'
 import { useWorkbenchScreenUsage } from './workbench-screen-usage'
 import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { useCycleView } from './cycle-view-state'
@@ -45,7 +49,9 @@ import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified
 import { VersionTreeDisplayProvider, type VersionTreeDisplayInput } from './VersionNativeTrees'
 import { VersionCatalogSourceProblem } from './VersionCatalogSourceProblem'
 import {
+  clearNavigationVersion,
   consumeVersionSidebarFocus,
+  useNavigationVersion,
   publishVersionSidebarProjection,
   useVersionSidebarFocusRequest
 } from './version-sidebar-state'
@@ -129,7 +135,8 @@ export function WorkbenchVersionNav({
     }
     return undefined
   }, [activeView, activeWorktree, projectPage, taskScope, taskRepoId, taskRepoMatches])
-  const project = useProjectVersionCatalog(repo, undefined, preference)
+  const navigationReveal = useNavigationVersion(getRepoRowIdentity(repo))
+  const project = useProjectVersionCatalog(repo, undefined, preference, Boolean(navigationReveal))
   const catalog = project.primary
   const materialReady = catalog?.materialReady ?? false
   const hasSourceProblems = project.sourceProblems.length > 0
@@ -142,6 +149,7 @@ export function WorkbenchVersionNav({
   const browsedVersion = useBrowsedVersion(repoId)
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const focusRequest = useVersionSidebarFocusRequest()
+  const sectionCollapsed = collapsed && !navigationReveal
   const versionElements = useRef(new Map<string, HTMLDivElement>())
 
   const expandedKey = repoId ? `workbench.version-expanded:${repoId}` : null
@@ -226,17 +234,17 @@ export function WorkbenchVersionNav({
       return
     }
     consumeVersionSidebarFocus(focusRequest.sequence)
-    const latest = entries[0]
-    if (!latest) {
+    const selected = entries[0]
+    if (!selected) {
       return
     }
-    setExpandedOverrideAndStore(new Set([...expandedVersions, latest.version]))
+    setExpandedOverrideAndStore(new Set([...expandedVersions, selected.version]))
     requestAnimationFrame(() => {
       const state = useAppStore.getState()
       const current = currentProjectRepo(state)
       if (current && resolveProjectSource(state, current)?.id === repoId) {
         versionElements.current
-          .get(latest.version)
+          .get(selected.version)
           ?.querySelector('button')
           ?.scrollIntoView({ block: 'nearest' })
       }
@@ -252,17 +260,50 @@ export function WorkbenchVersionNav({
     setExpandedOverrideAndStore
   ])
 
+  const activeStep = useAppStore((state) =>
+    state.activeContextualTourId === 'workbench-versions' ? state.activeContextualTourStepIndex : 0
+  )
+  const lastNavigationScroll = useRef('')
+  useEffect(() => {
+    if (!navigationReveal?.version) {
+      return
+    }
+    const key = `${navigationReveal.sequence}:${activeStep}`
+    if (lastNavigationScroll.current === key) {
+      return
+    }
+    const row = versionElements.current.get(navigationReveal.version)
+    const target =
+      navigationReveal.guide && activeStep === 1
+        ? row?.querySelector('[data-contextual-tour-target="workbench-versions-plan"]')
+        : row?.querySelector('button')
+    if (target) {
+      target.scrollIntoView({ block: 'nearest' })
+      lastNavigationScroll.current = key
+    }
+  }, [navigationReveal, activeStep, entries])
+
+  const stopNavigationReveal = useCallback(() => {
+    if (navigationReveal?.guide) {
+      cancelWorkbenchGuide('workbench-versions')
+    }
+    if (navigationReveal) {
+      clearNavigationVersion()
+    }
+  }, [navigationReveal])
+
   const toggleVersion = useCallback(
     (version: string) => {
       const next = new Set(expandedVersions)
-      if (next.has(version)) {
+      if (next.has(version) || navigationReveal?.version === version) {
         next.delete(version)
       } else {
         next.add(version)
       }
+      stopNavigationReveal()
       setExpandedOverrideAndStore(next)
     },
-    [expandedVersions, setExpandedOverrideAndStore]
+    [expandedVersions, navigationReveal, setExpandedOverrideAndStore, stopNavigationReveal]
   )
 
   const versions = useMemo(() => entries.map((entry) => entry.version), [entries])
@@ -326,17 +367,7 @@ export function WorkbenchVersionNav({
     const source = row?.source
     const versionCatalog = source?.state ?? null
     const sourceReady = !!versionCatalog?.scope && !versionCatalog.error
-    const openOverviewFromTree = (tree: Worktree) => {
-      try {
-        const selection = versionMaterialSelection(tree)
-        if (!selection) {
-          throw new Error('该流程工作区已变化')
-        }
-        openVersionOverview({ ...selection, version: entry.version })
-      } catch (error) {
-        notifyWorkbenchError('无法打开版本总览', error, '请刷新登记后重新选择工作区。')
-      }
-    }
+    const openOverviewFromTree = (tree: Worktree) => openOverviewFromWorktree(tree, entry.version)
     const openOverview = () => {
       if (
         activeView === 'terminal' &&
@@ -360,25 +391,7 @@ export function WorkbenchVersionNav({
         }
         return
       }
-      for (const workflow of ['plan', 'acceptance'] as const) {
-        const candidates = findVersionFlowWorktrees(source.state.worktrees, {
-          version: entry.version,
-          workflow
-        })
-        if (candidates.length > 1 && !entry.material[workflow]) {
-          openWorkbenchWorkspaceChoice({
-            title: `${entry.version} · 选择总览的${workflow === 'plan' ? '计划' : '验收'}工作区`,
-            candidates,
-            onChoose: openOverviewFromTree
-          })
-          return
-        }
-      }
-      openVersionOverview({
-        repoId: source.repo.id,
-        hostId: getRepoExecutionHostId(source.repo),
-        version: entry.version
-      })
+      openOverviewFromCatalog(source.repo, source.state.worktrees, entry)
     }
     const activeWorkflow: VersionWorkflow | null =
       activeBinding && activeBinding.version === entry.version
@@ -401,7 +414,10 @@ export function WorkbenchVersionNav({
       >
         <VersionNavGroup
           entry={entry}
-          expanded={expandedVersions.has(entry.version)}
+          expanded={
+            expandedVersions.has(entry.version) || navigationReveal?.version === entry.version
+          }
+          guidedVersion={navigationReveal?.guide ? navigationReveal.version : undefined}
           browsed={browsedVersion === entry.version}
           busy={busyKey !== null}
           initializing={busyKey === `${entry.version}:init`}
@@ -499,8 +515,11 @@ export function WorkbenchVersionNav({
     >
       <WorkbenchSidebarSectionHeader
         icon={Layers}
-        collapsed={collapsed}
-        onToggle={() => setCollapsed((value) => !value)}
+        collapsed={sectionCollapsed}
+        onToggle={() => {
+          stopNavigationReveal()
+          setCollapsed(!sectionCollapsed)
+        }}
         action={
           <>
             <Button
@@ -516,7 +535,11 @@ export function WorkbenchVersionNav({
               type="button"
               variant="ghost"
               size="icon-xs"
-              data-contextual-tour-target="workbench-versions-start"
+              data-contextual-tour-target={
+                navigationReveal?.guide && navigationReveal.version
+                  ? undefined
+                  : 'workbench-versions-start'
+              }
               aria-label="新建版本"
               title="新建版本"
               onClick={() => setDialog({ mode: 'create' })}
@@ -529,7 +552,7 @@ export function WorkbenchVersionNav({
         版本
       </WorkbenchSidebarSectionHeader>
 
-      {!collapsed ? (
+      {!sectionCollapsed ? (
         <>
           {project.sourceProblems.map(({ key, ...problem }) => (
             <VersionCatalogSourceProblem key={key} {...problem} />
@@ -551,7 +574,15 @@ export function WorkbenchVersionNav({
             activeContextKey={`${activeView}:${activeObjectKey}`}
             versionElements={versionElements}
             renderRow={renderVersionRow}
-            forceReveal={treeReveal.forceReveal}
+            forceReveal={
+              navigationReveal?.version
+                ? {
+                    version: navigationReveal.version,
+                    sequence: navigationReveal.sequence,
+                    onCollapse: stopNavigationReveal
+                  }
+                : treeReveal.forceReveal
+            }
           />
         </>
       ) : null}

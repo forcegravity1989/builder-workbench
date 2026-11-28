@@ -130,6 +130,8 @@ const devChannelRepo = isHourlyChannel
 const appId = process.env.ORCA_APP_ID || 'com.stablyai.orca'
 const workbench = process.env.ORCA_PRODUCT_NAME === 'Workbench'
 const productName = workbench ? 'Workbench' : 'Orca'
+// Windows display branding is separate from the legacy executable and packaged app metadata.
+const windowsWorkbench = workbench && process.env.WORKBENCH_WINDOWS_INSTALLER === '1'
 const windowsCliLauncherDirectory = `native/windows-cli-launcher/.build${workbench ? '/workbench' : ''}`
 const featureWallResources = {
   from: 'resources/onboarding/feature-wall',
@@ -268,7 +270,7 @@ const ORCA_MAC_TEAM_ID = '6CX3WHS9HZ'
 /** @type {import('electron-builder').Configuration} */
 module.exports = {
   appId,
-  productName,
+  productName: windowsWorkbench ? 'Monica' : productName,
   protocols: [{ name: productName, schemes: ['orca'] }],
   toolsets: { appimage: '1.0.3' },
   ...(devChannelBuildVersion || localBuildVersion || workbench
@@ -661,7 +663,7 @@ module.exports = {
   },
   nsis: {
     ...(workbench ? { oneClick: false, allowToChangeInstallationDirectory: true } : {}),
-    artifactName: workbench ? 'workbench-windows-setup.${ext}' : 'orca-windows-setup.${ext}',
+    artifactName: workbench ? 'monica-windows-setup.${ext}' : 'orca-windows-setup.${ext}',
     shortcutName: '${productName}',
     uninstallDisplayName: '${productName}',
     createDesktopShortcut: 'always',

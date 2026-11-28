@@ -2,6 +2,8 @@ import { getSystemLanguageDetection } from './system-language'
 import type { i18n as I18nInstance } from 'i18next'
 
 import { createOrcaI18n } from '../../shared/i18n/orca-i18n-instance'
+import { applyMonicaProductCopy } from '../../shared/i18n/monica-product-copy'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 import {
   DEFAULT_UI_LOCALE,
   resolveUiLocale,
@@ -33,8 +35,11 @@ const LAZY_LOCALE_LOADER_MAP = new Map<string, () => Promise<{ default: Record<s
 
 // Initializes synchronously, so startup dialogs can translate before settings load.
 const orcaI18n = createOrcaI18n({
-  loadCatalog: (language) => LAZY_LOCALE_LOADER_MAP.get(language)?.().then((mod) => mod.default),
-  englishResources: {}
+  loadCatalog: (language) =>
+    LAZY_LOCALE_LOADER_MAP.get(language)?.().then(({ default: catalog }) =>
+      isWorkbenchProduct() ? applyMonicaProductCopy(catalog) : catalog
+    ),
+  englishResources: isWorkbenchProduct() ? applyMonicaProductCopy({}, true) : {}
 })
 
 export const mainI18n: I18nInstance = orcaI18n.i18n

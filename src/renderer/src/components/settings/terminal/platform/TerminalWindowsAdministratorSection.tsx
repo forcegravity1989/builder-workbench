@@ -16,6 +16,7 @@ import { SearchableSetting } from '../../section-layout/SearchableSetting'
 import { getTerminalWindowsAdministratorSearchEntry } from './terminal-windows-search'
 import { MANAGE_SESSIONS_SECTION_ID } from '../session-management/open-terminal-manage-sessions'
 import { useAppStore } from '../../../../store/index'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useTranslate } from '@/i18n/use-translate'
 import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
 import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
@@ -209,7 +210,12 @@ export function TerminalWindowsAdministratorSection(): React.JSX.Element {
                     })
                   }
                 >
-                  {t('settings.terminal.windows.administratorDocumentation', 'Read the guide')}
+                  {isWorkbenchShell()
+                    ? t(
+                        'settings.terminal.windows.orcaAdministratorDocumentation',
+                        'Read the Orca terminal guide'
+                      )
+                    : t('settings.terminal.windows.administratorDocumentation', 'Read the guide')}
                 </Button>
               )
             }

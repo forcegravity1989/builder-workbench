@@ -45,7 +45,7 @@ export function PlanningHeader({
     <header className="vp-header">
       <div>
         <div className="g3-breadcrumb">
-          Builder Workbench <span>/</span>
+          Monica <span>/</span>
           <span className="g3-version-bound">{boundVersion ?? '版本未就绪'}</span>
         </div>
         <div className="vp-title-row">

@@ -2169,6 +2169,22 @@
         },
         "watches": "Your alert channel and incident issues"
       },
+      "bw-maintenance": {
+        "name": "Monica Fix",
+        "line": "Queues GitHub issues marked by a maintainer and hands them to repair workers.",
+        "firstChat": "Create this bot on the project computer. Select a registered project, then enable its scheduled check.",
+        "watches": "Open GitHub issues labeled bw-bot-fix, including older issues labeled later",
+        "does": "Starts one repair worker at a time and reports questions, progress and the pull request here.",
+        "reports": "When work is queued, needs attention or has a pull request",
+        "example1": "#42 is being fixed. #51 is queued.",
+        "example2": "The pull request for #42 is ready to review.",
+        "schedules": {
+          "labeled-issues": {
+            "when": "Every 5 minutes",
+            "what": "Check issues assigned to the bot"
+          }
+        }
+      },
       "pr-review": {
         "does": "Reviews each one and lists risky changes and missing tests, with file and line.",
         "events": {

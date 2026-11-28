@@ -1,5 +1,6 @@
 // The top of a bot's Activity tab: its picture (edited in place), name, what it is doing now or does next,
 // and its settings.
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useMemo, useState } from 'react'
 import { Copy, MoreHorizontal, Pause, Play, Settings, Share2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -266,10 +267,12 @@ export function BotPanelHeader({
               {bot.paused ? <Play /> : <Pause />}
               {bot.paused ? t('bots.row.resume', 'Resume bot') : t('bots.row.pause', 'Pause bot')}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setSharing(true)}>
-              <Share2 />
-              {t('bots.share.shareBot', 'Share bot…')}
-            </DropdownMenuItem>
+            {!isWorkbenchShell() ? (
+              <DropdownMenuItem onSelect={() => setSharing(true)}>
+                <Share2 />
+                {t('bots.share.shareBot', 'Share bot…')}
+              </DropdownMenuItem>
+            ) : null}
             {folderPath ? (
               <>
                 <DropdownMenuSeparator />

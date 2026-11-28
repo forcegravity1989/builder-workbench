@@ -6,17 +6,28 @@
 模型维护前必须读取本注释；范围变更按 AGENTS.md「文档怎么读、怎么维护」先与人确认。
 -->
 
-# Builders' Workbench
+# Monica
 
 **做得快，也交代得清。**
 
-给组织里带一条产品线、要向 Leader 交代结果的 Builder 的 AI 时代桌面工作台。目标是让 AI 跑完能跑的、你少搬运少记账；在版本开始定可验收的承诺，结束时逐目标对照证据下结论，随时查看真实数据，让交代用的材料来自工作过程。方向和完成始终由你确认。同一 Builder 的个人项目也可在 BW 中工作，不改变主要客群；哪些已可用见下节。
+Monica 是给组织里负责一条产品线的 Builder 使用的 AI 研发工作台。Orca 提供隔离的 Git 工作树、终端和智能体会话，让一个人能同时推进多项任务。Monica 把这套并行执行能力接入团队已有的 CodeHub、W3 和 WeLink。我们也用 Monica 开发 Monica，把日常使用中发现的问题带回下一轮迭代。
+
+并行的任务越多，越需要知道每项工作服务于哪个目标、做到什么程度才算完成。Monica 把版本计划、开发任务、评审和验收证据串起来：开始时约定交付什么，过程中查看真实进展，结束时由人对照证据确认结果。这是我们沿软件开发生命周期（SDLC）完善工作台的方向。个人项目也可以使用。
+
+| MONICA            | English                        | 中文               |
+| ----------------- | ------------------------------ | ------------------ |
+| M · Milestones    | Align on Milestones.           | 以里程碑对齐目标。 |
+| O · Orca          | Build on Orca.                 | 以 Orca 支撑构建。 |
+| N · Needs         | Create around Needs.           | 以需求驱动创造。   |
+| I · Iteration     | Develop through Iteration.     | 以迭代持续完善。   |
+| C · Collaboration | Execute through Collaboration. | 以协作推进执行。   |
+| A · Acceptance    | Finish with Acceptance.        | 以验收确认完成。   |
 
 ![CI](https://github.com/forcegravity1989/builder-workbench/actions/workflows/pr.yml/badge.svg?branch=main)
 
 ## 当前可用范围
 
-Workbench 是 Electron 桌面应用（Orca 产品叠层），面向 macOS 与 Windows，目前仍在内测与持续建设中。
+Monica 是 Electron 桌面应用（Orca 产品叠层），面向 macOS 与 Windows，目前仍在内测与持续建设中。
 
 - 接入本地或远端 GitHub / CodeHub 仓库，维护项目约定。
 - 计划与验收复用 Orca 原生会话工作区，右侧业务板读写版本材料；“开始计划／开始验收”准备完整 Skill 并打开会话草稿，由用户发送后执行，普通新建会话沿用 Orca。
@@ -33,19 +44,19 @@ Workbench 是 Electron 桌面应用（Orca 产品叠层），面向 macOS 与 Wi
 pnpm run dev:workbench
 ```
 
-构建完成后打开 Workbench 窗口。打开或接入项目后进入计划、任务或知识库页签；新路线的完整用户指南随迁移验收补齐。叠层说明见 [`SYNC.md`](src/renderer/src/workbench/SYNC.md)。
+构建完成后打开 Monica 窗口。打开或接入项目后进入计划、任务或知识库页签；新路线的完整用户指南随迁移验收补齐。叠层说明见 [`SYNC.md`](src/renderer/src/workbench/SYNC.md)。
 
 **启动窗口与实际开工是两件事。** 执行 Issue 还需要所选工具、会话宿主以及对应仓库的访问权限；具体依赖与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。完整开发、深链、测试与门禁命令只在 [AGENTS.md](AGENTS.md) 维护。
 
 ## 继续阅读
 
-| 想了解什么 | 入口 |
-|---|---|
-| 当前旅程与待迁移边界 | [架构说明 §1](docs/architecture.md#1--用例与旅程) |
+| 想了解什么             | 入口                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| 当前旅程与待迁移边界   | [架构说明 §1](docs/architecture.md#1--用例与旅程)                            |
 | 为谁做、要解决什么问题 | [产品主张 / FAQ / 飞轮](docs/01-principles/03-press-release-faq-flywheel.md) |
-| 当前整体设计与实现边界 | [架构说明](docs/architecture.md) |
-| 各类知识放在哪里 | [全仓文档地图](docs/README.md) |
-| 领域概念与容易混淆的词 | [CONTEXT.md](CONTEXT.md) |
-| 开发或让模型修改本仓 | [AGENTS.md](AGENTS.md) |
+| 当前整体设计与实现边界 | [架构说明](docs/architecture.md)                                             |
+| 各类知识放在哪里       | [全仓文档地图](docs/README.md)                                               |
+| 领域概念与容易混淆的词 | [CONTEXT.md](CONTEXT.md)                                                     |
+| 开发或让模型修改本仓   | [AGENTS.md](AGENTS.md)                                                       |
 
-产品称 **Builders' Workbench / Workbench / BW**，工程标识使用 `bw`。变更原因与验证证据查对应 commit / PR，当前知识以以上正本为准。
+Monica 原名 Builders' Workbench（BW），工程标识沿用 `bw`。变更原因与验证证据查对应 commit / PR，当前知识以以上正本为准。

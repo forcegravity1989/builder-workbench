@@ -1,3 +1,5 @@
+import { MONICA_DISPLAY_NAME } from '../../../shared/i18n/monica-display-name'
+import { isWorkbenchProduct } from '../workbench-product'
 import { app, type BrowserWindow } from 'electron'
 import { createMainWindow, loadMainWindow } from '../../window/createMainWindow'
 import {
@@ -149,7 +151,9 @@ export async function openMainWindow(options: MainWindowOpenOptions = {}): Promi
     deferLoad: true,
     ...(options.revealOnDidFinishLoad === true ? { revealOnDidFinishLoad: true } : {}),
     revealInBackground,
-    title: state.devInstanceIdentity?.name ?? app.name,
+    title: isWorkbenchProduct()
+      ? MONICA_DISPLAY_NAME
+      : (state.devInstanceIdentity?.name ?? app.name),
     getKeybindings: () => keybindings.getOverrides(),
     onBeforeReload: ({ ignoreCache, webContentsId }) => {
       if (state.mainWindow?.webContents.id === webContentsId) {

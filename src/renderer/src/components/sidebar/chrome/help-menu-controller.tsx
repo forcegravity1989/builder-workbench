@@ -1,3 +1,11 @@
+import {
+  agentMenuRowReady,
+  agentMenuRowSupportsChat
+} from '../../../../../shared/agent-launch/picker/agent-launch-picker-rows'
+import { ownBotHost } from '@/lib/bot-hosts'
+import { useBotsEnabled } from '@/lib/bot-catalog'
+import { useBotAgentMenu } from '../../bots/use-bot-agent-choices'
+import { openMonicaSupport } from '@/workbench/improvement/open-monica-support'
 import { DiscordIcon } from '../../icons/DiscordIcon'
 import React, { useState } from 'react'
 import {
@@ -22,8 +30,6 @@ import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdow
 import { useMountedRef } from '@/hooks/useMountedRef'
 import { showOnboardingFromRenderer } from '../../onboarding/show-onboarding-event'
 import { SetupGuideProgressRing } from '../../setup-guide/SetupGuideProgressRing'
-import { lazyWithRetry } from '@/app-shell/startup/lazy-with-retry'
-import type * as SidebarFeedbackDialogModule from '../sidebar-feedback/SidebarFeedbackDialog'
 import { useTranslate } from '@/i18n/use-translate'
 import {
   getUpdateCheckClickOptions,
@@ -33,15 +39,6 @@ import { openHelpLink } from './help-link-open'
 import { WORKBENCH_HELP_LINKS } from '@/workbench/help-links'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
-
-// Keep feedback off the boot graph; menu warming and selection share the same lazy module entry.
-const loadSidebarFeedbackDialog = (): Promise<typeof SidebarFeedbackDialogModule> =>
-  import('../sidebar-feedback/SidebarFeedbackDialog')
-
-const SidebarFeedbackDialog = lazyWithRetry(
-  () => loadSidebarFeedbackDialog().then((module) => ({ default: module.SidebarFeedbackDialog })),
-  { reloadKey: 'sidebar-feedback-dialog' }
-)
 
 const DOCS_URL = 'https://orca.dev/docs'
 const CHANGELOG_URL = 'https://orca.dev/changelog'
@@ -83,10 +80,9 @@ function ExternalMenuItem({
 
 export type SetupMilestones = { done: number; total: number }
 
-/** Help's menu rows and feedback dialog, so the same Help can open from its own button or as a More submenu. */
+/** Shared Help actions for the standalone menu and the More submenu. */
 export type HelpMenuController = {
   items: React.ReactNode
-  dialog: React.ReactNode
   handleMenuOpenChange: (open: boolean) => void
 }
 
@@ -94,13 +90,25 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
   const t = useTranslate()
   const isBW = isWorkbenchShell()
   const showWorkbenchDesktopHelp = isBW && !isWebClientLocation()
+  const botsEnabled = useBotsEnabled()
+  const [helpOpen, setHelpOpen] = useState(false)
+  const { model, choices } = useBotAgentMenu(
+    ownBotHost().hostId,
+    showWorkbenchDesktopHelp && botsEnabled && helpOpen
+  )
+  const preferred = useAppStore((s) => s.settings?.defaultTuiAgent)
+  const ready = choices.filter(
+    (agent) =>
+      model.state === 'settled' &&
+      model.rows.some(
+        (row) => row.agent === agent && agentMenuRowSupportsChat(row) && agentMenuRowReady(row)
+      )
+  )
+  const supportAgent = ready.find((agent) => agent === preferred) ?? ready[0]
   const openModal = useAppStore((s) => s.openModal)
   const openSettingsPage = useAppStore((s) => s.openSettingsPage)
   const openSettingsTarget = useAppStore((s) => s.openSettingsTarget)
   const updateStatus = useAppStore((s) => s.updateStatus)
-  const [feedbackOpen, setFeedbackOpen] = useState(false)
-  // Retain the mounted dialog through its closing animation.
-  const [feedbackDialogMounted, setFeedbackDialogMounted] = useState(false)
   const [isRestartingOrca, setIsRestartingOrca] = useState(false)
   const lastShowOnboardingAtRef = React.useRef(0)
   const updateCheckModifiersRef = React.useRef(NO_UPDATE_CHECK_MODIFIERS)
@@ -108,16 +116,12 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
   const updateCheckHint = getUpdateCheckHint()
 
   const handleMenuOpenChange = (open: boolean): void => {
+    setHelpOpen(open)
     updateCheckModifiersRef.current = NO_UPDATE_CHECK_MODIFIERS
     if (open) {
       // Warm while users read the menu so feedback is loaded before selection.
-      void loadSidebarFeedbackDialog().catch(() => {})
+      void import('../sidebar-feedback/SidebarFeedbackDialog').catch(() => {})
     }
-  }
-
-  const handleOpenFeedback = (): void => {
-    setFeedbackDialogMounted(true)
-    setFeedbackOpen(true)
   }
 
   const handleShowOnboarding = (): void => {
@@ -186,6 +190,27 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
       <>
         {isBW ? (
           <>
+            {showWorkbenchDesktopHelp && (
+              <DropdownMenuItem
+                disabled={!botsEnabled || model.state === 'loading'}
+                onSelect={() => {
+                  void openMonicaSupport(supportAgent)
+                    .then((warning) => {
+                      if (warning) {
+                        toast.warning(warning)
+                      }
+                    })
+                    .catch((error: unknown) => {
+                      toast.error(t('guidance.monicaOpenFailed', 'Could not open Monica'), {
+                        description: error instanceof Error ? error.message : undefined
+                      })
+                    })
+                }}
+              >
+                <MessageSquareText className="size-3.5" />
+                {t('guidance.askMonica', 'Ask Monica')}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onSelect={openMilestones}>
               <School className="size-3.5" />
               {t('guidance.gettingStarted', 'Getting Started with BW')}
@@ -202,10 +227,17 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
           {t('auto.components.sidebar.SidebarSettingsHelpMenu.e565171a7c', 'Keyboard Shortcuts')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={handleOpenFeedback}>
-          <MessageSquareText className="size-3.5" />
-          {t('auto.components.sidebar.SidebarSettingsHelpMenu.4cf5b868d7', 'Send Feedback')}
-        </DropdownMenuItem>
+        {isBW && !showWorkbenchDesktopHelp ? (
+          <DropdownMenuItem disabled>
+            <MessageSquareText className="size-3.5" />
+            {t('guidance.feedbackOnDesktop', 'To send feedback, open Help in the BW desktop app.')}
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onSelect={() => openModal('feedback')}>
+            <MessageSquareText className="size-3.5" />
+            {t('auto.components.sidebar.SidebarSettingsHelpMenu.4cf5b868d7', 'Send Feedback')}
+          </DropdownMenuItem>
+        )}
         {showWorkbenchDesktopHelp && window.api.app.openCrashReport ? (
           <DropdownMenuItem onSelect={() => void window.api.app.openCrashReport?.()}>
             <Bug className="size-3.5" aria-hidden />
@@ -295,15 +327,6 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
             ? t('guidance.restart', 'Restart BW')
             : t('auto.components.sidebar.SidebarSettingsHelpMenu.ad3d3ed7f1', 'Restart Orca')}
         </DropdownMenuItem>
-      </>
-    ),
-    dialog: (
-      <>
-        {feedbackDialogMounted ? (
-          <React.Suspense fallback={null}>
-            <SidebarFeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
-          </React.Suspense>
-        ) : null}
       </>
     ),
     handleMenuOpenChange
