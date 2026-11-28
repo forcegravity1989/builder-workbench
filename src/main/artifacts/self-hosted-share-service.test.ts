@@ -2,7 +2,6 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { SHARE_MAX_CONTENT_BYTES } from '../../shared/workbench/share'
 import { createShareService } from './self-hosted-share-service'
 
 type Call = { method: string; url: string; headers: Headers; body: unknown }
@@ -161,9 +160,15 @@ describe('createShareService', () => {
   })
 
   it('rejects oversized content before touching the network', async () => {
-    const result = await service().publish({
+    const result = await createShareService({
+      dataDir: () => dataDir,
+      serverUrl: SERVER_URL,
+      enrollKey: 'enroll-key',
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      maxContentBytes: 1024
+    }).publish({
       sourceKey: '/repo/a.html',
-      content: 'a'.repeat(SHARE_MAX_CONTENT_BYTES + 1),
+      content: 'a'.repeat(1025),
       fileName: 'a.html'
     })
 

@@ -25,10 +25,10 @@
 
 - 只把服务暴露在内网，或放在要求身份的前置代理后面；不要因为「有登记密钥」而暴露到公网。
 - 想要一台不认公开密钥的实例，就把 `BW_SHARE_ENROLL_KEY` 设成自己的值——但已发布的 Workbench 客户端仍带内置密钥，会全部登记失败。目前没有「既锁死登记、又能用出货客户端」的配置，两者只能选一。
-- 写入没有配额：单 IP 默认 30 次写/分钟 × 单份最大 10 MiB ≈ 300 MiB/分钟，约一小时就能写满一块 20 GB 盘，且默认保留 30 天才回收。把磁盘水位纳入运维告警，必要时调低 `BW_SHARE_RATE_LIMIT`、`BW_SHARE_MAX_BYTES` 或 `BW_SHARE_RETENTION_DAYS`。
+- 写入没有配额：单 IP 默认 30 次写/分钟 × 单份最大 200 MiB ≈ 6 GiB/分钟，一块 20 GB 盘很快就能写满，且默认保留 30 天才回收。默认上限面向内网可信使用；把磁盘水位纳入运维告警，必要时调低 `BW_SHARE_RATE_LIMIT`、`BW_SHARE_MAX_BYTES` 或 `BW_SHARE_RETENTION_DAYS`。
 - 打开链接不需要任何凭据，谁能读到内容同样由网络可达范围决定。`/s/:id` 查看页是服务端可信页面（批注面板与批注 API 同源）；被分享的内容在 `CSP: sandbox` 的不透明源 iframe 里运行，拿不到本服务的 origin、Cookie 或存储，但仍能执行脚本并向站外发请求——批注写入的 `application/json` 校验挡住它向自己链接灌批注（见「HTTP 接口」）。
 
-单个 HTML 文件，不打包相对路径资源。BW 客户端自 #786 起在上传前把本机 HTML 的相对样式表（含 `@import` 链）与其引用的字体/图片内联进文档，分享页因此还原本地观感；其余外链（如正文 `<img>`、外部脚本）仍需作者自行内联或改用绝对地址。服务端只存上传后的单份 HTML，此边界不变。
+单个 HTML 文件，不打包相对路径资源。BW 客户端在上传前把本机 HTML 的相对样式表（含 `@import` 链）与其引用的字体/图片，以及正文里的 `<img src>`、`srcset`、`poster` 和元素 `style` 属性内的 `url()` 内联进文档，分享页因此还原本地观感；外部脚本、绝对 URL 与客户端读不到的资源仍需作者自行处理。服务端只存上传后的单份 HTML，此边界不变。
 
 ## HTTP 接口
 
@@ -53,7 +53,7 @@
 ```
 
 - `contentType` 只接受 `text/html`，其他类型返回 `415`。Markdown 由客户端先渲染成 HTML 再上传。
-- 请求体上限按 6 倍 JSON 转义冗余放宽（10 MiB 内容最多可占 61 MiB 传输体）；判定仍以解码后的内容字节数为准，超过 `BW_SHARE_MAX_BYTES` 返回 `413`。
+- 请求体上限按 6 倍 JSON 转义冗余放宽（200 MiB 内容最多可占约 1.2 GiB 传输体）；判定仍以解码后的内容字节数为准，超过 `BW_SHARE_MAX_BYTES` 返回 `413`。
 - `title` 最长 200 字符，`fileName` 最长 255 字符且不能含控制字符。
 - 分享页带 `Content-Security-Policy: sandbox allow-scripts ...`，报告里的脚本能跑，但拿不到本服务的 origin、Cookie 或存储。可加载的内容一律 `nosniff`、`no-store`、`no-referrer`。
 
@@ -67,7 +67,7 @@
 
 `POST /api/client-tokens` 用登记密钥换一枚随机上传令牌（256 位），返回明文一次，服务端只落 sha256；同一设备不应重复登记。登记密钥编译在 Workbench 客户端里，只用于挡住无关网络客户端自行发令牌，不是抵御能读仓库的人的机密（见「写入权限的真实边界」）。换 `BW_SHARE_ENROLL_KEY` 只阻止新登记，已签发的设备令牌继续可用；`BW_SHARE_ENROLL_KEY` 留空则回落到客户端内置的公开默认值，即登记无法关闭。要撤销全部已登记设备，停止服务、删除 `<dataDir>/client-tokens.json` 再启动（客户端下次分享会重新登记）——**删完注册表后实例又回到「无静态令牌且无设备令牌」的匿名可写状态**，要同时设 `BW_SHARE_UPLOAD_TOKEN` 才能一直保持要求令牌。注册表只增不减（无过期、无淘汰），满 5000 条后登记持续返回 503 `enrollment_full`，需运维清理文件才恢复。
 
-错误统一为 `{"error":{"code":"...","message":"..."}}`。常见码：`bad_request`、`unauthorized`、`forbidden`、`not_found`、`too_large`、`unsupported_media_type`、`rate_limited`、`method_not_allowed`，以及三个 503：`busy`（在途上传占满 64 MiB 内存预算，或目标分享正被读取导致本次覆盖失败——两者重试即可）、`enrollment_full`（设备令牌注册表已满，重试无效，需运维清理文件）与 `registry_unavailable`（注册表读不出来：新建分享与登记被拒，改删已有分享不受影响；需运维修复或删除该文件后**重启**）。
+错误统一为 `{"error":{"code":"...","message":"..."}}`。常见码：`bad_request`、`unauthorized`、`forbidden`、`not_found`、`too_large`、`unsupported_media_type`、`rate_limited`、`method_not_allowed`，以及三个 503：`busy`（在途上传占满 512 MiB 内存预算，或目标分享正被读取导致本次覆盖失败——两者重试即可）、`enrollment_full`（设备令牌注册表已满，重试无效，需运维清理文件）与 `registry_unavailable`（注册表读不出来：新建分享与登记被拒，改删已有分享不受影响；需运维修复或删除该文件后**重启**）。
 
 ## 本地试跑
 
@@ -98,7 +98,7 @@ Windows 上不要用 `VAR=x cmd` 的 POSIX 前缀写法和 `pnpm exec`；前者�
 | `BW_SHARE_ENROLL_KEY`      | 内置值    | 换发设备令牌的登记密钥；必须与客户端编译值一致，修改只影响后续登记，不撤销已签发令牌。留空即用客户端内置的公开默认值，登记无法关闭 |
 | `BW_SHARE_UPLOAD_TOKEN`    | 空        | 额外的共享上传令牌（手工运维/脚本用）；设备登记令牌独立生效。**设了它，写入就一直要求令牌**，不会因为注册表被清空而回到匿名可写    |
 | `BW_SHARE_PUBLIC_BASE_URL` | 空        | 生成链接用的外网地址，可带路径前缀（反代需去掉前缀，见 nginx 示例）；为空时按请求 Host 推导                                        |
-| `BW_SHARE_MAX_BYTES`       | 10 MiB    | 单份内容上限                                                                                                                       |
+| `BW_SHARE_MAX_BYTES`       | 200 MiB   | 单份内容上限                                                                                                                       |
 | `BW_SHARE_RETENTION_DAYS`  | 30        | 保留天数，`0` 表示不过期                                                                                                           |
 | `BW_SHARE_RATE_LIMIT`      | 30        | 每 IP 每分钟写请求数，`0` 关闭                                                                                                     |
 | `BW_SHARE_TRUST_PROXY`     | `false`   | 反代后面部打开，才信任 `X-Forwarded-For/Proto/Host`                                                                                |
@@ -110,7 +110,7 @@ Node 22.9+ 自带 `fetch`、`node:test` 和 `--env-file-if-exists`，服务无�
 1. 建服务账号：`useradd --system --no-create-home bwshare`。
 2. 拷贝代码到 `/opt/bw-share`，把环境变量写到 `/etc/bw-share.env`（权限 0600），务必设 `BW_SHARE_PUBLIC_BASE_URL`；`BW_SHARE_ENROLL_KEY` 留空即用客户端内置值。不要设 `BW_SHARE_DATA_DIR`：unit 里默认 `/var/lib/bw-share`，由 systemd 的 `StateDirectory` 建好并授权。
 3. 安装 [`deploy/bw-share.service`](deploy/bw-share.service) 到 `/etc/systemd/system/`，`systemctl enable --now bw-share`。
-4. 前面挂 Nginx：参考 [`deploy/nginx.conf.example`](deploy/nginx.conf.example)，`BW_SHARE_TRUST_PROXY=true`，`client_max_body_size` 至少 64 MB（10 MiB 内容经 JSON 转义后传输体可达 60 MiB，反代低于这个值会先于服务返回自己的 413 页面）。服务把 `X-Forwarded-For` 的**最右一项**当作限流键，即受信任代理实际看到的对端：单层代理下用 `$remote_addr` 覆盖或用 `$proxy_add_x_forwarded_for` 追加都安全；多层代理则每层追加、只信任最后一跳，否则所有用户会共用最内层代理这一个限流键。
+4. 前面挂 Nginx：参考 [`deploy/nginx.conf.example`](deploy/nginx.conf.example)，`BW_SHARE_TRUST_PROXY=true`，`client_max_body_size` 至少 1300 MB（200 MiB 内容经 JSON 转义后传输体可达约 1.2 GiB，反代低于这个值会先于服务返回自己的 413 页面）。服务把 `X-Forwarded-For` 的**最右一项**当作限流键，即受信任代理实际看到的对端：单层代理下用 `$remote_addr` 覆盖或用 `$proxy_add_x_forwarded_for` 追加都安全；多层代理则每层追加、只信任最后一跳，否则所有用户会共用最内层代理这一个限流键。
 5. 验证：`curl -f localhost:8787/healthz`；再真实上传一份、在另一台机器打开链接。
 
 容器部署同样可行：单进程、无依赖、数据目录挂卷即可。
@@ -123,12 +123,14 @@ Node 22.9+ 自带 `fetch`、`node:test` 和 `--env-file-if-exists`，服务无�
 
 ## 资源预估
 
-单进程 Node，空闲常驻内存约 50–70 MB。打开分享是流式直出，不把整份报告读进内存。上传峰值取决于 JSON 体积：普通 HTML 约为原文件的两倍，转义字符极多时最高 6 倍；同时在途的上传总内存限制在 64 MiB，超出时新上传收到 `busy` 而不是拖垮进程。文件大小随报告体积走，一份 HTML 通常 0.2–5 MB。请求超时 120 秒（头部 15 秒），为 60 MiB 量级的传输体留足时间；客户端自己的超时可能更短，慢链路上以先到者为准。
+单进程 Node，空闲常驻内存约 50–70 MB。打开分享是流式直出，不把整份报告读进内存。上传峰值取决于 JSON 体积：普通 HTML 约为原文件的两倍，转义字符极多时最高 6 倍；同时在途的上传总内存限制在 512 MiB，超出时新上传收到 `busy` 而不是拖垮进程。文件大小随报告体积走，我们自己的报告通常 0.2–5 MB，但演示 GIF 等内联资源可把单份推到数百 MiB。请求超时 600 秒（头部 15 秒），为 200 MiB 量级的传输体留足时间；客户端自己的超时可能更短，慢链路上以先到者为准。
 
 | 场景                           | CPU  | 内存 | 磁盘  |
 | ------------------------------ | ---- | ---- | ----- |
-| 十几人小团队（每月几百次分享） | 1 核 | 1 GB | 20 GB |
-| 几十人、偶尔并发上传大报告     | 2 核 | 2 GB | 20 GB |
+| 十几人小团队（每月几百次分享） | 1 核 | 4 GB | 20 GB |
+
+200 MiB 的单份上传会在 Node 内解码为同等量级的字符串；1 GB 内存的机器只适合调低 `BW_SHARE_MAX_BYTES` 的小文件场景。
+| 几十人、偶尔并发上传大报告 | 2 核 | 2 GB | 20 GB |
 
 网络只按响应体积计费；打开分享是静态文件直出，基本不消耗 CPU。磁盘按 `份数 × 平均体积 × 保留天数内新增` 估，配合默认 30 天清理无需扩容。
 

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, truncate, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -108,6 +108,51 @@ describe('inlineLocalHtmlAssets', () => {
     expect(edge).toContain('<div id="tail">tail</div>')
   })
 
+  it('inlines relative image sources, srcset candidates, posters and inline style urls', async () => {
+    const pngBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    const gifBytes = Buffer.from('GIF89a-demo-frame')
+    await put('proto/imgs/a.png', pngBytes)
+    await put('proto/imgs/demo.gif', gifBytes)
+    const page = await put(
+      'proto/image-page.html',
+      [
+        '<!doctype html><html><body>',
+        '<img src="imgs/a.png" alt="a">',
+        '<img src="imgs/demo.gif" srcset="imgs/a.png 1x, https://cdn.example.com/b.png 2x">',
+        '<picture><source srcset="imgs/a.png 480w"><img src="imgs/a.png"></picture>',
+        '<video poster="imgs/demo.gif"></video>',
+        `<div style="background-image: url('imgs/a.png')">bg</div>`,
+        '<img src="https://cdn.example.com/x.png">',
+        '<img src="/abs/x.png">',
+        '<img src="imgs/missing.png">',
+        '<!-- <img src="imgs/a.png"> -->',
+        '<script>var s = "<img src=\\"imgs/a.png\\">";</script>',
+        '</body></html>'
+      ].join('\n')
+    )
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const out = await inlineLocalHtmlAssets(await readFileText(page), page)
+      const pngUri = `data:image/png;base64,${pngBytes.toString('base64')}`
+      const gifUri = `data:image/gif;base64,${gifBytes.toString('base64')}`
+      expect(out).toContain(`<img src="${pngUri}" alt="a">`)
+      expect(out).toContain(gifUri)
+      expect(out).toContain(`srcset="${pngUri} 1x, https://cdn.example.com/b.png 2x"`)
+      expect(out).toContain(`<source srcset="${pngUri} 480w">`)
+      expect(out).toContain(`<video poster="${gifUri}"></video>`)
+      expect(out).toContain(`url('${pngUri}')`)
+      // External, absolute and missing references stay as authored; the missing one logs once.
+      expect(out).toContain('<img src="https://cdn.example.com/x.png">')
+      expect(out).toContain('<img src="/abs/x.png">')
+      expect(out).toContain('<img src="imgs/missing.png">')
+      expect(out).toContain('<!-- <img src="imgs/a.png"> -->')
+      expect(out).toContain('var s = "<img src=\\"imgs/a.png\\">";')
+      expect(errors).toHaveBeenCalledTimes(1)
+    } finally {
+      errors.mockRestore()
+    }
+  })
+
   it('degrades per resource and skips remote keys, cycles, non-whitelisted and absolute references', async () => {
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
     try {
@@ -127,9 +172,10 @@ describe('inlineLocalHtmlAssets', () => {
       expect(await inlineLocalHtmlAssets(link, missing)).toBe(link)
       expect(errors).toHaveBeenCalledTimes(1)
 
-      // Oversized asset (> 2 MiB): kept as-is with a log.
+      // Oversized asset (> 200 MiB): kept as-is with a log; a sparse file keeps the test light.
       errors.mockClear()
-      await put('big/huge.png', Buffer.alloc(2 * 1024 * 1024 + 1, 0x61))
+      const huge = await put('big/huge.png', '')
+      await truncate(huge, 200 * 1024 * 1024 + 1)
       const bigHtml = '<style>.x{background:url(huge.png)}</style>'
       const big = await put('big/page.html', bigHtml)
       expect(await inlineLocalHtmlAssets(bigHtml, big)).toBe(bigHtml)
@@ -176,11 +222,12 @@ describe('inlineLocalHtmlAssets', () => {
         dataDir: () => root,
         serverUrl: SERVER_URL,
         enrollKey: 'enroll-key',
-        fetchImpl: impl as unknown as typeof fetch
+        fetchImpl: impl as unknown as typeof fetch,
+        maxContentBytes: 8 * 1024 * 1024
       })
 
-    // Six stylesheets under the per-resource cap still push the inlined document past 10 MiB:
-    // the limit is checked on what actually gets uploaded, not on the pre-inline source.
+    // Six stylesheets under the per-resource cap still push the inlined document past the share
+    // cap: the limit is checked on what actually gets uploaded, not on the pre-inline source.
     const links: string[] = []
     for (let i = 0; i < 6; i += 1) {
       await put(`big/b${i}.css`, Buffer.alloc(1_900_000, 0x61))

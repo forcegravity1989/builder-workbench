@@ -40,11 +40,14 @@ export function createShareService(options: {
   serverUrl?: string
   enrollKey?: string
   fetchImpl?: typeof fetch
+  /** Overrides the service's default cap so tests can exercise oversize without a huge string. */
+  maxContentBytes?: number
 }): ShareService {
   const tokenStore = createShareTokenStore(options)
   const recordStore = createShareRecordStore(options)
   const serverUrl = options.serverUrl ?? SHARE_SERVER_URL
   const enrollKey = options.enrollKey ?? SHARE_ENROLL_KEY
+  const maxContentBytes = options.maxContentBytes ?? SHARE_MAX_CONTENT_BYTES
   let enrollment: Promise<string> | null = null
 
   function failure(error: unknown): ShareResult<never> {
@@ -146,8 +149,9 @@ export function createShareService(options: {
       // original content inside the inliner.
       const content = await inlineLocalHtmlAssets(request.content, request.sourceKey)
       const bytes = shareContentByteLength(content)
-      if (bytes > SHARE_MAX_CONTENT_BYTES) {
-        throw new ShareServiceError('too-large', '文件超过 10 MiB，无法分享')
+      if (bytes > maxContentBytes) {
+        const mib = Math.round(maxContentBytes / 1024 / 1024)
+        throw new ShareServiceError('too-large', `文件超过 ${mib} MiB，无法分享`)
       }
       const payload = {
         content,

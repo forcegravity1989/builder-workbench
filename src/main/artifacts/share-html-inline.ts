@@ -1,7 +1,7 @@
 import { readFile, stat } from 'node:fs/promises'
 import { dirname, extname, isAbsolute, resolve } from 'node:path'
 
-const MAX_RESOURCE_BYTES = 2 * 1024 * 1024
+const MAX_RESOURCE_BYTES = 200 * 1024 * 1024
 const MAX_IMPORT_DEPTH = 8
 
 const ASSET_MIME: Record<string, string> = {
@@ -23,9 +23,11 @@ const ASSET_MIME: Record<string, string> = {
 // The share service stores one HTML string, so relative stylesheets, their @import chain and
 // url() assets would 404 on the share origin. Inline them for local source keys only; remote
 // tuples (["ssh", …] / ["editor", …]) name files this process cannot reach.
+const HAS_LOCAL_ASSETS = /<(?:link|style|img|source|video|audio)\b|\sstyle\s*=/i
+
 export async function inlineLocalHtmlAssets(content: string, sourceKey: string): Promise<string> {
   const baseDir = localBaseDir(sourceKey)
-  if (!baseDir || !/<(?:link|style)\b/i.test(content)) {
+  if (!baseDir || !HAS_LOCAL_ASSETS.test(content)) {
     return content
   }
   try {
@@ -50,7 +52,7 @@ function localBaseDir(sourceKey: string): string | null {
 type Edit = { start: number; end: number; text: string }
 
 const HTML_SCAN =
-  /(?<comment><!--[\s\S]*?-->)|(?<script><script\b[\s\S]*?<\/script\s*>)|(?<link><link\b[^>]*>)|(?<styleOpen><style\b[^>]*>)(?<styleBody>[\s\S]*?)<\/style\s*>/gi
+  /(?<comment><!--[\s\S]*?-->)|(?<script><script\b[\s\S]*?<\/script\s*>)|(?<link><link\b[^>]*>)|(?<styleOpen><style\b[^>]*>)(?<styleBody>[\s\S]*?)<\/style\s*>|(?<tag><[a-z][^>]*>)/gi
 
 async function inlineHtml(content: string, baseDir: string): Promise<string> {
   const edits: Edit[] = []
@@ -58,6 +60,7 @@ async function inlineHtml(content: string, baseDir: string): Promise<string> {
     const start = match.index ?? 0
     const link = match.groups?.link
     const styleOpen = match.groups?.styleOpen
+    const tag = match.groups?.tag
     if (link !== undefined) {
       const replacement = await inlineLinkTag(link, baseDir)
       if (replacement !== null) {
@@ -73,12 +76,81 @@ async function inlineHtml(content: string, baseDir: string): Promise<string> {
           text: `${styleOpen}${escapeStyleText(processed)}</style>`
         })
       }
+    } else if (tag !== undefined) {
+      const replacement = await inlineTagAssets(tag, baseDir)
+      if (replacement !== null) {
+        edits.push({ start, end: start + match[0].length, text: replacement })
+      }
     }
   }
   return applyEdits(content, edits)
 }
 
 const ATTR = /([a-z-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi
+
+const TAG_NAME = /^<\s*([a-z][a-z0-9-]*)/i
+
+// Image/media tags carry their source outside CSS, so `<style>` inlining alone leaves the share
+// page's pictures pointing at files that only exist beside the original HTML.
+const TAG_ASSET_ATTRS: Record<string, readonly string[]> = {
+  img: ['src', 'srcset'],
+  source: ['src', 'srcset'],
+  video: ['src', 'poster'],
+  audio: ['src']
+}
+
+async function inlineTagAssets(tag: string, baseDir: string): Promise<string | null> {
+  const name = (TAG_NAME.exec(tag)?.[1] ?? '').toLowerCase()
+  const assetAttrs = TAG_ASSET_ATTRS[name] ?? []
+  const edits: Edit[] = []
+  for (const match of tag.matchAll(ATTR)) {
+    const attr = (match[1] ?? '').toLowerCase()
+    const value = match[2] ?? match[3] ?? match[4] ?? ''
+    let replacement: string | null = null
+    if (attr === 'style') {
+      replacement = await inlineCssUrls(value, baseDir)
+    } else if (assetAttrs.includes(attr)) {
+      replacement =
+        attr === 'srcset'
+          ? await inlineSrcset(value, baseDir)
+          : await inlineAssetRef(value, baseDir)
+    }
+    if (replacement === null || replacement === value) {
+      continue
+    }
+    const start = match.index ?? 0
+    edits.push({
+      start,
+      end: start + match[0].length,
+      text: `${match[1]}="${escapeAttr(replacement)}"`
+    })
+  }
+  return edits.length === 0 ? null : applyEdits(tag, edits)
+}
+
+async function inlineSrcset(raw: string, baseDir: string): Promise<string | null> {
+  // Comma-separated commas live inside data URIs too; leave an already-inlined set untouched.
+  if (raw.includes('data:')) {
+    return null
+  }
+  let changed = false
+  const candidates: string[] = []
+  for (const part of raw.split(',')) {
+    const candidate = part.trim()
+    if (!candidate) {
+      continue
+    }
+    const [url = '', ...descriptors] = candidate.split(/\s+/)
+    const inlined = await inlineAssetRef(url, baseDir)
+    if (inlined === null) {
+      candidates.push(candidate)
+      continue
+    }
+    changed = true
+    candidates.push([inlined, ...descriptors].join(' '))
+  }
+  return changed ? candidates.join(', ') : null
+}
 
 async function inlineLinkTag(tag: string, baseDir: string): Promise<string | null> {
   const attrs = new Map<string, string>()
@@ -145,23 +217,47 @@ async function inlineCss(
       }
       continue
     }
-    const dq = match.groups?.dq
-    const sq = match.groups?.sq
-    const uq = match.groups?.uq
-    if (dq === undefined && sq === undefined && uq === undefined) {
-      continue
-    }
-    const replacement = await inlineUrlAsset(dq ?? sq ?? uq ?? '', cssDir)
-    if (replacement !== null) {
-      const quote = dq !== undefined ? '"' : sq !== undefined ? "'" : ''
-      edits.push({
-        start,
-        end: start + match[0].length,
-        text: `url(${quote}${replacement}${quote})`
-      })
+    const edit = await urlAssetEdit(match, cssDir)
+    if (edit !== null) {
+      edits.push(edit)
     }
   }
   return applyEdits(css, edits)
+}
+
+// Only url() references, for CSS that is not a stylesheet resource (an element's style attribute).
+async function inlineCssUrls(css: string, cssDir: string): Promise<string> {
+  const edits: Edit[] = []
+  for (const match of css.matchAll(CSS_SCAN)) {
+    if (match.groups?.impBody !== undefined) {
+      continue
+    }
+    const edit = await urlAssetEdit(match, cssDir)
+    if (edit !== null) {
+      edits.push(edit)
+    }
+  }
+  return applyEdits(css, edits)
+}
+
+async function urlAssetEdit(match: RegExpMatchArray, cssDir: string): Promise<Edit | null> {
+  const dq = match.groups?.dq
+  const sq = match.groups?.sq
+  const uq = match.groups?.uq
+  if (dq === undefined && sq === undefined && uq === undefined) {
+    return null
+  }
+  const replacement = await inlineAssetRef(dq ?? sq ?? uq ?? '', cssDir)
+  if (replacement === null) {
+    return null
+  }
+  const quote = dq !== undefined ? '"' : sq !== undefined ? "'" : ''
+  const start = match.index ?? 0
+  return {
+    start,
+    end: start + match[0].length,
+    text: `url(${quote}${replacement}${quote})`
+  }
 }
 
 async function inlineImport(
@@ -200,7 +296,7 @@ async function inlineImport(
   return `@import url("data:text/css;base64,${data}")${body.slice(reference[0].length)};`
 }
 
-async function inlineUrlAsset(raw: string, cssDir: string): Promise<string | null> {
+async function inlineAssetRef(raw: string, dir: string): Promise<string | null> {
   const rel = relativeLocalPath(raw)
   if (!rel) {
     return null
@@ -209,7 +305,7 @@ async function inlineUrlAsset(raw: string, cssDir: string): Promise<string | nul
   if (!mime) {
     return null
   }
-  const bytes = await readResource(resolve(cssDir, rel))
+  const bytes = await readResource(resolve(dir, rel))
   if (bytes === null) {
     return null
   }

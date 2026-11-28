@@ -46,9 +46,9 @@ export async function startServer(options = {}) {
       log
     })
   )
-  // A 10 MiB report can arrive as a 60 MiB transport body once JSON escaping is counted, so the
-  // body budget needs more than a small request warrants. Headers keep the tight budget.
-  server.requestTimeout = 120_000
+  // A 200 MiB report can arrive as a much larger transport body once JSON escaping is counted, and
+  // large inlined images need time on slow links. Headers keep the tight budget.
+  server.requestTimeout = 600_000
   server.headersTimeout = 15_000
   await new Promise((resolve, reject) => {
     const onError = (error) => {

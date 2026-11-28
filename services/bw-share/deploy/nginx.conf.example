@@ -17,9 +17,9 @@ server {
     ssl_certificate     /etc/letsencrypt/live/share.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/share.example.com/privkey.pem;
 
-    # The service caps content at 10 MiB, but JSON escaping can turn that into a 60 MiB transport
-    # body, so the proxy must not cut in below the service's own 6x + 1 MiB budget.
-    client_max_body_size 64m;
+    # The service caps content at 200 MiB by default; leave room for JSON escaping (the service
+    # allows up to 6x + 1 MiB on the wire) so the proxy never answers 413 first.
+    client_max_body_size 1300m;
 
     location / {
         proxy_pass http://127.0.0.1:8787;
@@ -33,7 +33,7 @@ server {
         proxy_set_header X-Forwarded-For   $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Host  $host;
-        proxy_read_timeout 60s;
+        proxy_read_timeout 600s;
     }
 
     # Hosting under a path prefix (BW_SHARE_PUBLIC_BASE_URL=https://host/team) requires stripping
@@ -45,6 +45,6 @@ server {
     #     proxy_set_header X-Forwarded-For   $remote_addr;
     #     proxy_set_header X-Forwarded-Proto $scheme;
     #     proxy_set_header X-Forwarded-Host  $host;
-    #     proxy_read_timeout 60s;
+    #     proxy_read_timeout 600s;
     # }
 }

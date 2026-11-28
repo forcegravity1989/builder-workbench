@@ -749,7 +749,7 @@
         toastShared: 'Artifact shared',
         toastUpdated: 'Artifact updated',
         toastTooLargeTitle: 'File is too large to share',
-        toastTooLargeDesc: 'This file is 12.4 MiB; the share limit is 10 MiB.',
+        toastTooLargeDesc: 'This file is 231.4 MiB; the share limit is 200 MiB.',
         toastFailedTitle: 'Could not share artifact',
         toastNetworkDesc: 'Could not reach the share server. Check your network connection.',
         toastStaleRecordDesc:
@@ -817,7 +817,7 @@
         browser: [
           ['generate', '未分享 · Generate link'],
           ['link', '已有链接 · 复制 / 打开 / 更新 / 移除'],
-          ['too-large', '错误 · 文件超过 10 MiB'],
+          ['too-large', '错误 · 文件超过 200 MiB'],
           ['network', '错误 · 分享服务不可达'],
           ['enrollment-full', '错误 · 服务端设备登记已满（不可重试）'],
           ['registry-unavailable', '错误 · 服务端设备注册表不可用（不可重试）'],
@@ -843,7 +843,7 @@
           link:
             '原型注释：链接从本机分享记录读回，不请求 Orca 账号。复制、在浏览器打开、更新内容、Remove link（行内二次确认）即本面板全部真实交互；示例地址不可点。',
           'too-large':
-            '原型注释：10 MiB 上限在上传前于本地校验（零网络调用）；服务端 413 复用同一文案，均给出实际大小与上限。',
+            '原型注释：200 MiB 上限在上传前于本地校验（零网络调用）；服务端 413 复用同一文案，均给出实际大小与上限。',
           network:
             '原型注释：此态演示首次分享不可达；若文件已分享，弹层仍显示本机记录的链接，仅更新时如实报错（spec「事实读回与失败」）。',
           'enrollment-full':
