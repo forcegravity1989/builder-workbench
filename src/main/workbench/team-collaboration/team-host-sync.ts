@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parsePairingCode } from '../../../shared/remote-runtime/pairing/pairing'
 import {
@@ -10,6 +10,7 @@ import {
 import { RuntimeEnvironmentStoreError } from '../../../shared/remote-runtime/host-store/runtime-environment-store-records'
 import type { TeamDirectoryMember } from '../../../shared/team-directory'
 import { planTeamHostRefresh, type TeamSavedHost } from '../../../shared/team-host-refresh'
+import { writePluginFileAtomically } from '../../plugins/installation/plugin-atomic-file-write'
 
 export type TeamHostSyncResult = { added: number; updated: number }
 
@@ -19,6 +20,7 @@ export type TeamHostSyncDeps = {
   /** Keeps a freshly saved host disconnected until the user connects it. */
   holdDisconnected: (environmentId: string) => void
   invalidateTransport: (environmentId: string) => Promise<void> | void
+  removeStaleHost: (environmentId: string) => Promise<boolean>
 }
 
 const MANAGED_FILE = 'workbench-team-hosts.json'
@@ -61,29 +63,26 @@ function readManagedHosts(userDataPath: string): ManagedHost[] {
   }
 }
 
-function writeManagedHosts(userDataPath: string, hosts: readonly ManagedHost[]): void {
-  writeFileSync(
+function writeManagedHosts(userDataPath: string, hosts: readonly ManagedHost[]): Promise<void> {
+  return writePluginFileAtomically(
     join(userDataPath, MANAGED_FILE),
     JSON.stringify({
       hosts: hosts.map((host) => ({
         environmentId: host.environmentId,
         ...(host.memberId ? { memberId: host.memberId } : {})
       }))
-    })
+    }),
+    { mode: 0o600 }
   )
 }
 
 function rememberManagedHost(
   hosts: readonly ManagedHost[],
   environmentId: string,
-  memberId: string,
-  removeIds: readonly string[]
+  memberId: string
 ): ManagedHost[] {
-  const removed = new Set(removeIds)
   return [
-    ...hosts.filter(
-      (host) => host.environmentId !== environmentId && !removed.has(host.environmentId)
-    ),
+    ...hosts.filter((host) => host.environmentId !== environmentId),
     { environmentId, memberId }
   ]
 }
@@ -94,12 +93,6 @@ function isNameTaken(error: unknown): boolean {
   )
 }
 
-/**
- * Saves the other members' published links as remote hosts, disconnected until the user connects.
- * A new link replaces the host already saved for that member. The previous address is not kept
- * as a second team host. A hand-added host changes only when it is the same link, or the only
- * host saved under that member's name.
- */
 export function syncTeamHosts(
   hosts: TeamDirectoryMember[],
   currentMemberId: string | null,
@@ -163,6 +156,9 @@ async function syncTeamHostsOnce(
     const name = host.name ?? host.member_id
     try {
       const listed = await listEnvironments(deps.userDataPath)
+      if (deps.isCurrentBinding?.() === false) {
+        break
+      }
       const plan = planTeamHostRefresh(
         host,
         {
@@ -178,6 +174,9 @@ async function syncTeamHostsOnce(
         const environment = await saveHost(deps, name, host, host.orca_endpoint)
         try {
           deps.holdDisconnected(environment.id)
+          const next = rememberManagedHost(managed, environment.id, plan.memberId)
+          await writeManagedHosts(deps.userDataPath, next)
+          managed = next
         } catch (error) {
           await removeEnvironment(deps.userDataPath, environment.id)
           throw error
@@ -193,26 +192,42 @@ async function syncTeamHostsOnce(
           pairingCode: host.orca_endpoint,
           expectedPairingRevision: current.pairingRevision ?? current.createdAt
         })
-        await deps.invalidateTransport(environmentId)
         result.updated += 1
-      }
-      for (const staleId of plan.removeEnvironmentIds) {
-        await deps.invalidateTransport(staleId)
-        await removeEnvironment(deps.userDataPath, staleId)
-      }
-      if (plan.action === 'skip' && plan.removeEnvironmentIds.length > 0) {
-        result.updated += 1
+        try {
+          await deps.invalidateTransport(environmentId)
+        } catch (error) {
+          console.warn('[workbench-team-hosts] Failed to reactivate updated host transport:', error)
+        }
       }
       if (!environmentId) {
         continue
       }
-      managed = rememberManagedHost(
-        managed,
-        environmentId,
-        plan.memberId,
-        plan.removeEnvironmentIds
-      )
-      writeManagedHosts(deps.userDataPath, managed)
+      if (
+        !managed.some(
+          (entry) => entry.environmentId === environmentId && entry.memberId === plan.memberId
+        )
+      ) {
+        const next = rememberManagedHost(managed, environmentId, plan.memberId)
+        await writeManagedHosts(deps.userDataPath, next)
+        managed = next
+      }
+      const removed = new Set<string>()
+      for (const staleId of plan.removeEnvironmentIds) {
+        if (deps.isCurrentBinding?.() === false) {
+          break
+        }
+        if (await deps.removeStaleHost(staleId)) {
+          removed.add(staleId)
+        }
+      }
+      if (removed.size > 0) {
+        const next = managed.filter(({ environmentId: id }) => !removed.has(id))
+        await writeManagedHosts(deps.userDataPath, next)
+        managed = next
+        if (plan.action === 'skip') {
+          result.updated += 1
+        }
+      }
     } catch {
       // One unusable link must not block the other members' hosts, and it is retried next sync.
     }

@@ -97,14 +97,56 @@
   // 演示数据：OneBox teamSpaceList 的原始条目形态。emeeting-* 是自动建的会议
   // 空间，没有 WeLink 群；groupId 为空代表空间还在但群已解散，选中后报无关联群。
   const demoRawSpaces = [
-    { spaceId: demoSpaceId, groupId: demoGroup, name: '神盾局项目群', curNumbers: 12, ownedByUserName: '韩岚' },
+    {
+      spaceId: demoSpaceId,
+      groupId: demoGroup,
+      name: '神盾局项目群',
+      curNumbers: 12,
+      ownedByUserName: '韩岚'
+    },
     // 排在「交付看板协作群」之前，用来演示搜索时前缀命中会插到包含命中前面。
-    { spaceId: '24170355', groupId: '1030194633998627511', name: '星图交付保障群', curNumbers: 6, ownedByUserName: '陈远' },
-    { spaceId: alternateSpaceId, groupId: alternateGroup, name: '交付看板协作群', curNumbers: 5, ownedByUserName: '林安' },
-    { spaceId: '24160277', groupId: '1030194633998627497', name: '星图服务发布群', curNumbers: 8, ownedByUserName: '陈远' },
-    { spaceId: '24190113', groupId: '', name: '临时对齐（群已解散）', curNumbers: 4, ownedByUserName: '林安' },
-    { spaceId: '24188001', groupId: '', name: 'emeeting-20261127-1402', curNumbers: 3, ownedByUserName: '韩岚' },
-    { spaceId: '24188002', groupId: '', name: 'emeeting-20261126-0930', curNumbers: 2, ownedByUserName: '陈远' }
+    {
+      spaceId: '24170355',
+      groupId: '1030194633998627511',
+      name: '星图交付保障群',
+      curNumbers: 6,
+      ownedByUserName: '陈远'
+    },
+    {
+      spaceId: alternateSpaceId,
+      groupId: alternateGroup,
+      name: '交付看板协作群',
+      curNumbers: 5,
+      ownedByUserName: '林安'
+    },
+    {
+      spaceId: '24160277',
+      groupId: '1030194633998627497',
+      name: '星图服务发布群',
+      curNumbers: 8,
+      ownedByUserName: '陈远'
+    },
+    {
+      spaceId: '24190113',
+      groupId: '',
+      name: '临时对齐（群已解散）',
+      curNumbers: 4,
+      ownedByUserName: '林安'
+    },
+    {
+      spaceId: '24188001',
+      groupId: '',
+      name: 'emeeting-20261127-1402',
+      curNumbers: 3,
+      ownedByUserName: '韩岚'
+    },
+    {
+      spaceId: '24188002',
+      groupId: '',
+      name: 'emeeting-20261126-0930',
+      curNumbers: 2,
+      ownedByUserName: '陈远'
+    }
   ]
   // 与主进程 isMeetingSpaceName 同一条规则：会议空间不进可绑定列表。
   const demoBindableSpaces = demoRawSpaces.filter(
@@ -307,6 +349,8 @@
   const surface = document.querySelector('#surface')
   const dialog = document.querySelector('#dialog')
   const status = document.querySelector('#status')
+  const demoOfficeEndpoint = 'ws://10.24.8.32:6768'
+  let reviewHostAddress = false
   let confirmForm
   let desktops = resetDesktops()
   let state = load()
@@ -318,6 +362,7 @@
         {
           screen: 'wall',
           directoryDraft: null,
+          savedTeamAddresses: {},
           switchingTeam: false,
           bindingPending: false,
           groupPicker: blankGroupPicker(),
@@ -409,6 +454,9 @@
   }
 
   function save() {
+    if (reviewHostAddress) {
+      return
+    }
     try {
       localStorage.setItem(key, JSON.stringify(state))
     } catch {
@@ -881,9 +929,13 @@
         const endpoint = endpointFor(id, draft)
         const fill =
           id === actor.value && writable
-            ? iconButton('Link2', endpoint ? '一键填入' : '一键生成并填入', 'fill-own-share')
+            ? iconButton(
+                'Link2',
+                endpoint && !reviewHostAddress ? '一键填入' : '一键生成并填入',
+                'fill-own-share'
+              )
             : ''
-        return `<tr><td><span class="row member-person"><img class="avatar team-avatar" src="${avatarAssets[id]}" alt="${member.name}头像"><span title="${member.member_id}"><strong>${member.name}</strong><small class="member-role">${id === 'lead' ? '群主' : '成员'}</small></span></span></td><td><div class="host-cell"><div class="row wrap"><input class="input member-address" aria-label="${hostLabel(id)} Orca 共享地址" data-address="${id}" value="${esc(endpoint)}" placeholder="Orca 共享地址"${id === actor.value && writable ? '' : ' readonly'}><span class="host-actions">${fill}</span></div></div></td></tr>`
+        return `<tr><td><span class="row member-person"><img class="avatar team-avatar" src="${avatarAssets[id]}" alt="${member.name}头像"><span title="${member.member_id}"><strong>${member.name}</strong><small class="member-role">${id === 'lead' ? '群主' : '成员'}</small></span></span></td><td><div class="host-cell"><div class="row"><input class="input member-address" aria-label="${hostLabel(id)} Orca 共享地址" data-address="${id}" value="${esc(endpoint)}" placeholder="Orca 共享地址"${id === actor.value && writable ? '' : ' readonly'}><span class="host-actions">${fill}</span></div></div></td></tr>`
       })
       .join('')
 
@@ -1061,8 +1113,8 @@
         !state.teamConnections?.[actor.value]?.[owner]
     )
     const row = (owner, connected) =>
-      `<div class="remote-host-row"><div class="remote-host-main"><span class="remote-host-dot${connected ? ' is-connected' : ''}"></span><span><strong>${hostLabel(owner)}</strong><small>${connected ? '已连接 · 只读' : '已登记 · 未连接'}</small></span></div>${button(connected ? '断开' : '连接', connected ? 'disconnect-host' : 'quick-connect-host', { value: owner, kind: 'ghost' })}</div>`
-    return `<div class="remote-host-popover" role="dialog" aria-label="远程主机"><header class="row between"><strong>远程主机</strong>${iconButton('RefreshCw', '刷新远程主机', 'refresh-remote-hosts')}</header>${
+      `<div class="remote-host-row"><div class="remote-host-main"><span class="remote-host-dot${connected ? ' is-connected' : ''}"></span><span><strong>${hostLabel(owner)}</strong><small>${connected ? '已连接 · 只读' : '已登记 · 未连接'}</small>${reviewHostAddress ? `<small>${esc(current().savedTeamAddresses[owner] ?? '')}</small>` : ''}</span></div>${button(connected ? '断开' : '连接', connected ? 'disconnect-host' : 'quick-connect-host', { value: owner, kind: 'ghost' })}</div>`
+    return `<div class="remote-host-popover" role="dialog" aria-label="远程主机"><header class="row between"><strong>远程主机</strong>${iconButton('RefreshCw', reviewHostAddress ? '刷新团队主机' : '刷新远程主机', 'refresh-remote-hosts')}</header>${
       connections
         .concat(available)
         .map((owner) => row(owner, connections.includes(owner)))
@@ -1383,6 +1435,7 @@
     },
     reopen: () => {
       const reset = resetDesktops()
+      reset[actor.value].savedTeamAddresses = current().savedTeamAddresses
       desktops[actor.value] = reset[actor.value]
       notify('')
       render()
@@ -1464,13 +1517,38 @@
     },
     'open-workspace': enterSource,
     reset: () => {
+      if (reviewHostAddress) {
+        actions['review-828']()
+        return
+      }
       state = fixture()
       desktops = resetDesktops()
       actor.value = 'lead'
       notify('')
       render()
     },
+    'review-828': () => {
+      reviewHostAddress = true
+      state = fixture(true)
+      desktops = resetDesktops()
+      const previous = 'ws://10.24.8.12:6768'
+      const directory = state.directories[bindingKey(demoGroup, demoSpaceId)]
+      directoryHostRecord('lead', directory).orca_endpoint = previous
+      state.teamConnections.lin.lead = previous
+      for (const [person, desktop] of Object.entries(desktops)) {
+        desktop.savedTeamAddresses = Object.fromEntries(
+          Object.keys(names)
+            .filter((owner) => owner !== person)
+            .map((owner) => [owner, endpointFor(owner, directory)])
+        )
+      }
+      document.querySelector('#host-address-result').value = 'office'
+      actor.value = 'lead'
+      notify('')
+      actions.panel('team')
+    },
     'review-791': () => {
+      reviewHostAddress = false
       state = fixture(true)
       desktops = resetDesktops()
       actor.value = 'lin'
@@ -1478,6 +1556,7 @@
       actions.panel('team')
     },
     sample: () => {
+      reviewHostAddress = false
       state = fixture(true)
       desktops = resetDesktops()
       actor.value = 'lead'
@@ -1512,16 +1591,29 @@
     },
     'fill-own-share': () => {
       const draft = current().directoryDraft
-      const endpoint =
-        state.teamEndpoints?.[actor.value] ??
-        addresses[actor.value] ??
-        `ws://192.0.2.${12 + Object.keys(names).indexOf(actor.value)}:${6770 + Object.keys(names).indexOf(actor.value)}`
+      const addressResult = document.querySelector('#host-address-result').value
+      if (reviewHostAddress && addressResult === 'failure') {
+        notify('Orca 共享地址生成失败。检查网络和共享主机配置后重试。仍无法生成时，可以问 Monica。')
+        return
+      }
+      const demoEndpoint =
+        addressResult === 'no-office' ? 'ws://192.168.1.32:6768' : demoOfficeEndpoint
+      const endpoint = reviewHostAddress
+        ? demoEndpoint
+        : (state.teamEndpoints?.[actor.value] ??
+          addresses[actor.value] ??
+          `ws://192.0.2.${12 + Object.keys(names).indexOf(actor.value)}:${6770 + Object.keys(names).indexOf(actor.value)}`)
       const host = draft?.hosts?.find((entry) => entry.member_id === employees[actor.value])
       if (!draft || !host || !endpoint) {
         notify('当前主机暂时无法生成 Orca 共享地址。')
         return
       }
       host.orca_endpoint = endpoint
+      if (reviewHostAddress) {
+        notify('已填入地址，保存后会更新群空间。')
+        render()
+        return
+      }
       state.teamEndpoints[actor.value] = endpoint
       state.generatedLinks[actor.value] ??= `orca://pair?code=demo-${actor.value}`
       setActiveDirectory(syncDirectory(structuredClone(draft)))
@@ -1582,6 +1674,22 @@
       render()
     },
     'refresh-remote-hosts': () => {
+      if (reviewHostAddress) {
+        let changed = 0
+        for (const owner of Object.keys(names)) {
+          const endpoint = endpointFor(owner)
+          if (owner !== actor.value && endpoint) {
+            if (current().savedTeamAddresses[owner] !== endpoint) {
+              changed++
+              delete state.teamConnections[actor.value]?.[owner]
+            }
+            current().savedTeamAddresses[owner] = endpoint
+          }
+        }
+        notify(changed ? '已更新已保存的团队主机地址' : '团队主机地址已是最新')
+        render()
+        return
+      }
       hydrateEndpoints()
       notify('已刷新团队远程主机，连接状态保持不变')
       render()
@@ -1595,7 +1703,7 @@
     },
     'quick-connect-host': (ownerValue) => {
       const owner = String(ownerValue || '')
-      const endpoint = endpointFor(owner)
+      const endpoint = reviewHostAddress ? current().savedTeamAddresses[owner] : endpointFor(owner)
       if (!owner || owner === actor.value || !endpoint) {
         notify('当前团队主机还没有可用的 Orca 地址。')
         return
@@ -1933,7 +2041,9 @@
     render()
   })
   const params = new URLSearchParams(location.search)
-  if (params.get('review') === '791') {
+  if (params.get('review') === '828') {
+    actions['review-828']()
+  } else if (params.get('review') === '791') {
     state = fixture(true)
     actor.value = 'lin'
     actions.panel('team')

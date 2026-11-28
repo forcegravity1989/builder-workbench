@@ -241,7 +241,7 @@
       .host-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
       .host-cell small { width: 100%; }
       .host-cell > .row small { width: auto; }
-      .host-cell > .row.wrap { width: 100%; gap: 6px; }
+      .host-cell > .row { width: 100%; gap: 6px; }
       .member-address { flex: 1 1 180px; min-width: 0; }
       .host-actions { display: inline-flex; flex: none; gap: 4px; }
       .directory-project-head, .directory-footer { margin-top: 14px; }
@@ -271,7 +271,7 @@
   <body>
     <main class="review-frame">
       <header class="review-header">
-        <div><h1>团队多人协作</h1><p>项目墙 → 团队设置 · #791 切换团队已认可 · #790 群名称绑定原型已认可 · 静态表达 / 演示数据</p></div>
+        <div><h1>团队多人协作</h1><p>项目墙 → 团队设置 · #828 主机地址待评审 · #791 切换团队已认可 · #790 群名称绑定原型已认可 · 静态表达 / 演示数据</p></div>
         <div class="row wrap">
           <label for="actor">模拟桌面</label>
           <select id="actor" class="input">
@@ -286,10 +286,11 @@
         </div>
       </header>
       <nav class="review-links"><a href="intent.md">意图</a><a href="spec.md">规格</a><a href="STATUS.md">状态</a><a href="../../../src/renderer/src/workbench/TeamSettingsDialog.tsx">当前界面来源</a><a href="../../../src/renderer/src/workbench/TeamGroupSpaceCombobox.tsx">#790 群名称控件来源</a><a href="../w3-account/prototype.html">W3 账户设置（另一特性原型）</a><span>基线 e6ebf32872 + #790 群名称绑定改动；静态参照，未加载 React 组件</span></nav>
-      <div class="row wrap review-tools"><strong>原型评审工具</strong><button class="btn btn-secondary" data-action="review-791">查看团队切换</button><label>群列表 <select id="group-list-result" class="input"><option value="ready">读取成功</option><option value="truncated">成功但群数超过上限</option><option value="w3-unconfigured">W3 账户未配置</option><option value="w3-not-signed-in">W3 账户未登录</option><option value="onebox-unauthorized">免密未通过 OneBox 校验</option><option value="rate-limit">OneBox 限流</option><option value="unreachable">连不上 OneBox</option><option value="parse-failed">群列表无法解析</option></select></label><label>读取结果 <select id="switch-result" class="input"><option value="success">成功</option><option value="failure">失败（保留原团队）</option></select></label><span>演示群：神盾局项目群（团队 A）、交付看板协作群（团队 B）、星图交付保障群、星图服务发布群、临时对齐（群已解散）；emeeting-* 会议空间已在列表中过滤。</span></div>
+      <div class="row wrap review-tools"><strong>原型评审工具</strong><button class="btn btn-secondary" data-action="review-828">查看主机地址</button><button class="btn btn-secondary" data-action="review-791">查看团队切换</button><label>生成地址 <select id="host-address-result" class="input"><option value="office">有可用办公网地址</option><option value="no-office">无办公网地址，由 Orca 自动选择</option><option value="failure">生成失败</option></select></label><label>群列表 <select id="group-list-result" class="input"><option value="ready">读取成功</option><option value="truncated">成功但群数超过上限</option><option value="w3-unconfigured">W3 账户未配置</option><option value="w3-not-signed-in">W3 账户未登录</option><option value="onebox-unauthorized">免密未通过 OneBox 校验</option><option value="rate-limit">OneBox 限流</option><option value="unreachable">连不上 OneBox</option><option value="parse-failed">群列表无法解析</option></select></label><label>读取结果 <select id="switch-result" class="input"><option value="success">成功</option><option value="failure">失败（保留原团队）</option></select></label><span>演示群：神盾局项目群（团队 A）、交付看板协作群（团队 B）、星图交付保障群、星图服务发布群、临时对齐（群已解散）；emeeting-* 会议空间已在列表中过滤。</span></div>
       <details class="walkthrough">
         <summary>原型注释：操作路线</summary>
         <ol>
+          <li>#828：点「查看主机地址」。一键生成时优先使用办公网地址，再保存到群空间。无办公网地址时沿用 Orca 自动选择。可在评审工具切换到「生成失败」，查看失败通知。将「模拟桌面」切到林安，在左下角打开「管理远程主机」，刷新前后对照韩岚同一行的地址。原型参照 PR #850 的 7e0e873747，使用演示数据。真壳、群空间和双机读回待验。</li>
           <li>#791：点「查看团队切换」，已绑定的两个 ID 只读，右侧「切换团队」打开新的群名称选择。取消或读取失败保留原团队与草稿；成功后整体切换。刷新按钮悬停或键盘聚焦显示「刷新当前团队目录」。已保存远程主机保留，群空间文件不变。底部不再放「解除绑定」。</li>
           <li>#790：「从头开始」。韩岚首次在弹窗里只看到一个「WeLink 群名称」输入框。点击展开群列表，不输入也能翻找已列出的群名；输入时本地同步收窄，前缀命中排在包含命中前。选中「神盾局项目群」后群 ID 与群空间 ID 由 OneBox 自动获取，只读显示在下方，两个 ID 都不再手填；获取完成前提交键禁用。绑定后本机记住这组绑定，重新打开 BW 直接进入团队目录。welink-cli 读取已支持的成员和群主信息，当前桌面的 WeLink 身份用于匹配主机归属，项目目录为空。</li>
           <li>#790 失败注入：把「群列表」切到 W3 账户未配置 / 未登录 / 免密未通过时，群名称下方直接显示对应原因和「打开 W3 账户设置」（导航到 w3-account 特性原型，不在本原型复制设置页）；切到限流、连不上、无法解析时只显示原因，不提供跳转。选中「临时对齐（群已解散）」后收起下拉，在群名称下方显示「这个空间没有关联 WeLink 群」。切到「成功但群数超过上限」时列表底部说明搜索仅覆盖已列出的群。</li>

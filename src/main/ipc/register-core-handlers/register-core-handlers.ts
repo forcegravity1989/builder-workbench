@@ -168,7 +168,7 @@ export async function registerCoreHandlers(
     registerGitHubHandlers(store, stats, runtime)
     registerGitLabHandlers(store)
     registerCodeHubHandlers(store)
-    registerTeamCollaborationHandlers()
+    registerTeamCollaborationHandlers(store)
     registerMilestoneRecoveryHandlers()
     registerHostedReviewHandlers(store, stats)
     registerLinearHandlers()

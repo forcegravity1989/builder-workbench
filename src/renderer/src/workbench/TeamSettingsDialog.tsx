@@ -22,7 +22,6 @@ import { cacheGeneratedRuntimePairingLink } from '@/components/settings/runtime-
 import { parsePairingCode } from '../../../shared/remote-runtime/pairing/pairing'
 import { TeamBindingForm } from './TeamBindingForm'
 import { TeamSettingsMembers } from './TeamSettingsMembers'
-import { useTeamOfficeAddress } from './use-team-office-address'
 import { logWorkbenchError, notifyWorkbenchError } from './error-feedback'
 import { rememberedTeamBinding, rememberTeamBinding, syncTeamHosts } from './team-hosts'
 import type { TeamBindingSelection } from './use-team-group-picker'
@@ -52,7 +51,6 @@ export function TeamSettingsDialog({
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [generatingHostId, setGeneratingHostId] = useState<string | null>(null)
-  const { networkInterfaces, selectedAddress, setSelectedAddress } = useTeamOfficeAddress(open)
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [projectRegisterOpen, setProjectRegisterOpen] = useState(false)
   const [filePreviewOpen, setFilePreviewOpen] = useState(false)
@@ -268,7 +266,6 @@ export function TeamSettingsDialog({
         reach: 'network',
         accessMode: 'team-read',
         teamBinding: { teamGroupId: directory.team_group_id, memberId },
-        ...(selectedAddress ? { address: selectedAddress } : {}),
         // Members connect under their own names; this name only labels the link until they do.
         name: `${host.name ?? memberId}的团队共享链接`,
         ...(host.avatar ? { avatar: host.avatar } : {})
@@ -300,7 +297,11 @@ export function TeamSettingsDialog({
           : current
       )
     } catch (cause) {
-      notifyWorkbenchError('Orca 共享地址生成失败', cause, '检查共享主机配置后重试。')
+      notifyWorkbenchError(
+        'Orca 共享地址生成失败',
+        cause,
+        '检查网络和共享主机配置后重试。仍无法生成时，可以问 Monica。'
+      )
     } finally {
       setGeneratingHostId(null)
     }
@@ -459,9 +460,6 @@ export function TeamSettingsDialog({
                 loading={loading}
                 disabled={busy}
                 generatingHostId={generatingHostId}
-                networkInterfaces={networkInterfaces}
-                selectedAddress={selectedAddress}
-                onSelectedAddressChange={setSelectedAddress}
                 onRefresh={refreshDirectory}
                 onEndpointChange={(memberId, endpoint) => {
                   setDirectory((current) =>

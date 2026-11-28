@@ -29,8 +29,10 @@ function saved(overrides: Partial<TeamSavedHost> & Pick<TeamSavedHost, 'id'>): T
 }
 
 describe('team host refresh', () => {
-  it('replaces a team host remembered only by name when the pairing key changes', () => {
-    const plan = planTeamHostRefresh(member, published, [saved({ id: 'named' })])
+  it('replaces a legacy team host whose sync name includes the member ID', () => {
+    const plan = planTeamHostRefresh(member, published, [
+      saved({ id: 'named', name: '安迪（A001）' })
+    ])
     expect(plan).toMatchObject({
       action: 'update',
       environmentId: 'named',
@@ -71,30 +73,17 @@ describe('team host refresh', () => {
     expect(plan.removeEnvironmentIds).toEqual(['duplicate'])
   })
 
-  it('does not rewrite a hand-added host that belongs to someone else', () => {
+  it('preserves an unrelated hand-added host even when it has the same name', () => {
     const plan = planTeamHostRefresh(member, published, [
       saved({
         id: 'manual',
-        name: '实验室',
+        name: '安迪',
         managed: false,
         memberId: null,
         publicKeys: ['key-lab']
-      })
+      }),
+      saved({ id: 'old-team-with-same-name' })
     ])
     expect(plan).toMatchObject({ action: 'add', environmentId: null, removeEnvironmentIds: [] })
-  })
-
-  it('leaves a current team host unchanged', () => {
-    const plan = planTeamHostRefresh(member, published, [
-      saved({
-        id: 'current',
-        memberId: 'A001',
-        endpoint: published.endpoint,
-        deviceToken: published.deviceToken,
-        publicKeys: [published.publicKeyB64]
-      })
-    ])
-    expect(plan.action).toBe('skip')
-    expect(plan.environmentId).toBe('current')
   })
 })

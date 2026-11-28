@@ -28,11 +28,6 @@ export type TeamHostRefreshPlan = {
   memberId: string
 }
 
-function memberNames(host: TeamDirectoryMember): Set<string> {
-  const name = host.name ?? host.member_id
-  return new Set([name, `${name}（${host.member_id}）`])
-}
-
 function sameMember(memberId: string | null | undefined, host: TeamDirectoryMember): boolean {
   return memberId?.toLowerCase() === host.member_id.toLowerCase()
 }
@@ -51,56 +46,28 @@ function linkAlreadyCurrent(saved: TeamSavedHost, offer: TeamPublishedLink): boo
   )
 }
 
-function legacyManaged(
-  host: TeamDirectoryMember,
-  environments: readonly TeamSavedHost[]
-): TeamSavedHost[] {
-  const names = memberNames(host)
-  return environments.filter(
-    (environment) =>
-      environment.managed && environment.memberId === null && names.has(environment.name)
-  )
-}
-
-function preferredNamed(
-  host: TeamDirectoryMember,
-  candidates: readonly TeamSavedHost[]
-): TeamSavedHost | undefined {
-  const displayName = host.name ?? host.member_id
-  return candidates.find((environment) => environment.name === displayName) ?? candidates[0]
-}
-
-function uniqueHandAdded(
-  host: TeamDirectoryMember,
-  environments: readonly TeamSavedHost[]
-): TeamSavedHost | undefined {
-  const names = memberNames(host)
-  const matches = environments.filter(
-    (environment) => !environment.managed && names.has(environment.name)
-  )
-  return matches.length === 1 ? matches[0] : undefined
-}
-
-/**
- * Decides how one published team link lands on this computer.
- * Same pairing key updates that saved host. A different key replaces the host previously
- * saved for this member instead of adding a second address. A hand-added host is updated
- * when it is that same key, or when it is the only saved host under this member's name.
- */
 export function planTeamHostRefresh(
   host: TeamDirectoryMember,
   offer: TeamPublishedLink,
   environments: readonly TeamSavedHost[]
 ): TeamHostRefreshPlan {
-  const byKey = environments.find((environment) => keyMatches(environment, offer))
+  const byKey = environments.find(
+    (environment) =>
+      keyMatches(environment, offer) &&
+      environment.deviceToken === offer.deviceToken &&
+      (environment.memberId === null
+        ? environment.managed || environment.accessMode === 'team-read'
+        : sameMember(environment.memberId, host))
+  )
   const memberMatches = environments.filter((environment) => sameMember(environment.memberId, host))
   const memberTarget =
     memberMatches.find((environment) => keyMatches(environment, offer)) ?? memberMatches[0]
-  const legacy = legacyManaged(host, environments).filter(
-    (environment) => environment.id !== byKey?.id && environment.id !== memberTarget?.id
+  const legacyName = `${host.name ?? host.member_id}（${host.member_id}）`
+  const legacy = environments.filter(
+    (environment) =>
+      environment.managed && environment.memberId === null && environment.name === legacyName
   )
-  const target =
-    byKey ?? memberTarget ?? preferredNamed(host, legacy) ?? uniqueHandAdded(host, environments)
+  const target = memberTarget ?? byKey ?? legacy[0]
   const removeEnvironmentIds = [
     ...memberMatches.filter((environment) => environment.id !== target?.id),
     ...legacy.filter((environment) => environment.id !== target?.id)
