@@ -1,0 +1,46 @@
+docs/04-design-system/guidance.md
+  h_d0d195a8c70989 81
+docs/05-features/version-acceptance/STATUS.md
+  h_d0d195a8c70989 7,51
+docs/05-features/version-acceptance/design.md
+  h_d0d195a8c70989 20-21
+docs/05-features/version-acceptance/spec.md
+  h_d0d195a8c70989 23-24,33
+src/main/bots/bot-template-bundle-skills.test.ts
+  h_d0d195a8c70989 1-82
+src/main/bots/bot-template-bundle-skills.ts
+  h_d0d195a8c70989 1-54
+src/main/bots/bot-template-create.ts
+  h_d0d195a8c70989 6-11,19,37,77-80,84-88
+src/main/bots/bot-template-skill-text.ts
+  h_d0d195a8c70989 1-4,19-22
+src/renderer/src/i18n/locales/en.json
+  h_d0d195a8c70989 29627-29637,30761,30775-30776
+src/renderer/src/i18n/locales/zh.json
+  h_d0d195a8c70989 27413-27423,28222,28236-28237
+src/shared/bots/bot-template-catalog/planning.ts
+  h_d0d195a8c70989 107-127
+src/shared/bots/bot-template-text.ts
+  h_d0d195a8c70989 155-156
+src/shared/bots/bot-template-view.ts
+  h_d0d195a8c70989 32-34
+src/shared/bots/bot-templates.ts
+  h_d0d195a8c70989 44-51
+standard/references/execution.md
+  h_d0d195a8c70989 24
+standard/skills/version-acceptance/SKILL.md
+  h_d0d195a8c70989 3
+standard/skills/version-acceptance/references/meeting-preparation.md
+  h_d0d195a8c70989 8-13,17-19,24,29-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "985eb548678e876a99b0898f9723782ce84d301b",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
