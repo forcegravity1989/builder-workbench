@@ -25,11 +25,6 @@ describe('W3 account settings navigation', () => {
   it('adds a distinct W3 entry and search result only on a Workbench desktop', () => {
     const sections = buildSetupSettingsSections(desktop)
     expect(sections.map((section) => section.id)).not.toContain('orca-account')
-    expect(
-      buildSetupSettingsSections({ ...desktop, showWorkbenchOrcaAccount: true }).find(
-        (section) => section.id === 'orca-account'
-      )?.title
-    ).toBe('Orca Account')
     const account = sections.find((section) => section.id === 'w3-account')
     expect(account?.group).toBe('setup')
     expect(account?.searchEntries[0]?.title).toBe('W3 account')

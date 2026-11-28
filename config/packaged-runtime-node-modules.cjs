@@ -41,7 +41,9 @@ const PACKAGED_RUNTIME_PACKAGE_ROOTS = [
   'tweetnacl',
   'ws',
   'yaml',
-  'zod'
+  'zod',
+  'playwright-core',
+  'marked'
 ]
 // serve-sim drives iOS Simulator; its Mach-O addon fails Windows PE signing.
 const DARWIN_PACKAGED_RUNTIME_PACKAGE_ROOTS = ['serve-sim']
