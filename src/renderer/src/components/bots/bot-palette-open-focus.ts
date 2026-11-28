@@ -1,6 +1,7 @@
 import { useAppStore } from '@/store'
 import { readHostBots } from '@/lib/bot-catalog-snapshot'
 import { readBotGroups } from '@/lib/bot-group-catalog-snapshot'
+import type { ExecutionHostId } from '../../../../shared/execution-host/execution-host'
 import type { Bot } from '../../../../shared/bot-types'
 import { requestNativeChatComposerFocus } from '@/components/native-chat/composer/focus/native-chat-composer-focus-intent'
 import type { BotGroup } from '../../../../shared/bots/bot-group'
@@ -30,17 +31,17 @@ export function requestOpenedChatFocus(tabId: string | null): void {
 /** The bot as its host lists it now, by host and id; null once it's gone. */
 export function readListedBot(
   bot: Pick<Bot, 'hostId' | 'id'>
-): { kind: 'bot'; paused: boolean } | null {
+): { kind: 'bot'; paused: boolean; hostId: ExecutionHostId } | null {
   const live = readHostBots(bot.hostId).find((candidate) => candidate.id === bot.id)
-  return live ? { kind: 'bot', paused: live.paused } : null
+  return live ? { kind: 'bot', paused: live.paused, hostId: live.hostId } : null
 }
 
 /** The group as its host lists it now; null once it's gone. */
 export function readListedGroup(
   group: Pick<BotGroup, 'hostId' | 'id'>
-): { kind: 'group'; paused: false } | null {
+): { kind: 'group'; paused: false; hostId: ExecutionHostId } | null {
   const live = readBotGroups().some(
     (candidate) => candidate.hostId === group.hostId && candidate.id === group.id
   )
-  return live ? { kind: 'group', paused: false } : null
+  return live ? { kind: 'group', paused: false, hostId: group.hostId } : null
 }

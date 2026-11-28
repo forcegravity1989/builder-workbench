@@ -159,7 +159,8 @@ export const UiUpdateFields = z
       .object({
         sortBy: z.enum(['manual', 'smart', 'recent', 'name']),
         hidePausedBots: z.boolean(),
-        hideSleepingWorkers: z.boolean()
+        hideSleepingWorkers: z.boolean(),
+        visibleHostIds: z.array(z.string()).nullable().optional()
       })
       .optional(),
     botChatFolds: z.record(z.string(), z.enum(['open', 'folded'])).optional(),

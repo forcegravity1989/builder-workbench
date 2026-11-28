@@ -1,4 +1,11 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore
+} from 'react'
 import { callBotRpc } from '@/lib/bot-hosts'
 import { Bot as BotIcon, Download, LayoutTemplate, Link2, Plus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -19,6 +26,7 @@ import {
   type ProjectGroupHeaderDragItem
 } from '@/components/sidebar/worktree-list/drag/project-group-header-drop'
 import { WorktreeSidebarDropIndicator } from '@/components/sidebar/worktree-list/drag/WorktreeSidebarDropIndicator'
+import { useSidebarHostScopeOptions } from '@/components/sidebar/worktree-list/controls/use-sidebar-host-scope-options'
 import { SidebarSectionHeader } from '@/components/sidebar/SidebarSectionHeader'
 import { selectActiveBotGroupRoomId } from '@/lib/bot-group-catalog'
 import { useBotGroups } from '@/lib/bot-group-list'
@@ -27,6 +35,12 @@ import { updateBot, useBotHomeWorkspaces, useBots } from '@/lib/bot-catalog'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/class-names'
+import {
+  indexExecutionHostsById,
+  widenSavedExecutionHostIds
+} from '../../../../shared/execution-host/managed-orcad-execution-host'
+import { isBotSidebarHostVisible } from '../../../../shared/bots/bot-sidebar-view'
+import { translateHostDisplayLabel } from '@/runtime/hosts/display/execution-host-label'
 import { BOTS_GROUP_KEY } from '../../../../shared/sidebar-list/sections/group-keys'
 import {
   folderWorkspaceKey,
@@ -34,7 +48,7 @@ import {
 } from '../../../../shared/workspace/identity/workspace-scope'
 import { botGroupMemberBots } from '../../../../shared/bots/bot-sidebar-entries'
 import { getHostKeyedBotSidebarEntries } from './bot-sidebar-entry-keys'
-import { readBotHostState } from '@/lib/bot-catalog-snapshot'
+import { readBotHostIds, readBotHostState, subscribeToBotChanges } from '@/lib/bot-catalog-snapshot'
 import { BotSidebarDragFrame, BotSidebarEntry, type BotSidebarEntryDrag } from './BotSidebarEntry'
 import { BotGroupRow } from './BotGroupRow'
 import { BotGroupMembersDialog } from './BotGroupMembersDialog'
@@ -98,14 +112,49 @@ export function SidebarBotsSection({
     () => getHostKeyedBotSidebarEntries(bots, groups, folderWorkspaces),
     [bots, groups, folderWorkspaces]
   )
-  const entries = useBotSidebarArrangement(savedEntries)
+  const visibleHostIds = useAppStore((s) => s.botSidebarView.visibleHostIds ?? null)
+  const { hostOptions } = useSidebarHostScopeOptions()
+  const botHostIds = useSyncExternalStore(subscribeToBotChanges, readBotHostIds, readBotHostIds)
+  const botHostOptions = useMemo(() => {
+    const botHosts = new Set(botHostIds)
+    return hostOptions.filter(
+      (host) => botHosts.has(host.id) || host.aliasHostIds?.some((id) => botHosts.has(id))
+    )
+  }, [botHostIds, hostOptions])
+  const widerHostIds = useMemo(
+    () => widenSavedExecutionHostIds(botHostOptions, visibleHostIds),
+    [botHostOptions, visibleHostIds]
+  )
+  useEffect(() => {
+    const state = useAppStore.getState()
+    if (widerHostIds && state.botSidebarView.visibleHostIds === visibleHostIds) {
+      state.setBotSidebarView({ visibleHostIds: widerHostIds })
+    }
+  }, [visibleHostIds, widerHostIds])
+  const botHostsById = useMemo(() => indexExecutionHostsById(botHostOptions), [botHostOptions])
+  const showHostNames = new Set(botHostIds.map((id) => botHostsById.get(id)?.id ?? id)).size > 1
+  const effectiveHostIds = widerHostIds ?? visibleHostIds
+  const scopedEntries = useMemo(() => {
+    if (!effectiveHostIds) {
+      return savedEntries
+    }
+    return savedEntries.filter((entry) =>
+      isBotSidebarHostVisible(
+        (entry.kind === 'bot' ? entry.bot : entry.group).hostId,
+        effectiveHostIds
+      )
+    )
+  }, [effectiveHostIds, savedEntries])
+  const entries = useBotSidebarArrangement(scopedEntries)
   const listRef = useRef<HTMLDivElement>(null)
   // Search shows the list in place and nothing drags while it is open. Its toggle lives only in the
   // unfolded header, so a search always starts unfolded.
   const search = useBotSidebarSearch({ listRef, savedEntries, onOpenBot })
   const searchOpen = search.open
   // Only the saved order can be dragged, as for workspaces.
-  const draggable = useAppStore((s) => s.botSidebarView.sortBy === 'manual') && !searchOpen
+  const manualSort = useAppStore((s) => s.botSidebarView.sortBy === 'manual')
+  // Manual order is shared across hosts, so a partial roster cannot assign new ranks.
+  const draggable = manualSort && !searchOpen && !visibleHostIds
   const rows = useMemo(
     () => entries.flatMap((entry) => (entry.kind === 'bot' ? [entry] : [])),
     [entries]
@@ -118,7 +167,7 @@ export function SidebarBotsSection({
   if (collapsed && newMenuOpen) {
     setNewMenuOpen(false)
   }
-  const collapseAll = useBotCollapseAll(entries, savedEntries)
+  const collapseAll = useBotCollapseAll(entries, scopedEntries)
   const facts = useBotPreviewFacts(rows)
   const preview = collapsedBotPreview(facts)
   // Bots reorder through the project-group header drag: one root bucket, each bot's order saved on its host.
@@ -168,7 +217,7 @@ export function SidebarBotsSection({
     getScrollContainer: () => listRef.current
   })
   const listShown = !collapsed && entries.length > 0
-  const reveal = useBotsSidebarReveal(listRef, listShown, savedEntries, search.endForReveal)
+  const reveal = useBotsSidebarReveal(listRef, listShown, scopedEntries, search.endForReveal)
   const newBotLabel = t('bots.section.newBot', 'New bot')
   const newLabel = t('bots.section.new', 'New bot or group')
 
@@ -226,7 +275,9 @@ export function SidebarBotsSection({
                   onToggle={search.toggleOpen}
                 />
               ) : null}
-              {hasEntries ? <BotSidebarOptionsMenu /> : null}
+              {hasEntries || visibleHostIds ? (
+                <BotSidebarOptionsMenu hostOptions={botHostOptions} hostIds={visibleHostIds} />
+              ) : null}
               <DropdownMenu open={newMenuOpen} onOpenChange={setNewMenuOpen}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -315,7 +366,7 @@ export function SidebarBotsSection({
         regionRef={search.regionRef}
         panel={{
           entries,
-          allEntries: savedEntries,
+          allEntries: scopedEntries,
           bots,
           onSelect: search.select,
           onSupersede: search.supersede,
@@ -333,7 +384,11 @@ export function SidebarBotsSection({
             )}
           >
             {/* A room kept after its last bot went still lists, so it can be opened or deleted. */}
-            {savedEntries.length > 0 && entries.length === 0 ? (
+            {visibleHostIds && scopedEntries.length === 0 && !collapsed ? (
+              <div className="px-4 text-xs text-muted-foreground">
+                {t('bots.options.noBotsOnSelectedHosts', 'No bots on the selected hosts.')}
+              </div>
+            ) : scopedEntries.length > 0 && entries.length === 0 ? (
               collapsed ? null : (
                 <div className="px-4 text-xs text-muted-foreground">
                   {t('bots.options.allHidden', 'All bots are paused and hidden.')}
@@ -360,6 +415,13 @@ export function SidebarBotsSection({
                           onPointerDown: (event) => drag.onHandlePointerDown(event, entry.id)
                         }
                       : undefined
+                    const owner = entry.kind === 'group' ? entry.group : entry.bot
+                    const host = botHostsById.get(owner.hostId)
+                    const visibleHostLabel = showHostNames
+                      ? host
+                        ? translateHostDisplayLabel(host, t)
+                        : owner.hostId
+                      : undefined
                     return entry.kind === 'group' ? (
                       <BotSidebarDragFrame id={entry.id} drag={entryDrag}>
                         <BotGroupRow
@@ -371,6 +433,7 @@ export function SidebarBotsSection({
                           onManageMembers={() => setEditingGroup(entry.group)}
                           onDelete={() => void deleteGroup(entry.group)}
                           dragHandle={draggable}
+                          visibleHostLabel={visibleHostLabel}
                         />
                       </BotSidebarDragFrame>
                     ) : (
@@ -380,6 +443,7 @@ export function SidebarBotsSection({
                         isActive={activeWorkspaceId === folderWorkspaceKey(entry.home.id)}
                         onOpen={onOpenBot}
                         drag={entryDrag}
+                        visibleHostLabel={visibleHostLabel}
                       />
                     )
                   }}

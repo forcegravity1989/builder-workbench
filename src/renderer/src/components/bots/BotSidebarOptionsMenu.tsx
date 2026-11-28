@@ -1,8 +1,15 @@
 import React from 'react'
+import type { VisibleWorkspaceHostIds } from '../../../../shared/ui-chrome/ui-chrome-types'
+import { pickerExecutionHosts } from '../../../../shared/execution-host/managed-orcad-execution-host'
 import { Moon, Pause } from 'lucide-react'
 import { DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { FilterToggleRow } from '@/components/sidebar/worktree-list/controls/FilterToggleRow'
 import { OptionChoiceSubmenu } from '@/components/sidebar/worktree-list/controls/OptionChoiceSubmenu'
+import { SidebarHostScopeMenuSection } from '@/components/sidebar/worktree-list/controls/SidebarHostScopeMenuSection'
+import {
+  getSidebarHostVisibilityLabel,
+  type SidebarHostOption
+} from '@/components/sidebar/worktree-list/controls/sidebar-host-options'
 import { SidebarOptionsPopover } from '@/components/sidebar/worktree-list/controls/SidebarOptionsPopover'
 import { useTranslate, type Translate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
@@ -28,7 +35,13 @@ const SORT_DESCRIPTIONS: Partial<Record<BotSidebarSortBy, (t: Translate) => stri
 }
 
 /** The Bots header's options: how the section orders its bots and what it leaves out. */
-export function BotSidebarOptionsMenu(): React.JSX.Element {
+export function BotSidebarOptionsMenu({
+  hostOptions,
+  hostIds
+}: {
+  hostOptions: readonly SidebarHostOption[]
+  hostIds: VisibleWorkspaceHostIds
+}): React.JSX.Element {
   const t = useTranslate()
   const view = useAppStore((s) => s.botSidebarView)
   const setView = useAppStore((s) => s.setBotSidebarView)
@@ -65,6 +78,15 @@ export function BotSidebarOptionsMenu(): React.JSX.Element {
           {t('bots.options.filters', 'Filters')}
         </span>
       </div>
+      {pickerExecutionHosts(hostOptions).length > 1 || hostIds ? (
+        <SidebarHostScopeMenuSection
+          hostVisibilityLabel={getSidebarHostVisibilityLabel(hostIds, hostOptions, t)}
+          hostOptions={hostOptions}
+          preserveWorkspaceBoardOpen={false}
+          visibleHostIds={hostIds}
+          setVisibleHostIds={(visibleHostIds) => setView({ visibleHostIds })}
+        />
+      ) : null}
       <FilterToggleRow
         icon={<Pause className="size-3.5" />}
         label={t('bots.options.hidePaused', 'Hide paused bots')}
