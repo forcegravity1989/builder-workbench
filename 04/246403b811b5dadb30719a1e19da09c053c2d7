@@ -1,0 +1,62 @@
+src/main/ipc/team-collaboration.ts
+  s_9c01210eda15f4::t_94645b8c17f9c9 1,3-8,19,22,27-52,201-220
+src/main/ipc/w3-account-ipc.ts
+  s_9c01210eda15f4::t_d64307b12d39d4 339-357
+src/main/workbench/team-collaboration/onebox-group-space-client.ts
+  s_9c01210eda15f4::t_a27f886a6f326f 1-311
+src/preload/api/team-collaboration-api.ts
+  s_9c01210eda15f4::t_b20801de6b7b0f 2-5,21-22
+src/preload/api/team-collaboration-bridge.ts
+  s_9c01210eda15f4::t_344cc6620baf88 11-14
+src/renderer/src/web/preload-api/web-team-collaboration-api.ts
+  s_9c01210eda15f4::t_e7db7968d10257 14-19
+src/renderer/src/workbench/TeamBindingForm.tsx
+  s_9c01210eda15f4::t_bf3f9ed2daf6a7 3-7,10-11,20-23,25-26,34-35,47-59,61-66,75,85-89
+src/renderer/src/workbench/TeamGroupSpaceCombobox.tsx
+  s_9c01210eda15f4::t_b6bfa61cf739f5 1-219
+src/renderer/src/workbench/TeamSettingsDialog.tsx
+  s_9c01210eda15f4::t_998c8db65a8481 27,45-47,88,94-97,101,158,212,232,399-400,410-411,440
+src/renderer/src/workbench/open-w3-account-settings.ts
+  s_9c01210eda15f4::t_81780e6b3a2884 1-11
+src/renderer/src/workbench/team-group-search.ts
+  s_9c01210eda15f4::t_0907b3c311becf 1-40
+src/shared/team-group-discovery.ts
+  s_91af594814062b::t_84ee550afa33c8 1-35
+docs/05-features/team-collaboration/intent.md
+  h_d0d195a8c70989 13,27
+docs/05-features/team-collaboration/prototype/journey.js
+  h_d0d195a8c70989 60-63,97-110,142-261,320,713,776-854,862-864,867-868,871,1340,1356,1387-1446,1449,1453
+docs/05-features/team-collaboration/spec.md
+  h_d0d195a8c70989 9,25,37-38,42,73,100,108
+src/renderer/src/workbench/use-team-group-picker.ts
+  h_d0d195a8c70989 1-154
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "04246403b811b5dadb30719a1e19da09c053c2d7",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_91af594814062b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "230d2283-96d4-4f09-8124-2fd3bbb80d94",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    },
+    "s_9c01210eda15f4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8edf6193-0141-4e57-bf8a-c6eb848188ea",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
