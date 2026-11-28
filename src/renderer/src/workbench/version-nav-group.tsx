@@ -31,6 +31,7 @@ import {
 
 type VersionNavGroupProps = {
   entry: VersionCatalogEntry
+  guidedVersion?: string
   expanded: boolean
   browsed: boolean
   busy: boolean
@@ -57,6 +58,7 @@ type VersionNavGroupProps = {
 
 export function VersionNavGroup({
   entry,
+  guidedVersion,
   expanded,
   browsed,
   busy,
@@ -112,6 +114,9 @@ export function VersionNavGroup({
           type="button"
           onClick={onToggle}
           aria-expanded={expanded}
+          data-contextual-tour-target={
+            guidedVersion === entry.version ? 'workbench-versions-start' : undefined
+          }
           aria-label={`${entry.version} 展开或收起`}
           title={
             retired ? '无存活工作区绑定（已清理或未准备）；材料可回看' : '在制（有存活绑定工作区）'
@@ -192,6 +197,7 @@ export function VersionNavGroup({
           <WorkflowRow
             version={entry.version}
             workflow="plan"
+            guideTarget={!guidedVersion || guidedVersion === entry.version}
             worktrees={worktrees}
             busy={busy}
             active={activeWorkflow === 'plan'}

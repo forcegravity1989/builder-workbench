@@ -1,8 +1,9 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { translate } from '@/i18n/i18n'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 import { translateSearchKeyword } from '../search/settings-search-keywords'
 
-export const getGeneralSupportSearchEntries = createLocalizedCatalog(() => [
+const getOrcaSupportSearchEntries = createLocalizedCatalog(() => [
   {
     title: translate('auto.components.settings.general.search.36a72f0d9e', 'Star Orca on GitHub'),
     description: translate(
@@ -18,3 +19,7 @@ export const getGeneralSupportSearchEntries = createLocalizedCatalog(() => [
     ]
   }
 ])
+
+export function getGeneralSupportSearchEntries(): ReturnType<typeof getOrcaSupportSearchEntries> {
+  return isWorkbenchShell() ? [] : getOrcaSupportSearchEntries()
+}

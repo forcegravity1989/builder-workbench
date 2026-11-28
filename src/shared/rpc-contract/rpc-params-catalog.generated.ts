@@ -1113,6 +1113,7 @@ import {
 } from '../workbench/charter'
 import { FixedWorkspaceEnsureSchema } from '../workbench/fixed-workspace'
 import { MetricReadRequestSchema } from '../workbench/metrics'
+import { MonicaSupportRequest } from '../workbench/monica-support'
 import {
   PackageDownloadSchema,
   PackageLatestSchema,
@@ -2362,6 +2363,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.share.publish': SharePublishSchema,
   'workbench.share.remove': ShareSourceSchema,
   'workbench.skills.prepare': WorkbenchSkillPrepareRequest,
+  'workbench.support.open': MonicaSupportRequest,
   'workbench.trunk.update': TrunkUpdateSchema,
   'workbench.versionBinding.read': VersionBindingScopeSchema,
   'workbench.versionBinding.set': VersionBindingSetSchema,

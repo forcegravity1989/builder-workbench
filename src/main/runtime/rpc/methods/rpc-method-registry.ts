@@ -94,6 +94,7 @@ import { WORKBENCH_MATERIAL_METHODS } from './workbench-materials'
 import { WORKBENCH_VERSION_BINDING_METHODS } from './workbench-version-binding'
 import { WORKBENCH_FIXED_WORKSPACE_METHODS } from './workbench-fixed-workspace'
 import { WORKBENCH_HISTORY_METHODS } from './workbench-history'
+import { MONICA_SUPPORT_METHOD } from './workbench-support'
 import { WORKBENCH_SKILL_METHODS } from './workbench-skills'
 import { WORKBENCH_VERSION_WORKSPACE_METHODS } from './workbench-version-workspace'
 import { WORKBENCH_ARCHIVE_METHODS } from './workbench-archive'
@@ -213,6 +214,7 @@ const SERVICE_RPC_METHODS = [
   ...WORKBENCH_VERSION_BINDING_METHODS,
   ...WORKBENCH_FIXED_WORKSPACE_METHODS,
   ...WORKBENCH_HISTORY_METHODS,
+  MONICA_SUPPORT_METHOD,
   ...WORKBENCH_SKILL_METHODS,
   ...WORKBENCH_VERSION_WORKSPACE_METHODS,
   ...WORKBENCH_ARCHIVE_METHODS,

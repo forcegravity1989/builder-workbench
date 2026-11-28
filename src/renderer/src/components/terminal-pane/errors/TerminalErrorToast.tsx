@@ -10,6 +10,9 @@ import {
 import { useEffect, useState } from 'react'
 import { AlertTriangle, X } from 'lucide-react'
 import { useTranslate } from '@/i18n/use-translate'
+import { useAppStore } from '@/store'
+import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { Button } from '@/components/ui/button'
 import { CopyTextButton } from '@/components/clipboard/CopyTextButton'
 import { isAgentLaunchOnlyError } from '../launch-outcome/agent-launch-pane-notice-text'
@@ -162,18 +165,32 @@ export function TerminalErrorToast({
               'Restart the terminal daemon from here to clear stale daemon state.'
             )}
           </p>
+        ) : showIssueLink && isWorkbenchShell() && isWebClientLocation() ? (
+          <p className="mt-3 text-xs text-muted-foreground">
+            {t('guidance.feedbackOnDesktop', 'To send feedback, open Help in the BW desktop app.')}
+          </p>
         ) : showIssueLink ? (
           <p className="mt-3 text-xs text-muted-foreground">
             {t(
               'auto.components.terminal.pane.TerminalErrorToast.5c8ce20be6',
               'If this persists, please'
             )}{' '}
-            <a
-              href="https://github.com/stablyai/orca/issues"
-              className="underline underline-offset-2"
-            >
-              {t('auto.components.terminal.pane.TerminalErrorToast.a7e2fd2699', 'file an issue')}
-            </a>
+            {isWorkbenchShell() ? (
+              <button
+                type="button"
+                className="underline underline-offset-2"
+                onClick={() => useAppStore.getState().openModal('feedback')}
+              >
+                {t('auto.components.sidebar.SidebarSettingsHelpMenu.4cf5b868d7', 'Send Feedback')}
+              </button>
+            ) : (
+              <a
+                href="https://github.com/stablyai/orca/issues"
+                className="underline underline-offset-2"
+              >
+                {t('auto.components.terminal.pane.TerminalErrorToast.a7e2fd2699', 'file an issue')}
+              </a>
+            )}
             .
           </p>
         ) : null}

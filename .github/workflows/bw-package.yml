@@ -108,9 +108,9 @@ jobs:
           ls -la dist/
           gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
             -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA" >/dev/null
-          gh release create "$TAG" dist/workbench-windows-setup.exe \
+          gh release create "$TAG" dist/monica-windows-setup.exe \
             --target "$GITHUB_SHA" \
             --verify-tag \
-            --title "Workbench $VERSION" \
-            --notes "Workbench Windows x64 installer built from ${GITHUB_REF_NAME} @ $GITHUB_SHA." \
+            --title "Monica $VERSION" \
+            --notes "Monica Windows x64 installer built from ${GITHUB_REF_NAME} @ $GITHUB_SHA." \
             --prerelease

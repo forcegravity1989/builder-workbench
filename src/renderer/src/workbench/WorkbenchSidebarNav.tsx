@@ -3,13 +3,13 @@ import { useAppStore } from '@/store'
 import type { VersionTreeDisplayInput } from './VersionNativeTrees'
 import { WorkbenchVersionNav } from './WorkbenchVersionNav'
 import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-list/viewport/virtual-rows'
-import { publishVersionSidebarProjection } from './version-sidebar-state'
+import { publishVersionSidebarProjection, useNavigationVersion } from './version-sidebar-state'
 import {
   isWorkbenchBotWorkspace,
   resolveProjectSource,
   workbenchSidebarProjectRepo
 } from './project-source-resolution'
-import { findRepoForHost } from '@/store/repos/repo-host-identity'
+import { findRepoForHost, getRepoRowIdentity } from '@/store/repos/repo-host-identity'
 import { useProjectPage } from './project-page-state'
 import { toRuntimeExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { parseWorkspaceKey } from '../../../shared/workspace/identity/workspace-scope'
@@ -53,7 +53,11 @@ export function WorkbenchSidebarVersions({
   visibleWorktrees
 }: VersionTreeDisplayInput): React.JSX.Element {
   const page = useProjectPage()
+  const navigationReveal = useNavigationVersion()
   const versionRepo = useAppStore((s) => {
+    if (s.activeView === 'terminal' && navigationReveal) {
+      return s.repos.find((row) => getRepoRowIdentity(row) === navigationReveal.rowKey) ?? null
+    }
     if (page?.kind === 'version-overview' || page?.kind === 'project-overview') {
       return page.options ? findRepoForHost(s.repos, page.options.repoId, page.options) : null
     }

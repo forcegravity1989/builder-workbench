@@ -14,6 +14,7 @@ import { getCodeHubViewer } from './viewer'
 import { resolveCodeHubWebIdentity } from './web-identity'
 import { parseTaskItemLink, taskItemLinkIdentityKey } from '../../shared/task-item-link'
 import {
+  addCodeHubIssueLabels,
   assignCodeHubIssue,
   closeCodeHubMr,
   createCodeHubIssue,
@@ -98,7 +99,17 @@ export function createCodeHubService(deps: {
       await updateCodeHubIssueTitle({ ...args, ...(await context(args)) })
     },
     async updateIssueLabels(args) {
-      await updateCodeHubIssueLabels({ ...args, ...(await context(args)) })
+      const target = await context(args)
+      if (args.append) {
+        await addCodeHubIssueLabels({
+          remote: target.remote,
+          execOptions: target.execOptions,
+          iid: args.iid,
+          labels: args.labels
+        })
+        return
+      }
+      await updateCodeHubIssueLabels({ ...args, ...target })
     },
     async listLabels(args) {
       return listCodeHubProjectLabels(await context(args))

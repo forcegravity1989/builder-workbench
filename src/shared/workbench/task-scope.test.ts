@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { Repo } from '../repository/repo-types'
 import { parseTaskQuery } from '../work-items/task-query'
 import {
   matchesWorkbenchTaskQuery,
@@ -9,7 +10,13 @@ import {
   workbenchGoalMutationQuery,
   type WorkbenchTaskScope
 } from './task-scope'
-import { resolveMemberGoalId } from './version-membership'
+import {
+  githubIssueAssignmentTarget,
+  linkedIssueRepository,
+  nextIssueVersionMembership,
+  resolveMemberGoalId,
+  sameIssueLink
+} from './version-membership'
 
 const scope: WorkbenchTaskScope = { version: 'v0.7', references: [] }
 
@@ -86,5 +93,111 @@ describe('native task entry filters', () => {
     expect(resolveMemberGoalId('【v0.8|G1】其他版本', 'v0.7', goalIds)).toBeUndefined()
     expect(resolveMemberGoalId('【v0.7|G9】未列出的目标', 'v0.7', goalIds)).toBeUndefined()
     expect(resolveMemberGoalId('【特性#334】执行', 'v0.7', goalIds)).toBeUndefined()
+
+    const moved = nextIssueVersionMembership({
+      title: '【v0.7|G1】【特性#334】执行',
+      labels: ['bug', 'bw:plan:v0.7'],
+      version: 'v1.2',
+      goalId: 'G3'
+    })
+    expect(moved).toEqual({
+      title: '【v1.2|G3】【特性#334】执行',
+      labels: ['bug', 'bw:plan:v0.7', 'bw:plan:v1.2'],
+      titleChanged: true,
+      addedLabel: 'bw:plan:v1.2'
+    })
+    expect(
+      nextIssueVersionMembership({
+        title: '绑定窗口',
+        labels: [],
+        version: 'v1.2',
+        goalId: 'G3'
+      }).title
+    ).toBe('【v1.2|G3】绑定窗口')
+    expect(
+      nextIssueVersionMembership({
+        title: '【v1.2|G3】绑定窗口',
+        labels: ['bw:plan:v0.7', 'bw:plan:v1.2'],
+        version: 'v1.2',
+        goalId: 'G3'
+      })
+    ).toMatchObject({
+      titleChanged: false,
+      addedLabel: null,
+      labels: ['bw:plan:v0.7', 'bw:plan:v1.2']
+    })
+    expect(githubIssueAssignmentTarget('https://github.com/origin/app/issues/12', 12)).toEqual({
+      owner: 'origin',
+      repo: 'app',
+      host: 'github.com'
+    })
+    expect(githubIssueAssignmentTarget('https://github.com/upstream/app/issues/12', 12)).toEqual({
+      owner: 'upstream',
+      repo: 'app',
+      host: 'github.com'
+    })
+    expect(githubIssueAssignmentTarget('https://github.com/origin/app/issues/12', 13)).toBeNull()
+    expect(githubIssueAssignmentTarget('https://github.com/origin/app/pull/12', 12)).toBeNull()
+    expect(linkedIssueRepository('https://github.com/upstream/app/issues/12', 'github', 12)).toBe(
+      'https://github.com/upstream/app'
+    )
+    expect(
+      linkedIssueRepository('https://github.com/upstream/app/issues/12', 'github', 13)
+    ).toBeNull()
+    expect(
+      sameIssueLink(
+        'https://github.com/upstream/app/issues/12',
+        'https://github.com/origin/app/issues/12',
+        'github',
+        12
+      )
+    ).toBe(false)
+    expect(
+      sameIssueLink(
+        'https://github.com/upstream/app/issues/12',
+        'https://github.com/upstream/app/issues/12',
+        'github',
+        12
+      )
+    ).toBe(true)
+    expect(
+      linkedIssueRepository('https://codehub-g.huawei.com/Org/Group/repo/issues/12', 'codehub', 12)
+    ).toBe('codehub-g.huawei.com/org/group/repo')
+    const enterprise = {
+      id: 'ghes',
+      path: '/projects/ghes',
+      displayName: 'ghes',
+      badgeColor: '',
+      addedAt: 0,
+      gitRemoteIdentity: {
+        canonicalKey: 'github.example.com/owner/project',
+        remoteName: 'origin',
+        remoteUrl: 'https://github.example.com:8443/owner/project.git'
+      }
+    } as Repo
+    const enterpriseUrl = 'https://github.example.com:8443/owner/project/issues/8'
+    expect(linkedIssueRepository(enterpriseUrl, 'github', 8)).toBeNull()
+    expect(linkedIssueRepository(enterpriseUrl, 'github', 8, [enterprise])).toBe(
+      'https://github.example.com:8443/owner/project'
+    )
+    const otherUrl = enterpriseUrl.replace(':8443', ':9443')
+    const other = {
+      ...enterprise,
+      gitRemoteIdentity: {
+        ...enterprise.gitRemoteIdentity!,
+        remoteUrl: otherUrl.replace('/issues/8', '.git')
+      }
+    }
+    expect(sameIssueLink(enterpriseUrl, otherUrl, 'github', 8, [enterprise, other])).toBe(false)
+    expect(sameIssueLink(enterpriseUrl, enterpriseUrl, 'github', 8, [enterprise])).toBe(true)
+    expect(
+      sameIssueLink(
+        enterpriseUrl,
+        'https://github.example.com:8443/other/project/issues/8',
+        'github',
+        8,
+        [enterprise]
+      )
+    ).toBe(false)
   })
 })

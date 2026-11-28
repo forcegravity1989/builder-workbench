@@ -26,10 +26,12 @@ const DATE: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
 function BotSharedLinkRow({
   share,
   bot,
+  withdrawalOnly,
   onAct
 }: {
   share: BotOwnedShare
   bot: Bot | null
+  withdrawalOnly: boolean
   onAct: (start: BotShareStart) => void
 }): React.JSX.Element {
   const t = useTranslate()
@@ -75,7 +77,7 @@ function BotSharedLinkRow({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {/* Update link rebuilds from the bot, so it needs the bot here; stopping needs only the link. */}
-          {bot ? (
+          {bot && !withdrawalOnly ? (
             <DropdownMenuItem onSelect={() => onAct('update')}>
               <RefreshCw />
               {t('bots.share.updateLink', 'Update link')}
@@ -87,7 +89,7 @@ function BotSharedLinkRow({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      {bot ? (
+      {bot && !withdrawalOnly ? (
         <Button
           type="button"
           size="icon-sm"
@@ -102,7 +104,11 @@ function BotSharedLinkRow({
   )
 }
 
-export function BotSharedLinksList(): React.JSX.Element {
+export function BotSharedLinksList({
+  withdrawalOnly = false
+}: {
+  withdrawalOnly?: boolean
+}): React.JSX.Element {
   const t = useTranslate()
   const bots = useBots()
   const [shares, setShares] = useState<BotOwnedShare[] | null>(null)
@@ -136,7 +142,9 @@ export function BotSharedLinksList(): React.JSX.Element {
   if (shares.length === 0) {
     return (
       <p className="rounded-md border border-border p-3 text-xs text-muted-foreground">
-        {t('bots.share.noLinks', 'No bot links. Share a bot from its settings.')}
+        {withdrawalOnly
+          ? t('auto.components.settings.RuntimeAccessGrantList.noActiveLinks', 'No active links.')
+          : t('bots.share.noLinks', 'No bot links. Share a bot from its settings.')}
       </p>
     )
   }
@@ -152,12 +160,13 @@ export function BotSharedLinksList(): React.JSX.Element {
               key={share.id}
               share={share}
               bot={bot}
+              withdrawalOnly={withdrawalOnly}
               onAct={(start) => setActing({ share, bot, start })}
             />
           )
         })}
       </ul>
-      {acting && !acting.bot ? (
+      {acting && (withdrawalOnly || !acting.bot) ? (
         <BotShareStopDialog
           name={acting.share.displayName ?? acting.share.name}
           shareId={acting.share.id}

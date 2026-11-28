@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { track } from '@/diagnostics/telemetry/telemetry'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useAppStore } from '@/store/index'
 import {
   ONBOARDING_FINAL_STEP,
@@ -135,7 +136,7 @@ export function useCloseWith({ onOnboardingChange, startTimeRef, setError }: Clo
           total_duration_ms: total
         })
       }
-      if (outcome === 'completed') {
+      if (outcome === 'completed' && !isWorkbenchShell()) {
         // Wait until the next commit can unmount onboarding before notifying star nag.
         window.setTimeout(() => {
           void window.api.starNag.onboardingCompleted()

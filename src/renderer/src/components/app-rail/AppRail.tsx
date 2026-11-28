@@ -328,8 +328,6 @@ export function AppRail({
             </RailItem>
           )}
         </div>
-        {/* Rendered once, outside both Help presentations, so folding Help keeps an open dialog. */}
-        {help.dialog}
       </div>
     </nav>
   )
