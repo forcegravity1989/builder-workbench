@@ -26,7 +26,7 @@ export function cycleAutomationHost(scope: CycleScope): StableAutomationHostRef 
  * registered an entry (existingId), it opens that record for editing — BW never
  * re-prefills over human-owned fields. Otherwise it prefills a create draft:
  * existing fixed tree, a fresh session per run, a prompt without any frozen
- * cycleId, and the BW creationKey so a manual save dedupes with `ensureCycleAutomation`.
+ * cycleId, and the BW creationKey so a manual save matches an entry `ensureCycleAutomation` already found.
  * Enablement, time and tool stay human-confirmed in the native editor.
  */
 export function useCycleAutomationDraft({

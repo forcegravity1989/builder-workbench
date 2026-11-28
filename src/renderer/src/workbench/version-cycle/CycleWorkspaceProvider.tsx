@@ -61,8 +61,6 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const automation = useEnsureCycleAutomation({
     cycleScope: scope,
     fixedId,
-    workflow: workflow ?? 'plan',
-    agent,
     onNotice: setNotice,
     version
   })

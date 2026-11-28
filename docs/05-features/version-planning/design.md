@@ -6,14 +6,14 @@
 
 版本计划位于 `src/renderer/src/workbench/version-planning/`，通过 `version-cycle` 共享层接入项目、版本、材料、任务、会话和归档能力。计划屏负责目标、纪要和计划侧投影，验收屏负责验收结论和实际交付，指标域负责指标定义与采集。Orca 负责 Tasks、工作树、会话、Automations、项目身份和权限。
 
-| 业务区域 | 当前落点 | 责任 |
-| --- | --- | --- |
-| 页面与导航 | `PlanningBoard`、`PlanningHeader`、`PlanningJourneyNav` | 四区布局、同页定位、开始卡、会话收折和操作入口 |
-| 上版回顾 | `PlanningPriorReview`、`use-prior-carryovers` | 固定验收来源核验与延期、会议遗留投影 |
-| 目标与任务 | `PlanningGoalCard`、任务端口和 G2 Start/Open 解析器 | 目标编辑、指标承诺、任务归属、详情往返和开工入口 |
-| 批注与纪要 | `annotations/`、`PlanningMinutesSection`、`plan-send-menu` | 对象批注、原生发送、纪要读写和人工确认 |
-| 归档 | `PlanningArchiveCard`、`open-archive-pr` | 归档引用、provider 状态和原生 PR/MR 页面 |
-| 材料事务 | `version-document-store`、`MaterialDraftController`、`VersionDocumentPort` | schema 校验、CAS 修订、锁、原子写入和冲突处理 |
+| 业务区域   | 当前落点                                                                   | 责任                                             |
+| ---------- | -------------------------------------------------------------------------- | ------------------------------------------------ |
+| 页面与导航 | `PlanningBoard`、`PlanningHeader`、`PlanningJourneyNav`                    | 四区布局、同页定位、开始卡、会话收折和操作入口   |
+| 上版回顾   | `PlanningPriorReview`、`use-prior-carryovers`                              | 固定验收来源核验与延期、会议遗留投影             |
+| 目标与任务 | `PlanningGoalCard`、任务端口和 G2 Start/Open 解析器                        | 目标编辑、指标承诺、任务归属、详情往返和开工入口 |
+| 批注与纪要 | `annotations/`、`PlanningMinutesSection`、`plan-send-menu`                 | 对象批注、原生发送、纪要读写和人工确认           |
+| 归档       | `PlanningArchiveCard`、`open-archive-pr`                                   | 归档引用、provider 状态和原生 PR/MR 页面         |
+| 材料事务   | `version-document-store`、`MaterialDraftController`、`VersionDocumentPort` | schema 校验、CAS 修订、锁、原子写入和冲突处理    |
 
 不新增第二套聊天、任务详情、材料存储或自动化执行核。计划屏和验收屏可以共享端口与通用批注模块，业务投影保持各自演进。
 
@@ -47,4 +47,4 @@
 
 ## 验证边界与维护
 
-核心 TDD 关注目标到纪要的材料协议、CAS 冲突、来源隔离、自动化去重和导航返回。E2E 入口按 [spec](spec.md) 的 P01–P12 和 W02 登记，当前数量受三类用例规范和 allowlist 约束。实现模块、材料契约或原生接缝改变时更新本设计，并把运行结果写入 PR 验证评论，不在此追加历史日志。
+核心 TDD 关注目标到纪要的材料协议、CAS 冲突、来源隔离、已有周期自动化的去重与进屏不新建、导航返回。E2E 入口按 [spec](spec.md) 的 P01–P12 和 W02 登记，当前数量受三类用例规范和 allowlist 约束。实现模块、材料契约或原生接缝改变时更新本设计，并把运行结果写入 PR 验证评论，不在此追加历史日志。
