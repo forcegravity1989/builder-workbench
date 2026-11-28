@@ -31,6 +31,7 @@ import { usePlanColumnResize } from '../workbench/use-plan-column-resize'
 import { useMetricsWorkspaceOpen } from '../workbench/metrics-workspace-open'
 import { useMetricsBandResize } from '../workbench/use-metrics-band-resize'
 import { WorkbenchRail } from '../workbench/WorkbenchRail'
+import { MonicaNavigationDialog } from '../workbench/navigation/MonicaNavigationDialog'
 import { WorkbenchWorkspaceChoiceDialog } from '../workbench/WorkbenchWorkspaceChoiceDialog'
 import { WorkbenchVersionBindingDialog } from '../workbench/version-tree-bind-dialog'
 
@@ -195,6 +196,7 @@ export function AppWorkspaceShell(props: AppWorkspaceShellProps): React.JSX.Elem
     <CycleWorkspaceProvider>
       <AppWorkspaceContent {...props} />
       <WorkbenchWorkspaceChoiceDialog />
+      <MonicaNavigationDialog />
       <WorkbenchVersionBindingDialog />
       <PrReviewNotifications />
       <TeamHostSyncOnStart />

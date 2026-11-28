@@ -12,7 +12,7 @@ import { AcceptanceEvidenceReportRow } from '../version-acceptance/AcceptancePre
 import { versionWorkflowProgress } from '../version-workflow-progress'
 import { DECISION_LABELS } from '../version-labels'
 import type { CycleTaskRead } from '../version-cycle/ports'
-import { sampleCharter } from './DirectionCharterDemo'
+import { sampleCharter } from './sample-charter'
 import '../version-acceptance/acceptance.css'
 import '../version-overview/overview.css'
 

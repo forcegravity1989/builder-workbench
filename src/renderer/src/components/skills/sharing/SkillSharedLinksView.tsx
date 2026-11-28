@@ -9,9 +9,11 @@ function matchesQuery(name: string, query: string): boolean {
 
 export function SkillSharedLinksView({
   query,
+  withdrawalOnly = false,
   shares: { shares, loading, error, busyShareId, revoke, refresh }
 }: {
   query: string
+  withdrawalOnly?: boolean
   shares: OwnedSkillShares
 }): React.JSX.Element {
   const t = useTranslate()
@@ -39,10 +41,12 @@ export function SkillSharedLinksView({
   if (shares.length === 0) {
     return (
       <p className="rounded-md border border-border p-3 text-xs text-muted-foreground">
-        {t(
-          'auto.components.settings.shareSkills.noActiveLinks',
-          'No active links. Publish a skill bundle from Skills to create one.'
-        )}
+        {withdrawalOnly
+          ? t('auto.components.settings.RuntimeAccessGrantList.noActiveLinks', 'No active links.')
+          : t(
+              'auto.components.settings.shareSkills.noActiveLinks',
+              'No active links. Publish a skill bundle from Skills to create one.'
+            )}
       </p>
     )
   }

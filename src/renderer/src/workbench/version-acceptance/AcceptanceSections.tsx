@@ -31,7 +31,7 @@ export function AcceptanceHeader({
     <header className="acc-header">
       <div>
         <div className="acc-breadcrumb">
-          Builder Workbench <span>/</span>
+          Monica <span>/</span>
           <span className="acc-version-bound">{boundVersion ?? '版本未就绪'}</span>
         </div>
         <div className="acc-title-row">

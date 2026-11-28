@@ -199,6 +199,7 @@ jobs:
           src/main/persistence-workspace-default.test.ts
           src/main/observability/bundle.test.ts
           src/main/telemetry/client-workbench-transport.test.ts
+          src/main/orca-profiles/cloud-auth/profile-cloud-device-reporting.test.ts
           src/main/telemetry/consent.test.ts
           src/main/telemetry/picker-accept-rollup.test.ts
           src/main/ipc/w3-account-ipc.test.ts

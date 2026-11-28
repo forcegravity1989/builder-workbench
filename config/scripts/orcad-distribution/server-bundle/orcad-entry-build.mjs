@@ -66,7 +66,10 @@ export const ORCAD_COMMONJS_MODULE_OPTIONS = {
   define: {
     'import.meta.url': '__orcadModuleUrl',
     // Why only when on: an undeclared switch already reads as off, so other builds keep their bytes.
-    ...turnedOnDarkBuildDefines()
+    ...turnedOnDarkBuildDefines(),
+    ...(process.env.WORKBENCH_SHELL === '1' || process.env.ORCA_PRODUCT_NAME === 'Workbench'
+      ? { WORKBENCH_SHELL: JSON.stringify('1') }
+      : {})
   },
   logOverride: { 'empty-import-meta': 'error' }
 }

@@ -1,3 +1,8 @@
+import { isWorkbenchProduct } from '../../startup/workbench-product'
+import {
+  SharingUnavailableOnHostError,
+  WORKBENCH_PUBLISHING_UNAVAILABLE_MESSAGE
+} from '../../../shared/remote-runtime/host-status/sharing-unavailable-on-host'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { app } from 'electron'
@@ -297,7 +302,20 @@ export function registerSkillCloudIpcHandlers(
   runtime: OrcaRuntimeService,
   discover: SkillShareDiscover
 ): void {
-  registerSharingHandlers(runtime, discover)
+  if (isWorkbenchProduct()) {
+    for (const channel of [
+      'skills:prepareShare',
+      'skills:publishShare',
+      'skills:cancelShare',
+      'skills:releaseShare'
+    ]) {
+      handleMainWindowSkillIpc(channel, () => {
+        throw new SharingUnavailableOnHostError(WORKBENCH_PUBLISHING_UNAVAILABLE_MESSAGE, [])
+      })
+    }
+  } else {
+    registerSharingHandlers(runtime, discover)
+  }
   registerCloudInstallHandlers(runtime)
   registerSkillInstallManagementIpcHandlers(runtime)
 }

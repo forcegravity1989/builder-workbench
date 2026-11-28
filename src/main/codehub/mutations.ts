@@ -81,6 +81,42 @@ export async function updateCodeHubIssueTitle(args: {
   )
 }
 
+export async function addCodeHubIssueLabels(args: {
+  remote: CodeHubRemote
+  execOptions?: CodeHubExecOptions
+  iid: number
+  labels: string[]
+}): Promise<void> {
+  // `issue update --labels` replaces the whole set. `add_labels` on the issue
+  // API appends, so a label added by someone else between our read and write
+  // stays on the issue.
+  const labels = [...new Set(args.labels.map((label) => label.trim()).filter(Boolean))]
+  if (labels.length === 0) {
+    throw new Error('At least one CodeHub label is required')
+  }
+  if (labels.some((label) => label.includes(','))) {
+    throw new Error('CodeHub label names cannot contain commas')
+  }
+  await runCodeHubCli(
+    [
+      'api',
+      'PUT',
+      '/projects/:id/issues/:iid',
+      '--field',
+      `id=${args.remote.project}`,
+      '--field',
+      `iid=${args.iid}`,
+      '--field',
+      `add_labels=${labels.join(',')}`,
+      '-H',
+      args.remote.host.replace(/:\d+$/, ''),
+      '-f',
+      'json'
+    ],
+    args.execOptions
+  )
+}
+
 export async function updateCodeHubIssueLabels(args: {
   remote: CodeHubRemote
   execOptions?: CodeHubExecOptions
