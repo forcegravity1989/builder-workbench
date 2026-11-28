@@ -1,3 +1,7 @@
+import {
+  normalizeVisibleExecutionHostIds,
+  type ExecutionHostId
+} from '../execution-host/execution-host'
 import type { WorkspaceViewChoice } from '../workspace-view/workspace-view-options'
 
 // Ids and meanings match the projects' Sort by; desktop and phone localize the labels.
@@ -20,12 +24,14 @@ export type BotSidebarView = {
   hidePausedBots: boolean
   /** A bot's worker lines with nothing running drop off, as the projects' Hide sleeping. */
   hideSleepingWorkers: boolean
+  visibleHostIds?: ExecutionHostId[] | null
 }
 
 export const DEFAULT_BOT_SIDEBAR_VIEW: BotSidebarView = {
   sortBy: 'manual',
   hidePausedBots: false,
-  hideSleepingWorkers: false
+  hideSleepingWorkers: false,
+  visibleHostIds: null
 }
 
 /** Saved or relayed options, any missing or unknown field at its default. */
@@ -36,13 +42,29 @@ export function normalizeBotSidebarView(value: unknown): BotSidebarView {
   return {
     sortBy: sortBy ?? DEFAULT_BOT_SIDEBAR_VIEW.sortBy,
     hidePausedBots: saved.hidePausedBots === true,
-    hideSleepingWorkers: saved.hideSleepingWorkers === true
+    hideSleepingWorkers: saved.hideSleepingWorkers === true,
+    visibleHostIds: normalizeVisibleExecutionHostIds(
+      Array.isArray(saved.visibleHostIds)
+        ? saved.visibleHostIds.filter((id): id is string => typeof id === 'string')
+        : null
+    )
   }
 }
 
 /** How many options differ from the default, for the button's badge. */
 export function countActiveBotSidebarFilters(view: BotSidebarView): number {
-  return Number(view.hidePausedBots) + Number(view.hideSleepingWorkers)
+  return (
+    Number(view.hidePausedBots) +
+    Number(view.hideSleepingWorkers) +
+    Number(Boolean(view.visibleHostIds))
+  )
+}
+
+export function isBotSidebarHostVisible(
+  hostId: ExecutionHostId,
+  visibleHostIds: BotSidebarView['visibleHostIds']
+): boolean {
+  return visibleHostIds == null || visibleHostIds.includes(hostId)
 }
 
 type ArrangedEntry =

@@ -20,6 +20,7 @@ import {
 import { BotAvatar } from './BotAvatar'
 import { FOLD_TOGGLE_CLASS } from './BotChatRowControls'
 import { botRowLineAge, BotRowLineView } from './BotRowActivityLine'
+import { WorktreeHostContextBadge } from '@/components/sidebar/workspace-card/host/WorktreeHostContextBadge'
 import { BotSidebarRow } from './BotSidebarRow'
 import { revealBotHome } from './BotHoverNeedsYou'
 import { BotHoverDetails, useBotRowDetails } from './BotHoverDetails'
@@ -46,6 +47,7 @@ type BotRowProps = {
   fold?: BotRowFold | null
   /** The Bots section's reorder: this row is where a drag starts. */
   dragHandle?: boolean
+  visibleHostLabel?: string
 }
 
 export function BotRow({
@@ -54,7 +56,8 @@ export function BotRow({
   isActive,
   onOpen,
   fold = null,
-  dragHandle = false
+  dragHandle = false,
+  visibleHostLabel
 }: BotRowProps): React.JSX.Element {
   const t = useTranslate()
   const details = useBotRowDetails(bot, home)
@@ -62,7 +65,11 @@ export function BotRow({
   const isUnread = home.isUnread && !offline
   const upNextNew = useBotUpNextUnseen(bot)
   const age = offline ? null : botRowLineAge(line, now)
-  const hostPill = hostLabel ? <BotRowHostIcon label={hostLabel} /> : null
+  const hostPill = visibleHostLabel ? (
+    <WorktreeHostContextBadge label={visibleHostLabel} title={visibleHostLabel} />
+  ) : hostLabel ? (
+    <BotRowHostIcon label={hostLabel} />
+  ) : null
   // The Bots search matches purposes from what each listed row shows; it never reads SOUL.md.
   const purposeKey = botSidebarEntryKey(bot)
   useEffect(() => {

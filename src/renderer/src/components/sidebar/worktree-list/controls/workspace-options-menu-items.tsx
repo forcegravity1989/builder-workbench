@@ -124,7 +124,6 @@ function HostsOptionItem({
   hostOptions
 }: OptionItemProps): JSX.Element {
   const t = useTranslate()
-  const setWorkspaceHostScope = useAppStore((s) => s.setWorkspaceHostScope)
   const visibleWorkspaceHostIds = useAppStore((s) => s.visibleWorkspaceHostIds)
   const setVisibleWorkspaceHostIds = useAppStore((s) => s.setVisibleWorkspaceHostIds)
   return (
@@ -132,9 +131,8 @@ function HostsOptionItem({
       hostVisibilityLabel={getSidebarHostVisibilityLabel(visibleWorkspaceHostIds, hostOptions, t)}
       hostOptions={hostOptions}
       preserveWorkspaceBoardOpen={preserveWorkspaceBoardOpen}
-      setWorkspaceHostScope={setWorkspaceHostScope}
-      visibleWorkspaceHostIds={visibleWorkspaceHostIds}
-      setVisibleWorkspaceHostIds={setVisibleWorkspaceHostIds}
+      visibleHostIds={visibleWorkspaceHostIds}
+      setVisibleHostIds={setVisibleWorkspaceHostIds}
     />
   )
 }

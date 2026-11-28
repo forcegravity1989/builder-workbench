@@ -5,11 +5,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger
 } from '@/components/ui/dropdown-menu'
-import { ALL_EXECUTION_HOSTS_SCOPE } from '../../../../../../shared/execution-host/execution-host'
-import type {
-  VisibleWorkspaceHostIds,
-  WorkspaceHostScope
-} from '../../../../../../shared/ui-chrome/ui-chrome-types'
+import type { VisibleWorkspaceHostIds } from '../../../../../../shared/ui-chrome/ui-chrome-types'
 import { pickerExecutionHosts } from '../../../../../../shared/execution-host/managed-orcad-execution-host'
 import {
   getCheckedHostRows,
@@ -31,9 +27,8 @@ type SidebarHostScopeMenuSectionProps = {
   hostVisibilityLabel: string
   hostOptions: readonly SidebarHostOption[]
   preserveWorkspaceBoardOpen: boolean
-  setWorkspaceHostScope: (scope: WorkspaceHostScope) => void
-  visibleWorkspaceHostIds: VisibleWorkspaceHostIds
-  setVisibleWorkspaceHostIds: (ids: VisibleWorkspaceHostIds) => void
+  visibleHostIds: VisibleWorkspaceHostIds
+  setVisibleHostIds: (ids: VisibleWorkspaceHostIds) => void
 }
 
 function getHostMetadata(host: SidebarHostOption, t: Translate = translate): string {
@@ -68,12 +63,11 @@ export function SidebarHostScopeMenuSection({
   hostVisibilityLabel,
   hostOptions,
   preserveWorkspaceBoardOpen,
-  setWorkspaceHostScope,
-  visibleWorkspaceHostIds,
-  setVisibleWorkspaceHostIds
+  visibleHostIds,
+  setVisibleHostIds
 }: SidebarHostScopeMenuSectionProps): React.JSX.Element {
   const t = useTranslate()
-  const allVisible = !visibleWorkspaceHostIds
+  const allVisible = !visibleHostIds
   const hostRows = useMemo(
     () =>
       pickerExecutionHosts(hostOptions).map((host) => ({
@@ -83,28 +77,25 @@ export function SidebarHostScopeMenuSection({
     [hostOptions, t]
   )
   const checkedRowIds = new Set(
-    (visibleWorkspaceHostIds
-      ? getCheckedHostRows(hostRows, visibleWorkspaceHostIds)
-      : hostRows
-    ).map((host) => host.id)
+    (visibleHostIds ? getCheckedHostRows(hostRows, visibleHostIds) : hostRows).map(
+      (host) => host.id
+    )
   )
 
   // Pin checked filter matches so users can still uncheck them.
   const rows = useBoundedHostRows(hostRows, allVisible ? undefined : checkedRowIds)
 
   const toggleAllHosts = (): void => {
-    const next = toggleAllVisibleHosts(hostOptions, visibleWorkspaceHostIds)
-    if (next === null) {
-      setWorkspaceHostScope(ALL_EXECUTION_HOSTS_SCOPE)
-    } else if (next) {
-      setVisibleWorkspaceHostIds(next)
+    const next = toggleAllVisibleHosts(hostOptions, visibleHostIds)
+    if (next !== undefined) {
+      setVisibleHostIds(next)
     }
   }
 
   const toggleHost = (host: SidebarHostOption): void => {
-    const next = toggleVisibleHostRow(hostOptions, visibleWorkspaceHostIds, host)
+    const next = toggleVisibleHostRow(hostOptions, visibleHostIds, host)
     if (next !== undefined) {
-      setVisibleWorkspaceHostIds(next)
+      setVisibleHostIds(next)
     }
   }
 

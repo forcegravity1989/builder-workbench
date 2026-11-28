@@ -22,7 +22,7 @@ function useReasonText(reason: SidebarRevealNoneReason | null): string | null {
     case 'bots-off':
       return t('sidebar.revealCurrent.botsOff', 'Bots are turned off, so this bot isn’t listed')
     case 'bot-hidden':
-      return t('sidebar.revealCurrent.botHidden', 'This bot is paused and hidden by Bot options')
+      return t('sidebar.revealCurrent.botHidden', 'This row is hidden by Bot options')
   }
 }
 
