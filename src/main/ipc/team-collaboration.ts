@@ -1,5 +1,14 @@
-import { app, ipcMain } from 'electron'
+import { BrowserWindow, app, ipcMain, session } from 'electron'
 import { resolveWelinkRoute } from '../workbench/reporting/report-submission'
+import {
+  CSRF_COOKIE_NAME,
+  ONEBOX_ENTRY_URL,
+  ONEBOX_ORIGIN,
+  SSO_LOGIN_MARKER,
+  listTeamGroupSpaces,
+  resolveTeamGroupId,
+  type OneboxGroupSpaceDeps
+} from '../workbench/team-collaboration/onebox-group-space-client'
 import {
   readTeamDirectory,
   writeTeamDirectory,
@@ -10,11 +19,138 @@ import {
   loadTeamIdentity,
   rememberTeamIdentity
 } from '../workbench/team-collaboration/team-identity'
+import { isTrustedBrowserRenderer } from './browser/browser-renderer-trust'
 import { markRuntimeEnvironmentManuallyDisconnected } from './runtime-environments/connectivity/runtime-environment-manual-disconnect'
 import { invalidateRuntimeEnvironmentTransport } from './runtime-environments/runtime-environments'
+import { resolveSignedInW3Partition } from './w3-account-ipc'
 
 const NUMERIC_ID = /^\d{1,32}$/
 const TEXT_ID = /^.{1,256}$/u
+
+/** How long the hidden warm-up page may take to seed the CSRF cookie. */
+const ONEBOX_WARMUP_TIMEOUT_MS = 8_000
+const ONEBOX_WARMUP_POLL_INTERVAL_MS = 250
+/** Bound for each OneBox API round trip; a hung response must not wedge the IPC. */
+const ONEBOX_REQUEST_TIMEOUT_MS = 15_000
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('onebox request timed out')), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      }
+    )
+  })
+}
+
+/**
+ * Why a hidden window instead of session.fetch: the OneBox entry page is an
+ * SPA shell whose JS performs the SSO handshake and seeds the CSRF cookie; a
+ * plain fetch never runs that JS. Hardening mirrors the W3 login window.
+ */
+async function warmOneboxSession(partition: string): Promise<{
+  finalUrl: string
+  networkError?: boolean
+}> {
+  const window = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      preload: undefined,
+      // Hidden windows throttle timers by default; the SPA handshake must run at full speed.
+      backgroundThrottling: false,
+      session: session.fromPartition(partition)
+    }
+  })
+  // The warm-up is a background session bootstrap, not a browsing surface.
+  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  try {
+    // loadURL only settles on did-finish/did-fail-load; a host that accepts
+    // the connection but never answers would hang it forever, so race a
+    // bounded timeout and report it like any other unreachable network path.
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error('onebox warm-up timed out')),
+        ONEBOX_WARMUP_TIMEOUT_MS
+      )
+      window.loadURL(ONEBOX_ENTRY_URL).then(
+        () => {
+          clearTimeout(timer)
+          resolve()
+        },
+        (error) => {
+          clearTimeout(timer)
+          reject(error)
+        }
+      )
+    })
+    const deadline = Date.now() + ONEBOX_WARMUP_TIMEOUT_MS
+    for (;;) {
+      const cookies = await session
+        .fromPartition(partition)
+        .cookies.get({ name: CSRF_COOKIE_NAME, url: ONEBOX_ORIGIN })
+      if (cookies[0]?.value) {
+        break
+      }
+      // The SSO login bounce never seeds the cookie; bail early instead of
+      // waiting out the full timeout.
+      if (window.webContents.getURL().includes(SSO_LOGIN_MARKER)) {
+        break
+      }
+      if (Date.now() >= deadline) {
+        break
+      }
+      await new Promise((resolve) => setTimeout(resolve, ONEBOX_WARMUP_POLL_INTERVAL_MS))
+    }
+    return { finalUrl: window.webContents.getURL() }
+  } catch {
+    return { finalUrl: '', networkError: true }
+  } finally {
+    window.destroy()
+  }
+}
+
+// Why the W3 partition: OneBox accepts the passwordless SSO the user already
+// configured there, so group discovery needs no second login and no credential
+// of its own. The warm-up window mirrors the login window in w3-account-ipc.ts;
+// the fetch/cookie pair mirrors its service wiring.
+const oneboxDeps: OneboxGroupSpaceDeps = {
+  resolvePartition: resolveSignedInW3Partition,
+  warmSession: warmOneboxSession,
+  fetch: async (partition, url, init) => {
+    try {
+      // Both the request and the body read are bounded: a server that accepts
+      // the connection but never finishes answering must surface as
+      // `unreachable`, not as a list that never stops loading.
+      const response = await withTimeout(
+        session.fromPartition(partition).fetch(url, init),
+        ONEBOX_REQUEST_TIMEOUT_MS
+      )
+      const text = await withTimeout(response.text(), ONEBOX_REQUEST_TIMEOUT_MS)
+      return { status: response.status, url: response.url, text: async () => text }
+    } catch {
+      return { status: 0, url: '', networkError: true, text: async () => '' }
+    }
+  },
+  readCsrfCookie: async (partition, cookieName) => {
+    try {
+      const cookies = await session
+        .fromPartition(partition)
+        .cookies.get({ name: cookieName, url: ONEBOX_ORIGIN })
+      return cookies[0]?.value ?? null
+    } catch {
+      return null
+    }
+  }
+}
 
 function requireId(value: unknown, name: string): string {
   if (typeof value !== 'string' || !NUMERIC_ID.test(value)) {
@@ -164,4 +300,24 @@ export function registerTeamCollaborationHandlers(): void {
       })
     }
   )
+
+  // Why the trust gate: these two enumerate every group the signed-in W3
+  // account can see, which is broader than the bound team the sibling handlers
+  // already expose. Only the main app window may ask. A refused caller gets a
+  // plain "no usable W3 session" failure rather than a partial list.
+  ipcMain.handle('teamCollaboration:listGroupSpaces', async (event) => {
+    if (!isTrustedBrowserRenderer(event.sender)) {
+      return { ok: false, reason: 'w3-not-signed-in' } as const
+    }
+    return listTeamGroupSpaces(oneboxDeps)
+  })
+
+  ipcMain.handle('teamCollaboration:resolveGroupSpace', async (event, args: { spaceId: string }) => {
+    if (!isTrustedBrowserRenderer(event.sender)) {
+      return { ok: false, reason: 'w3-not-signed-in' } as const
+    }
+    // Why no requireId throw here: this handler answers with a typed result, so
+    // a malformed id is reported the same way as any other unusable space.
+    return resolveTeamGroupId(oneboxDeps, typeof args?.spaceId === 'string' ? args.spaceId : '')
+  })
 }

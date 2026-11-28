@@ -1,3 +1,5 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { useAppStore } from '@/store'
 import React from 'react'
 import { Plus } from 'lucide-react'
 import { AddConnectorButton } from '@/components/bots/AddConnectorButton'
@@ -85,6 +87,9 @@ function BotConnectorEntryCard({
 /** The bot page's Connectors tab when the bot has none: what they're for, and Add a connector. */
 /** No connectors yet: their logos, what they're for, and Add a connector. */
 export function BotNoConnectors({ bot }: { bot: Bot }): React.JSX.Element {
+  if (isWorkbenchShell()) {
+    return <MonicaIntegrations bot={bot} />
+  }
   return (
     <AddConnectorButton bot={bot} trigger={(open) => <NoConnectors bot={bot} onAdd={open} />} />
   )
@@ -119,6 +124,37 @@ function NoConnectors({ bot, onAdd }: { bot: Bot; onAdd: () => void }): React.JS
  * bot page's Connectors tab and the Connectors page of its settings.
  */
 export function BotConnectorsSection({ bot }: { bot: Bot }): React.JSX.Element {
+  return isWorkbenchShell() ? (
+    <MonicaIntegrations bot={bot} />
+  ) : (
+    <OrcaBotConnectorsSection bot={bot} />
+  )
+}
+
+function MonicaIntegrations({ bot }: { bot: Bot }): React.JSX.Element {
+  const t = useTranslate()
+  return (
+    <div className="flex flex-col items-start gap-3 p-3">
+      <p className="text-sm text-muted-foreground">
+        {t('bots.monicaIntegrations.description', 'Bots use the integrations on their computer.')}
+      </p>
+      {bot.hostId === 'local' && (
+        <Button
+          variant="outline"
+          onClick={() => {
+            const state = useAppStore.getState()
+            state.openSettingsTarget({ pane: 'integrations', repoId: null })
+            state.openSettingsPage()
+          }}
+        >
+          {t('bots.monicaIntegrations.open', 'Open Integrations')}
+        </Button>
+      )}
+    </div>
+  )
+}
+
+function OrcaBotConnectorsSection({ bot }: { bot: Bot }): React.JSX.Element {
   const t = useTranslate()
   const webhooks = useWebhooksConnector(bot)
   const inventory = useBotConnectorInventory(bot, 'apps')

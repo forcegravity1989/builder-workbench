@@ -4,12 +4,13 @@
 
 ## 入口与数据流
 
-项目墙页头的团队设置图标复用现有项目墙工具栏。一台主机只绑定一个团队：本机没有绑定时，团队设置弹窗同时要求 WeLink 群 ID 和群空间 ID，绑定后每次直接打开团队目录。读取时 `welink-cli im query-group-member --group-id` 返回成员账号、群主和当前身份，再用 `welink-cli contact detail` 批量补成员中文名和头像（读不到时界面退回账号与首字母占位）。群号不能反查群空间 ID，所以空间 ID 由人在首次绑定时提供；本机保存这一组绑定（`bw:team-group-id`、`bw:team-space-id`），之后从绑定和群空间文件读回。OneBox 读写在群空间的 `BW/team.json` 中完成。
+项目墙页头的团队设置图标复用现有项目墙工具栏。一台主机只绑定一个团队：本机没有绑定时，团队设置弹窗只要求按群名称选择 WeLink 群（#790），群 ID 与群空间 ID 由主进程经 OneBox 在已登录 W3 分区内自动获取，绑定后每次直接打开团队目录。读取时 `welink-cli im query-group-member --group-id` 返回成员账号、群主和当前身份，再用 `welink-cli contact detail` 批量补成员中文名和头像（读不到时界面退回账号与首字母占位）。群名称到两个 ID 的映射由 OneBox 内网接口完成：`teamSpaceList` 分页拉取群空间列表（无服务端名称过滤，本地匹配），选定后 `openGetTeamInfo` 解析群号；入口页是无 HTTP 跳转的 SPA 壳，SSO 与 `WAPCSRFTOKEN` 种植由页面 JS 完成，会话预热须在 W3 分区内的隐藏窗口进行。本机保存这一组绑定（`bw:team-group-id`、`bw:team-space-id`），之后从绑定和群空间文件读回。OneBox 读写在群空间的 `BW/team.json` 中完成。
 
 团队目录是薄目录。它保存群绑定、成员/主机身份和仓库身份；不保存完全访问授权状态、日志、项目负责人或人工维护的来源名单；主机地址保存为 Orca 只读配对链接（含只读设备令牌，已确认的取舍，成员无需二次输入授权码）。登记项目时，`TeamSettingsDialog` 通过现有项目墙仓库身份写入团队项目，并把本机项目的 `projectVisibility` 设为 `team`。其他成员在自己的项目墙执行同一动作；项目墙按 `repoId` 读回各主机来源并聚合成一张现有项目卡。个人项目没有登记就继续留在个人范围。
 
 ```text
 项目墙团队设置
+  ├─ W3 分区 → OneBox 群列表/群 ID 解析（隐藏窗口预热 SSO）
   ├─ welink-cli 群成员/群主 ──┐
   ├─ OneBox BW/team.json       ├─ 团队目录读取/保存
   └─ 本机项目墙 repo identity ─┘
@@ -43,6 +44,7 @@
 
 | 能力 | 现有落点 | G1 适配 |
 | --- | --- | --- |
+| 群发现 | `src/main/workbench/team-collaboration/onebox-group-space-client.ts`、`src/renderer/src/workbench/TeamGroupSpaceCombobox.tsx`、`use-team-group-picker.ts` | W3 分区隐藏窗口预热 SSO、分页列表本地匹配、选定后按需解析群 ID |
 | 团队目录 | `src/main/workbench/team-collaboration/team-directory-client.ts`、`src/main/ipc/team-collaboration.ts`、`src/renderer/src/workbench/TeamSettingsDialog.tsx` | 群成员/群主读回、`BW/team.json` 读写、登记即标为团队项目、地址一键填入 |
 | 项目聚合 | `ProjectWallPage`、项目来源与仓库身份读取 | 以 `repoId` 聚合团队来源，保留现有卡片和未连接状态 |
 | Orca 连接 | `SshStatusSegment`、`RuntimePairingUrlGenerator`、`DeviceRegistry` | 默认 `team-read`，共享访问列表按成员显示，保留来源身份 |

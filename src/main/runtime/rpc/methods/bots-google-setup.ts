@@ -34,6 +34,7 @@ import {
 import type { OrcaRuntimeService } from '../../orca-runtime'
 import { googleSetupKeyRefusedLine } from '../../../google/google-setup-key-download'
 import { noWindowAnswersGoogleCards } from '../../../google/google-card-reach'
+import { isWorkbenchProduct } from '../../../startup/workbench-product'
 import { defineMethod, InvalidArgumentError, type RpcContext } from '../core'
 import { requireSetupPageInAgentWorkspace } from '../../../google/google-setup-page-binding'
 import { postConnectorOffer } from './bots-connector-offer'
@@ -253,6 +254,12 @@ async function routeBotStart(
   return { routed: ask.kind === 'card' ? 'offer' : ask.kind, message: ask.message }
 }
 
+function requireGoogleSetupEnabled(): void {
+  if (isWorkbenchProduct()) {
+    throw new InvalidArgumentError('Use the integrations on the Monica host.')
+  }
+}
+
 export const GOOGLE_SETUP_METHODS = [
   defineMethod({
     name: 'bots.googleSetup.read',
@@ -268,6 +275,7 @@ export const GOOGLE_SETUP_METHODS = [
     permission: 'workspace',
     params: GoogleSetupWrite,
     handler: async (params, context) => {
+      requireGoogleSetupEnabled()
       const { botId, actor } = whose(params, context)
       if (actor === 'bot' && params.change.action === 'start') {
         const routed = await routeBotStart(context, botId, params.callerSessionId)
@@ -301,6 +309,7 @@ export const GOOGLE_SETUP_METHODS = [
     permission: 'workspace',
     params: GoogleSetupAnswer,
     handler: async ({ botId, card, values }, context) => {
+      requireGoogleSetupEnabled()
       // Card buttons run in the owner's Orca; an agent's CLI never answers for them.
       if (isAgentRpcCaller(context.caller)) {
         throw new InvalidArgumentError('Only your owner answers setup cards, in Orca.')
@@ -316,6 +325,7 @@ export const GOOGLE_SETUP_METHODS = [
     permission: 'workspace',
     params: GoogleSetupStart,
     handler: async ({ botId, from }, context) => {
+      requireGoogleSetupEnabled()
       // Set up Google is a button in the owner's Orca; a bot starts its own run with the CLI.
       if (isAgentRpcCaller(context.caller)) {
         throw new InvalidArgumentError('Only your owner starts Google setup from Orca.')

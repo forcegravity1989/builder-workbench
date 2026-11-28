@@ -1,3 +1,4 @@
+import { isWorkbenchProduct } from '../../startup/workbench-product'
 import {
   cleanCloudServiceUrl as cleanUrl,
   cleanCloudServiceOrigin as cleanOrigin
@@ -40,6 +41,12 @@ export function getOrcaCloudAuthConfig(
   env: NodeJS.ProcessEnv = process.env,
   packaged: boolean = isPackagedOrcaBuild()
 ): { configured: true; config: OrcaCloudAuthConfig } | { configured: false; setupMessage: string } {
+  if (isWorkbenchProduct(env)) {
+    return {
+      configured: false,
+      setupMessage: 'Monica uses your internal account and integrations.'
+    }
+  }
   // Plain HTTP token endpoints are development-only.
   const allowLoopbackHttp = !packaged
   const cleanEndpointUrl = (value: string | undefined): string | null =>
@@ -119,5 +126,10 @@ export function isOrcaCloudDevAuthEnabled(
   env: NodeJS.ProcessEnv = process.env,
   packaged: boolean = isPackagedOrcaBuild()
 ): boolean {
-  return env.ORCA_CLOUD_DEV_AUTH === '1' && env.NODE_ENV !== 'production' && !packaged
+  return (
+    !isWorkbenchProduct(env) &&
+    env.ORCA_CLOUD_DEV_AUTH === '1' &&
+    env.NODE_ENV !== 'production' &&
+    !packaged
+  )
 }

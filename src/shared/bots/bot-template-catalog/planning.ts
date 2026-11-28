@@ -104,5 +104,26 @@ export const BOT_TEMPLATES_PLANNING: readonly BotTemplate[] = [
     events: [],
     skills: ['issue-triage'],
     example: ['14 issues untouched since August.', 'ORC-511 and ORC-688 look like the same bug.']
+  },
+  {
+    id: 'bw-meeting',
+    category: 'planning',
+    name: 'WeLink meeting assistant',
+    line: 'Books a WeLink meeting after you confirm the details.',
+    firstChat:
+      'Checks WeLink on this computer, then previews the subject, time and attendees before booking.',
+    mascot: 'Q1',
+    watches: 'Your meeting request',
+    does: 'Books a WeLink meeting and reads back the meeting number and join link.',
+    reports: 'Here, when you ask',
+    connectors: [],
+    schedules: [],
+    events: [],
+    skills: ['welink-meeting'],
+    needsSetup: 'welink-cli signed in on this machine; run welink-cli auth status to check.',
+    example: [
+      'Project discussion: Friday 10:00–10:30, booked via WeLink.',
+      'The meeting number and join link are ready.'
+    ]
   }
 ]

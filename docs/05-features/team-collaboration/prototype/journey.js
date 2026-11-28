@@ -57,6 +57,10 @@
       '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left" aria-hidden="true" focusable="false"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>',
     Check:
       '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"></path></svg>',
+    ChevronsUpDown:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevrons-up-down" aria-hidden="true" focusable="false"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg>',
+    LoaderCircle:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-loader-circle" aria-hidden="true" focusable="false"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>',
     Terminal:
       '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-terminal" aria-hidden="true" focusable="false"><path d="M12 19h8"></path><path d="m4 17 6-6-6-6"></path></svg>',
     Network:
@@ -90,6 +94,22 @@
   const alternateGroup = '938583054774198542'
   const alternateSpaceId = '20065475'
   const bindingKey = (group, space) => `${group}|${space}`
+  // 演示数据：OneBox teamSpaceList 的原始条目形态。emeeting-* 是自动建的会议
+  // 空间，没有 WeLink 群；groupId 为空代表空间还在但群已解散，选中后报无关联群。
+  const demoRawSpaces = [
+    { spaceId: demoSpaceId, groupId: demoGroup, name: '神盾局项目群', curNumbers: 12, ownedByUserName: '韩岚' },
+    // 排在「交付看板协作群」之前，用来演示搜索时前缀命中会插到包含命中前面。
+    { spaceId: '24170355', groupId: '1030194633998627511', name: '星图交付保障群', curNumbers: 6, ownedByUserName: '陈远' },
+    { spaceId: alternateSpaceId, groupId: alternateGroup, name: '交付看板协作群', curNumbers: 5, ownedByUserName: '林安' },
+    { spaceId: '24160277', groupId: '1030194633998627497', name: '星图服务发布群', curNumbers: 8, ownedByUserName: '陈远' },
+    { spaceId: '24190113', groupId: '', name: '临时对齐（群已解散）', curNumbers: 4, ownedByUserName: '林安' },
+    { spaceId: '24188001', groupId: '', name: 'emeeting-20261127-1402', curNumbers: 3, ownedByUserName: '韩岚' },
+    { spaceId: '24188002', groupId: '', name: 'emeeting-20261126-0930', curNumbers: 2, ownedByUserName: '陈远' }
+  ]
+  // 与主进程 isMeetingSpaceName 同一条规则：会议空间不进可绑定列表。
+  const demoBindableSpaces = demoRawSpaces.filter(
+    (space) => !space.name.toLowerCase().startsWith('emeeting-')
+  )
   const demoProjectGroup = '300000000000000001'
   const employees = { lead: 'A0010001', lin: 'A0010002', chen: 'A0010003' }
   const addresses = {
@@ -119,6 +139,127 @@
       host_id: hosts[person]?.id ?? `${person}-host`,
       identity_source: 'welink-cli'
     }
+  }
+
+  function findDemoSpace(spaceId) {
+    return demoBindableSpaces.find((space) => space.spaceId === spaceId) ?? null
+  }
+
+  // 与 team-group-search.ts 同一套排序：前缀命中排在包含命中前，同档保持服务端顺序。
+  function searchDemoSpaces(query) {
+    const needle = query.trim().toLowerCase()
+    if (!needle) {
+      return [...demoBindableSpaces]
+    }
+    const prefix = []
+    const contains = []
+    for (const space of demoBindableSpaces) {
+      const name = space.name.toLowerCase()
+      if (name.startsWith(needle)) {
+        prefix.push(space)
+      } else if (name.includes(needle)) {
+        contains.push(space)
+      }
+    }
+    return [...prefix, ...contains]
+  }
+
+  function demoSpaceDetail(space) {
+    return `${space.curNumbers} 人 · 群主 ${space.ownedByUserName}`
+  }
+
+  // 与 TeamGroupSpaceCombobox 的 failureCopy 同一套文案：OneBox 的原始报错带
+  // cookie 与 CSRF 令牌，一律不上屏，只显示主进程判定的原因。
+  const groupFailureCopy = {
+    'w3-unconfigured': { message: '还没配置 W3 账户，读不到群列表。', needsAccount: true },
+    'w3-not-signed-in': { message: 'W3 账户未登录，读不到群列表。', needsAccount: true },
+    'onebox-unauthorized': {
+      message: 'W3 免密登录没有通过 OneBox 校验，读不到群列表。',
+      needsAccount: true
+    },
+    'rate-limit': { message: 'OneBox 接口限流，稍后重试。', needsAccount: false },
+    unreachable: { message: '连不上 OneBox 群空间服务。', needsAccount: false },
+    'parse-failed': { message: 'OneBox 返回的群列表无法解析。', needsAccount: false },
+    'not-a-group-space': {
+      message: '这个空间没有关联 WeLink 群，换一个群试试。',
+      needsAccount: false
+    }
+  }
+
+  function groupFailure(reason) {
+    const copy = groupFailureCopy[reason] ?? groupFailureCopy.unreachable
+    return `<div class="group-picker-failure" role="alert"><p>${esc(copy.message)}</p>${
+      copy.needsAccount
+        ? button('打开 W3 账户设置', 'open-w3-account-settings', { kind: 'secondary' })
+        : ''
+    }</div>`
+  }
+
+  function blankGroupPicker() {
+    return {
+      open: false,
+      query: '',
+      phase: 'idle',
+      listFailure: '',
+      truncated: false,
+      selection: null,
+      resolving: false,
+      resolveFailure: ''
+    }
+  }
+
+  // 绑定表单每次打开都重新挂载：清掉上一次的选择与面板状态，已读到的群列表按
+  // useTeamGroupPicker 的缓存保留；失败过的列表退回 idle，下次打开重试。
+  function reopenGroupPicker(picker) {
+    return {
+      ...blankGroupPicker(),
+      phase: picker.phase === 'failed' ? 'idle' : picker.phase,
+      truncated: picker.truncated
+    }
+  }
+
+  // 读取结果由评审工具区的「群列表」注入，模拟 OneBox 的各种返回。
+  function loadGroupList() {
+    const picker = current().groupPicker
+    // 已就绪的列表直接复用（对应 useTeamGroupPicker 的 TTL 缓存），读取中的不
+    // 重复触发分页；失败过的留在 failed，由下一次打开重试。
+    if (picker.phase === 'loading' || picker.phase === 'ready') {
+      return
+    }
+    const mode = document.querySelector('#group-list-result')?.value ?? 'ready'
+    const person = actor.value
+    const desktop = current()
+    picker.phase = 'loading'
+    picker.listFailure = ''
+    setTimeout(() => {
+      if (desktops[person] !== desktop) {
+        return
+      }
+      if (mode === 'ready' || mode === 'truncated') {
+        picker.phase = 'ready'
+        picker.truncated = mode === 'truncated'
+      } else {
+        picker.phase = 'failed'
+        picker.open = false
+        picker.truncated = false
+        picker.listFailure = mode
+      }
+      if (actor.value === person) {
+        render()
+      }
+    }, 450)
+  }
+
+  // 绑定表单可见就开始读取，和 useTeamGroupPicker 挂载即 loadList 一致。
+  // 幂等：phase 同步置为 loading，重复 render 不会重复触发分页。
+  function startGroupListIfNeeded() {
+    const desktop = current()
+    const bindingVisible =
+      desktop.panel === 'team' && (!desktop.directoryDraft || desktop.switchingTeam)
+    if (!bindingVisible || desktop.groupPicker.phase !== 'idle') {
+      return
+    }
+    loadGroupList()
   }
 
   // Catalog identity only. Which desktop currently has the repo is wallRepos.
@@ -179,7 +320,7 @@
           directoryDraft: null,
           switchingTeam: false,
           bindingPending: false,
-          bindingDraft: { group: '', space: '' },
+          groupPicker: blankGroupPicker(),
           bindingError: '',
           directoryBase: 'null',
           source: person === 'lead' ? 'lin' : person,
@@ -572,7 +713,7 @@
   function saveDirectory() {
     const draft = current().directoryDraft
     if (!draft?.team_space_id) {
-      notify('请先填写群空间 ID，再同步团队目录。')
+      notify('重新绑定团队后再保存。')
       return
     }
     if (current().directoryBase !== JSON.stringify(activeDirectory())) {
@@ -635,6 +776,85 @@
     )
   }
 
+  // 群名称联想输入：替代原先的两个手填 ID 输入框。列表来自 W3 账户可见的
+  // OneBox 群空间，本地按名称收窄，所以不输入也能翻遍全部群名。
+  function groupPickerField() {
+    const picker = current().groupPicker
+    const pending = current().bindingPending
+    const label = picker.resolving
+      ? '正在获取群 ID…'
+      : picker.selection
+        ? picker.selection.name
+        : '选择 WeLink 群'
+    return `<div class="field group-picker"><span>WeLink 群名称</span>
+      <div class="group-picker-control">
+        <button type="button" class="btn btn-secondary group-picker-trigger" role="combobox" aria-haspopup="listbox" aria-expanded="${picker.open}" aria-controls="group-picker-panel" aria-label="${esc(picker.selection ? `WeLink 群名称：${picker.selection.name}` : 'WeLink 群名称')}" data-action="toggle-group-picker"${pending ? ' disabled' : ''}>
+          <span class="group-picker-value${picker.selection || picker.resolving ? '' : ' is-placeholder'}">${esc(label)}</span>${icon('ChevronsUpDown')}
+        </button>
+        ${picker.open ? groupPickerPanel() : ''}
+      </div>
+      ${picker.resolveFailure ? groupFailure(picker.resolveFailure) : ''}
+      ${picker.phase === 'failed' ? groupFailure(picker.listFailure) : ''}
+    </div>`
+  }
+
+  function groupPickerPanel() {
+    const picker = current().groupPicker
+    return `<div class="group-picker-panel" id="group-picker-panel">
+      <input class="input group-picker-search" type="search" placeholder="搜索群名称" aria-label="搜索群名称" autocomplete="off" data-group-search value="${esc(picker.query)}"${current().bindingPending ? ' disabled' : ''}>
+      ${groupPickerBody()}
+    </div>`
+  }
+
+  function groupPickerBody() {
+    const picker = current().groupPicker
+    if (picker.phase === 'idle' || picker.phase === 'loading') {
+      return `<p class="group-picker-busy"><span class="spin">${icon('LoaderCircle')}</span>正在读取 W3 账户可见的群…</p>`
+    }
+    if (picker.phase === 'failed') {
+      return ''
+    }
+    return `<div class="group-picker-list" role="listbox" aria-label="WeLink 群列表">${groupOptionRows()}</div>${
+      picker.truncated
+        ? '<p class="group-picker-foot">群数量超过上限，只列出最近的一部分；搜索也仅覆盖已列出的群。</p>'
+        : ''
+    }`
+  }
+
+  function groupOptionRows() {
+    const picker = current().groupPicker
+    const options = searchDemoSpaces(picker.query)
+    if (!options.length) {
+      return '<p class="group-picker-empty">没有匹配的群。</p>'
+    }
+    return options
+      .map((space) => {
+        const selected = picker.selection?.spaceId === space.spaceId
+        return `<button type="button" role="option" aria-selected="${selected}" class="group-picker-option${selected ? ' is-selected' : ''}" data-action="choose-group-space" data-value="${space.spaceId}"${current().bindingPending ? ' disabled' : ''}>
+          <span class="group-picker-check">${selected ? icon('Check') : ''}</span>
+          <span class="group-picker-text"><strong>${esc(space.name)}</strong><small>${esc(demoSpaceDetail(space))}</small></span>
+        </button>`
+      })
+      .join('')
+  }
+
+  // 选中后两个 ID 只读展示：都由群名称推导，人不再手填任何一个。
+  function groupPickerDerived() {
+    const selection = current().groupPicker.selection
+    if (!selection) {
+      return ''
+    }
+    return `<p class="field-note binding-derived">群 ID <code>${esc(selection.groupId)}</code> · 群空间 ID <code>${esc(selection.spaceId)}</code></p>`
+  }
+
+  // 搜索时只替换选项区：整屏重渲染会让搜索框失焦。
+  function renderGroupOptions() {
+    const list = surface.querySelector('.group-picker-list')
+    if (list) {
+      list.innerHTML = groupOptionRows()
+    }
+  }
+
   function teamDirectory() {
     const close = iconButton('X', '关闭团队设置', 'panel')
     const draft = current().directoryDraft
@@ -642,15 +862,16 @@
       const switching = Boolean(draft)
       const dirty = switching && JSON.stringify(draft) !== current().directoryBase
       const pending = current().bindingPending
+      const picker = current().groupPicker
+      // 与 TeamBindingForm 的 canSubmit 一致：没有选出群、或群 ID 还在解析时不能提交。
+      const canSubmit = picker.selection !== null && !pending && !picker.resolving
       return `<div class="overlay"><section class="surface-dialog team-bind-dialog" role="dialog" aria-label="${switching ? '切换团队' : '连接团队'}">
         <header class="row between"><h2>${switching ? '切换团队' : '连接团队'}</h2>${iconButton('X', switching ? '取消切换团队' : '关闭团队设置', switching ? 'cancel-team-switch' : 'panel', { disabled: pending })}</header>
-        <form id="team-lookup"><div class="directory-id-grid">
-          <label class="field"><span>WeLink 群 ID</span><input class="input" name="group" aria-label="WeLink 群 ID" inputmode="numeric" pattern="[0-9]+" autocomplete="off" value="${esc(current().bindingDraft.group)}" required ${pending ? 'disabled' : ''}></label>
-          <label class="field"><span>群空间 ID</span><input class="input" name="space" aria-label="群空间 ID" inputmode="numeric" pattern="[0-9]+" autocomplete="off" value="${esc(current().bindingDraft.space)}" required ${pending ? 'disabled' : ''}></label>
-        </div>
+        <form id="team-lookup"><p class="sr-only">${switching ? '按名称选择新的 WeLink 群。' : '按名称选择 WeLink 群绑定团队，群 ID 与群空间 ID 自动获取。'}</p>
+        ${groupPickerField()}${groupPickerDerived()}
         ${switching ? `<p class="binding-note">已保存的远程主机会保留，可在「管理远程主机」移除。</p>${dirty ? '<p class="binding-note binding-warning">切换后将丢弃未保存的修改。</p>' : ''}` : ''}
         <p id="binding-error" class="binding-error" role="alert">${esc(current().bindingError)}</p>
-        <footer class="dialog-actions">${switching ? button('取消', 'cancel-team-switch', { kind: 'ghost', disabled: pending }) : ''}<button type="submit" class="btn btn-primary" ${pending ? 'disabled' : ''}>${pending ? '正在读取团队…' : switching ? '读取并切换' : '绑定团队'}</button></footer></form>
+        <footer class="dialog-actions">${switching ? button('取消', 'cancel-team-switch', { kind: 'ghost', disabled: pending }) : ''}<button type="submit" class="btn btn-primary" ${canSubmit ? '' : 'disabled'}>${pending || picker.resolving ? `<span class="spin">${icon('LoaderCircle')}</span>` : ''}${pending ? '正在读取团队…' : switching ? '读取并切换' : '绑定团队'}</button></footer></form>
       </section></div>`
     }
     const writable = state.directoryEditable[actor.value]
@@ -1119,6 +1340,7 @@
   }
   function render() {
     pruneAudit()
+    startGroupListIfNeeded()
     surface.innerHTML = {
       wall: wallPage,
       workspace: workspacePage,
@@ -1134,6 +1356,7 @@
       const desktop = current()
       desktop.switchingTeam = false
       if (value === 'team') {
+        desktop.groupPicker = reopenGroupPicker(desktop.groupPicker)
         if (!state.bound[actor.value]) {
           desktop.directoryDraft = null
           desktop.directoryBase = 'null'
@@ -1164,13 +1387,71 @@
       notify('')
       render()
     },
+    'toggle-group-picker': () => {
+      const picker = current().groupPicker
+      if (current().bindingPending) {
+        return
+      }
+      picker.open = !picker.open
+      if (picker.open) {
+        // 重开面板：已就绪的列表复用，失败过的重试。
+        loadGroupList()
+      } else {
+        picker.query = ''
+      }
+      render()
+      surface
+        .querySelector(picker.open ? '[data-group-search]' : '[data-action="toggle-group-picker"]')
+        ?.focus()
+    },
+    'choose-group-space': (spaceId) => {
+      const desktop = current()
+      const picker = desktop.groupPicker
+      const space = findDemoSpace(spaceId)
+      if (!space || desktop.bindingPending || picker.resolving) {
+        return
+      }
+      picker.open = false
+      picker.query = ''
+      picker.resolveFailure = ''
+      // 与 useTeamGroupPicker.choose 同一步骤：解析期间先清空选择，
+      // 提交键不能继续提供上一个群。
+      picker.selection = null
+      picker.resolving = true
+      render()
+      const person = actor.value
+      setTimeout(() => {
+        if (desktops[person] !== desktop) {
+          return
+        }
+        picker.resolving = false
+        if (space.groupId) {
+          picker.selection = { spaceId: space.spaceId, groupId: space.groupId, name: space.name }
+        } else {
+          picker.resolveFailure = 'not-a-group-space'
+        }
+        if (actor.value === person) {
+          render()
+          surface.querySelector('[data-action="toggle-group-picker"]')?.focus()
+        }
+      }, 500)
+    },
+    'open-w3-account-settings': () => {
+      // W3 账户设置页本体属 w3-account 特性，这里导航到它的当前原型入口，
+      // 不在本原型复制第二份设置页。
+      current().panel = ''
+      current().switchingTeam = false
+      notify('已打开设置的 W3 账户页')
+      render()
+      window.open('../w3-account/prototype.html', '_blank', 'noopener')
+    },
     'switch-team': () => {
       current().switchingTeam = true
-      current().bindingDraft = { group: '', space: '' }
+      current().groupPicker = reopenGroupPicker(current().groupPicker)
       current().bindingError = ''
       notify('')
       render()
-      surface.querySelector('input[name="group"]')?.focus()
+      surface.querySelector('[data-action="toggle-group-picker"]')?.focus()
     },
     'cancel-team-switch': () => {
       if (current().bindingPending) {
@@ -1473,8 +1754,9 @@
   })
 
   surface.addEventListener('input', (event) => {
-    if (event.target.matches('#team-lookup input[name]')) {
-      current().bindingDraft[event.target.name] = event.target.value
+    if (event.target.hasAttribute('data-group-search')) {
+      current().groupPicker.query = event.target.value
+      renderGroupOptions()
     }
     if (event.target.dataset.auditFilter === 'search') {
       updateAuditFilter(event.target)
@@ -1514,11 +1796,11 @@
       if (desktop.bindingPending) {
         return
       }
-      const group = String(data.get('group')).trim()
-      const space = String(data.get('space')).trim()
-      const valid =
-        (group === demoGroup && space === demoSpaceId) ||
-        (group === alternateGroup && space === alternateSpaceId)
+      const selection = desktop.groupPicker.selection
+      // 提交键在没有选出群时就是 disabled，这里只挡直接回车提交。
+      if (!selection || desktop.groupPicker.resolving) {
+        return
+      }
       const fail = document.querySelector('#switch-result').value === 'failure'
       desktop.bindingPending = true
       desktop.bindingError = ''
@@ -1537,19 +1819,22 @@
           return
         }
         desktop.bindingPending = false
-        if (!valid || fail) {
-          desktop.bindingError = desktop.switchingTeam
-            ? '未能读取新团队，当前团队保持不变。核对两个 ID 后重试。'
-            : '未能读取团队目录，核对两个 ID 后重试。'
+        if (fail) {
+          // 切换失败是弹窗内的内联错误；首次绑定失败在产品里走通知。
+          if (desktop.switchingTeam) {
+            desktop.bindingError = '未能读取新团队，当前团队保持不变。重新选择群后重试。'
+          } else if (actor.value === person) {
+            notify('未能读取团队目录。重新选择 WeLink 群后重试。')
+          }
           if (actor.value === person) {
             render()
           }
           return
         }
-        state.bindings[person] = bindingKey(group, space)
+        state.bindings[person] = bindingKey(selection.groupId, selection.spaceId)
         if (!activeDirectory(person)) {
-          const directory = blankDirectory(group, space)
-          if (group === alternateGroup) {
+          const directory = blankDirectory(selection.groupId, selection.spaceId)
+          if (selection.spaceId === alternateSpaceId) {
             directory.projects = [
               {
                 repo_id: 'board',
@@ -1620,6 +1905,18 @@
 
   actor.addEventListener('change', () => {
     notify('')
+    render()
+  })
+  // 评审工具区换注入结果：清掉已缓存的群列表，下一次打开面板按新结果重读。
+  document.querySelector('#group-list-result').addEventListener('change', () => {
+    for (const person of Object.keys(desktops)) {
+      const picker = desktops[person].groupPicker
+      if (picker.phase === 'ready' || picker.phase === 'failed') {
+        picker.phase = 'idle'
+        picker.listFailure = ''
+        picker.truncated = false
+      }
+    }
     render()
   })
   dialog.addEventListener('cancel', render)

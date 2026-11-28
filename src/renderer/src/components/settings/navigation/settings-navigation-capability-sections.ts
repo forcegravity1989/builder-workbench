@@ -125,26 +125,21 @@ export function buildCapabilitySettingsSections(
 }
 
 export function buildSetupSettingsSections(
-  { isLocalWindowsHost, isWebClient, showWorkbenchOrcaAccount }: SettingsNavigationBuildOptions,
+  { isLocalWindowsHost, isWebClient }: SettingsNavigationBuildOptions,
   t: Translate = translate
 ): SettingsNavSection[] {
   const showDesktopOnlySettings = !isWebClient
   const workbench = isWorkbenchShell()
   return [
-    ...(showDesktopOnlySettings && (!workbench || showWorkbenchOrcaAccount)
+    ...(showDesktopOnlySettings && !workbench
       ? [
           {
             id: 'orca-account',
             title: t('auto.components.settings.orcaAccount.title', 'Orca Account'),
-            description: workbench
-              ? t(
-                  'auto.components.settings.orcaAccount.workbenchDescription',
-                  'This account is used by Orca cloud connectors on the bot host.'
-                )
-              : t(
-                  'auto.components.settings.orcaAccount.description',
-                  'Share work instantly and reach your desktop from Orca Mobile wherever you are.'
-                ),
+            description: t(
+              'auto.components.settings.orcaAccount.description',
+              'Share work instantly and reach your desktop from Orca Mobile wherever you are.'
+            ),
             icon: CircleUserRound,
             searchEntries: getOrcaAccountSettingsSearchEntries(),
             group: 'setup'

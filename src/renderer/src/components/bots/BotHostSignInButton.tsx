@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { useTranslate } from '@/i18n/use-translate'
@@ -25,6 +26,9 @@ export function BotHostSignInButton({
   const openSettingsTarget = useAppStore((state) => state.openSettingsTarget)
   const openSettingsPage = useAppStore((state) => state.openSettingsPage)
   const signInFromHere = useBotHostSignInFromHere(bot.hostId)
+  if (isWorkbenchShell()) {
+    return null
+  }
   if (host && signInFromHere !== 'start') {
     return signInFromHere === null ? null : (
       <div className="flex flex-col gap-1 text-sm text-muted-foreground">
