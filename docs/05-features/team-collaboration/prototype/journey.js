@@ -297,7 +297,8 @@
   function startGroupListIfNeeded() {
     const desktop = current()
     const bindingVisible =
-      desktop.panel === 'team' && (!desktop.directoryDraft || desktop.switchingTeam)
+      desktop.panel === 'team' &&
+      ((!desktop.directoryDraft && !desktop.directoryLoadFailed) || desktop.switchingTeam)
     if (!bindingVisible || desktop.groupPicker.phase !== 'idle') {
       return
     }
@@ -363,6 +364,7 @@
           screen: 'wall',
           directoryDraft: null,
           savedTeamAddresses: {},
+          directoryLoadFailed: false,
           switchingTeam: false,
           bindingPending: false,
           groupPicker: blankGroupPicker(),
@@ -905,9 +907,17 @@
 
   function teamDirectory() {
     const close = iconButton('X', '关闭团队设置', 'panel')
-    const draft = current().directoryDraft
-    if (!draft || current().switchingTeam) {
-      const switching = Boolean(draft)
+    const desktop = current()
+    const draft = desktop.directoryDraft
+    if (desktop.directoryLoadFailed && !desktop.switchingTeam) {
+      return `<div class="overlay"><section class="surface-dialog team-directory" role="dialog" aria-label="团队设置">
+        <header class="row between"><h2>团队设置</h2>${close}</header>
+        <p class="binding-error" role="alert">团队目录读取失败。已保留当前团队绑定。</p>
+        <footer class="dialog-actions">${button('切换团队', 'switch-team', { kind: 'ghost' })}${button('重试读取团队目录', 'retry-team-directory', { kind: 'primary' })}</footer>
+      </section></div>`
+    }
+    if (!draft || desktop.switchingTeam) {
+      const switching = desktop.switchingTeam
       const dirty = switching && JSON.stringify(draft) !== current().directoryBase
       const pending = current().bindingPending
       const picker = current().groupPicker
@@ -1402,19 +1412,31 @@
     save()
   }
 
+  function readSavedTeamDirectory() {
+    const desktop = current()
+    desktop.directoryLoadFailed = document.querySelector('#switch-result').value === 'failure'
+    const directory = desktop.directoryLoadFailed ? null : (activeDirectory() ?? blankDirectory())
+    desktop.directoryDraft = directory && structuredClone(directory)
+    desktop.directoryBase = JSON.stringify(directory)
+  }
+
   const actions = {
     show,
+    'retry-team-directory': () => {
+      readSavedTeamDirectory()
+      render()
+    },
     panel: (value) => {
       const desktop = current()
       desktop.switchingTeam = false
       if (value === 'team') {
         desktop.groupPicker = reopenGroupPicker(desktop.groupPicker)
         if (!state.bound[actor.value]) {
+          desktop.directoryLoadFailed = false
           desktop.directoryDraft = null
           desktop.directoryBase = 'null'
         } else {
-          desktop.directoryDraft = structuredClone(activeDirectory() ?? blankDirectory())
-          desktop.directoryBase = JSON.stringify(activeDirectory())
+          readSavedTeamDirectory()
         }
       }
       if (
@@ -1954,6 +1976,7 @@
           setActiveDirectory(syncDirectory(directory), person)
         }
         state.bound[person] = true
+        desktop.directoryLoadFailed = false
         hydrateEndpoints(activeDirectory(person))
         desktop.directoryDraft = structuredClone(activeDirectory(person))
         desktop.directoryBase = JSON.stringify(activeDirectory(person))

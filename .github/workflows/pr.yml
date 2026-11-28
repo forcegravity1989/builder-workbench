@@ -48,6 +48,9 @@ jobs:
           src/shared/remote-runtime/e2ee/mobile-e2ee-v2-framing.test.ts
           src/shared/remote-runtime/e2ee/node/mobile-e2ee-v2-node-key-schedule.test.ts
           src/shared/remote-runtime/host-store/runtime-environment-store-unreadable-records.test.ts
+          src/shared/remote-runtime/host-store/runtime-environment-store-team-refresh.test.ts
+          src/shared/team-host-address.test.ts
+          src/shared/team-host-refresh.test.ts
           src/shared/remote-runtime/session-graph/session-tabs-tab-delta.test.ts
       - name: Test shared host recovery, launch and close contracts
         run: >-

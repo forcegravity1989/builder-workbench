@@ -20,10 +20,15 @@ import { useAppStore } from '@/store'
 import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { cacheGeneratedRuntimePairingLink } from '@/components/settings/runtime-pairing-link-state'
 import { parsePairingCode } from '../../../shared/remote-runtime/pairing/pairing'
-import { TeamBindingForm } from './TeamBindingForm'
+import { TeamBindingForm, TeamDirectoryReadFailure } from './TeamBindingForm'
 import { TeamSettingsMembers } from './TeamSettingsMembers'
 import { logWorkbenchError, notifyWorkbenchError } from './error-feedback'
-import { rememberedTeamBinding, rememberTeamBinding, syncTeamHosts } from './team-hosts'
+import {
+  hasTeamBinding,
+  rememberedTeamBinding,
+  rememberTeamBinding,
+  syncTeamHosts
+} from './team-hosts'
 import type { TeamBindingSelection } from './use-team-group-picker'
 
 type TeamSettingsDialogProps = {
@@ -114,6 +119,12 @@ export function TeamSettingsDialog({
     setSwitchingTeam(false)
   }
 
+  const beginSwitch = (): void => {
+    setPendingSelection(null)
+    setSwitchFailed(false)
+    setSwitchingTeam(true)
+  }
+
   const closeDialog = (): void => {
     if (busy || reading.current) {
       return
@@ -198,7 +209,7 @@ export function TeamSettingsDialog({
       notifyWorkbenchError(
         '团队目录读取失败',
         cause,
-        '重新打开团队设置并重新选择 WeLink 群后重试。'
+        hasTeamBinding() ? '检查 WeLink 连接后重试。' : '检查 WeLink 连接，再重新选择 WeLink 群。'
       )
       return false
     } finally {
@@ -379,10 +390,12 @@ export function TeamSettingsDialog({
       )
     : []
   const savedBinding = rememberedTeamBinding()
-  const checkingBinding =
-    !directory && !loadFailed && Boolean(savedBinding.groupId && savedBinding.spaceId)
+  const hasSavedBinding = Boolean(savedBinding.groupId && savedBinding.spaceId)
+  const checkingBinding = !directory && !loadFailed && hasSavedBinding
+  const savedDirectoryFailed = !directory && loadFailed && hasSavedBinding && !switchingTeam
   const showSpinner = !directory && (loading || checkingBinding)
-  const showDirectoryChrome = !switchingTeam && (Boolean(directory) || checkingBinding)
+  const showDirectoryChrome =
+    !switchingTeam && (Boolean(directory) || checkingBinding || savedDirectoryFailed)
   return (
     <Dialog open={open} onOpenChange={(next) => !next && closeDialog()}>
       <DialogContent
@@ -412,6 +425,16 @@ export function TeamSettingsDialog({
           <div className="flex items-center justify-center py-8 text-muted-foreground">
             <LoaderCircle className="size-5 animate-spin" aria-label="正在读取团队目录" />
           </div>
+        ) : savedDirectoryFailed ? (
+          <TeamDirectoryReadFailure
+            switchButtonRef={switchButton}
+            onSwitch={beginSwitch}
+            onRetry={() =>
+              void loadDirectory(savedBinding.groupId, savedBinding.spaceId).then(
+                syncLoadedTeamHosts
+              )
+            }
+          />
         ) : !directory || switchingTeam ? (
           <TeamBindingForm
             selection={pendingSelection}
@@ -443,11 +466,7 @@ export function TeamSettingsDialog({
                 size="sm"
                 className="ml-auto"
                 disabled={busy}
-                onClick={() => {
-                  setPendingSelection(null)
-                  setSwitchFailed(false)
-                  setSwitchingTeam(true)
-                }}
+                onClick={beginSwitch}
               >
                 <ArrowRightLeft />
                 切换团队

@@ -1,3 +1,5 @@
+export type TeamHostSyncResult = { added: number; updated: number; failed: number }
+
 export type TeamDirectoryMember = {
   member_id: string
   name?: string

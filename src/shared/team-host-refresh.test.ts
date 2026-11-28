@@ -29,7 +29,7 @@ function saved(overrides: Partial<TeamSavedHost> & Pick<TeamSavedHost, 'id'>): T
 }
 
 describe('team host refresh', () => {
-  it('replaces a legacy team host whose sync name includes the member ID', () => {
+  it('identifies an old team host by member ID or by its name and unambiguous host key', () => {
     const plan = planTeamHostRefresh(member, published, [
       saved({ id: 'named', name: '安迪（A001）' })
     ])
@@ -38,9 +38,18 @@ describe('team host refresh', () => {
       environmentId: 'named',
       removeEnvironmentIds: []
     })
+    const old = saved({ id: 'legacy-key', publicKeys: [published.publicKeyB64] })
+    expect(planTeamHostRefresh(member, published, [old], true)).toMatchObject({
+      action: 'update',
+      environmentId: 'legacy-key'
+    })
+    expect(planTeamHostRefresh(member, published, [old], false)).toMatchObject({
+      action: 'conflict',
+      environmentId: null
+    })
   })
 
-  it('replaces a saved member host when the group-space link changes key', () => {
+  it('updates a member with a free key and preserves a key owned by a manual host', () => {
     const plan = planTeamHostRefresh(member, published, [
       saved({ id: 'old', memberId: 'A001' }),
       saved({
@@ -57,6 +66,20 @@ describe('team host refresh', () => {
       removeEnvironmentIds: [],
       memberId: 'A001'
     })
+    const manual = saved({
+      id: 'manual',
+      managed: false,
+      accessMode: 'full',
+      publicKeys: [published.publicKeyB64],
+      deviceToken: published.deviceToken
+    })
+    expect(
+      planTeamHostRefresh(member, published, [saved({ id: 'old', memberId: 'A001' }), manual])
+    ).toMatchObject({
+      action: 'conflict',
+      environmentId: null,
+      removeEnvironmentIds: []
+    })
   })
 
   it('updates the same pairing in place and drops the leftover team copy', () => {
@@ -65,16 +88,19 @@ describe('team host refresh', () => {
       { ...published, publicKeyB64: 'key-a', deviceToken: 'token-a' },
       [
         saved({ id: 'connected', managed: false, memberId: null }),
-        saved({ id: 'duplicate', name: '安迪（A001）', endpoint: 'ws://169.254.239.57:6768' })
+        saved({
+          id: 'duplicate',
+          memberId: 'A001',
+          publicKeys: ['old-key'],
+          endpoint: 'ws://169.254.239.57:6768'
+        })
       ]
     )
     expect(plan.action).toBe('update')
     expect(plan.environmentId).toBe('connected')
     expect(plan.removeEnvironmentIds).toEqual(['duplicate'])
-  })
 
-  it('preserves an unrelated hand-added host even when it has the same name', () => {
-    const plan = planTeamHostRefresh(member, published, [
+    const unrelated = planTeamHostRefresh(member, published, [
       saved({
         id: 'manual',
         name: '安迪',
@@ -84,6 +110,10 @@ describe('team host refresh', () => {
       }),
       saved({ id: 'old-team-with-same-name' })
     ])
-    expect(plan).toMatchObject({ action: 'add', environmentId: null, removeEnvironmentIds: [] })
+    expect(unrelated).toMatchObject({
+      action: 'add',
+      environmentId: null,
+      removeEnvironmentIds: []
+    })
   })
 })

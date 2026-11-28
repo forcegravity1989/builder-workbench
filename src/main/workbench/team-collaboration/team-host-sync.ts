@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parsePairingCode } from '../../../shared/remote-runtime/pairing/pairing'
+import { sameHostKeyB64 } from '../../../shared/remote-runtime/host-catalog/runtime-environment-host-key-match'
 import {
   addEnvironmentFromPairingCode,
   listEnvironments,
@@ -8,11 +9,9 @@ import {
   updateEnvironmentFromPairingCode
 } from '../../../shared/remote-runtime/host-store/runtime-environment-store'
 import { RuntimeEnvironmentStoreError } from '../../../shared/remote-runtime/host-store/runtime-environment-store-records'
-import type { TeamDirectoryMember } from '../../../shared/team-directory'
+import type { TeamDirectoryMember, TeamHostSyncResult } from '../../../shared/team-directory'
 import { planTeamHostRefresh, type TeamSavedHost } from '../../../shared/team-host-refresh'
 import { writePluginFileAtomically } from '../../plugins/installation/plugin-atomic-file-write'
-
-export type TeamHostSyncResult = { added: number; updated: number }
 
 export type TeamHostSyncDeps = {
   userDataPath: string
@@ -20,7 +19,7 @@ export type TeamHostSyncDeps = {
   /** Keeps a freshly saved host disconnected until the user connects it. */
   holdDisconnected: (environmentId: string) => void
   invalidateTransport: (environmentId: string) => Promise<void> | void
-  removeStaleHost: (environmentId: string) => Promise<boolean>
+  removeStaleHost: (environmentId: string, expectedPairingRevision: number) => Promise<boolean>
 }
 
 const MANAGED_FILE = 'workbench-team-hosts.json'
@@ -141,16 +140,17 @@ async function syncTeamHostsOnce(
   deps: TeamHostSyncDeps
 ): Promise<TeamHostSyncResult> {
   let managed = readManagedHosts(deps.userDataPath)
-  const result: TeamHostSyncResult = { added: 0, updated: 0 }
-  for (const host of hosts) {
+  const result: TeamHostSyncResult = { added: 0, updated: 0, failed: 0 }
+  const published = hosts.flatMap((host) => {
+    const pairingCode = host.orca_endpoint
+    const offer = pairingCode ? parsePairingCode(pairingCode) : null
+    return pairingCode && offer ? [{ host, pairingCode, offer }] : []
+  })
+  for (const { host, pairingCode, offer } of published) {
     if (deps.isCurrentBinding?.() === false) {
       break
     }
-    if (!host.orca_endpoint || host.member_id.toLowerCase() === currentMemberId?.toLowerCase()) {
-      continue
-    }
-    const offer = parsePairingCode(host.orca_endpoint)
-    if (!offer) {
+    if (host.member_id.toLowerCase() === currentMemberId?.toLowerCase()) {
       continue
     }
     const name = host.name ?? host.member_id
@@ -167,18 +167,29 @@ async function syncTeamHostsOnce(
           publicKeyB64: offer.publicKeyB64,
           accessMode: offer.accessMode
         },
-        savedHosts(listed, managed)
+        savedHosts(listed, managed),
+        !published.some(
+          (other) =>
+            other.host.member_id.toLowerCase() !== host.member_id.toLowerCase() &&
+            sameHostKeyB64(other.offer.publicKeyB64, offer.publicKeyB64)
+        )
       )
+      if (plan.action === 'conflict') {
+        result.failed += 1
+        continue
+      }
       let environmentId = plan.environmentId
       if (plan.action === 'add') {
-        const environment = await saveHost(deps, name, host, host.orca_endpoint)
+        const environment = await saveHost(deps, name, host, pairingCode)
         try {
           deps.holdDisconnected(environment.id)
           const next = rememberManagedHost(managed, environment.id, plan.memberId)
           await writeManagedHosts(deps.userDataPath, next)
           managed = next
         } catch (error) {
-          await removeEnvironment(deps.userDataPath, environment.id)
+          await removeEnvironment(deps.userDataPath, environment.id, {
+            expectedPairingRevision: environment.pairingRevision ?? environment.createdAt
+          })
           throw error
         }
         environmentId = environment.id
@@ -189,8 +200,9 @@ async function syncTeamHostsOnce(
           continue
         }
         await updateEnvironmentFromPairingCode(deps.userDataPath, environmentId, {
-          pairingCode: host.orca_endpoint,
-          expectedPairingRevision: current.pairingRevision ?? current.createdAt
+          pairingCode,
+          expectedPairingRevision: current.pairingRevision ?? current.createdAt,
+          rejectDuplicateHostKey: true
         })
         result.updated += 1
         try {
@@ -212,13 +224,23 @@ async function syncTeamHostsOnce(
         managed = next
       }
       const removed = new Set<string>()
+      let staleHostPreserved = false
       for (const staleId of plan.removeEnvironmentIds) {
         if (deps.isCurrentBinding?.() === false) {
           break
         }
-        if (await deps.removeStaleHost(staleId)) {
+        const stale = listed.find((environment) => environment.id === staleId)
+        if (
+          stale &&
+          (await deps.removeStaleHost(staleId, stale.pairingRevision ?? stale.createdAt))
+        ) {
           removed.add(staleId)
+        } else {
+          staleHostPreserved = true
         }
+      }
+      if (staleHostPreserved) {
+        result.failed += 1
       }
       if (removed.size > 0) {
         const next = managed.filter(({ environmentId: id }) => !removed.has(id))
@@ -229,7 +251,7 @@ async function syncTeamHostsOnce(
         }
       }
     } catch {
-      // One unusable link must not block the other members' hosts, and it is retried next sync.
+      result.failed += 1
     }
   }
   return result

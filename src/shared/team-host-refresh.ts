@@ -21,7 +21,7 @@ export type TeamPublishedLink = {
 }
 
 export type TeamHostRefreshPlan = {
-  action: 'add' | 'update' | 'skip'
+  action: 'add' | 'update' | 'skip' | 'conflict'
   environmentId: string | null
   /** Previous team copies of this member whose address must not stay beside the new one. */
   removeEnvironmentIds: string[]
@@ -49,30 +49,49 @@ function linkAlreadyCurrent(saved: TeamSavedHost, offer: TeamPublishedLink): boo
 export function planTeamHostRefresh(
   host: TeamDirectoryMember,
   offer: TeamPublishedLink,
-  environments: readonly TeamSavedHost[]
+  environments: readonly TeamSavedHost[],
+  hostKeyUniqueInDirectory = false
 ): TeamHostRefreshPlan {
-  const byKey = environments.find(
+  const keyOwners = environments.filter((environment) => keyMatches(environment, offer))
+  const byPairing = keyOwners.find(
     (environment) =>
-      keyMatches(environment, offer) &&
       environment.deviceToken === offer.deviceToken &&
       (environment.memberId === null
         ? environment.managed || environment.accessMode === 'team-read'
         : sameMember(environment.memberId, host))
   )
   const memberMatches = environments.filter((environment) => sameMember(environment.memberId, host))
-  const memberTarget =
-    memberMatches.find((environment) => keyMatches(environment, offer)) ?? memberMatches[0]
   const legacyName = `${host.name ?? host.member_id}（${host.member_id}）`
   const legacy = environments.filter(
     (environment) =>
       environment.managed && environment.memberId === null && environment.name === legacyName
   )
-  const target = memberTarget ?? byKey ?? legacy[0]
+  const legacyKey = hostKeyUniqueInDirectory
+    ? environments.filter(
+        (environment) =>
+          environment.managed &&
+          environment.memberId === null &&
+          environment.name === (host.name ?? host.member_id) &&
+          keyMatches(environment, offer)
+      )
+    : []
+  const memberId = host.member_id
+  const keyOwner = keyOwners[0]
+  if (
+    keyOwners.length > 1 ||
+    (keyOwner &&
+      keyOwner !== byPairing &&
+      !memberMatches.includes(keyOwner) &&
+      !legacy.includes(keyOwner) &&
+      !(legacyKey.length === 1 && legacyKey[0] === keyOwner))
+  ) {
+    return { action: 'conflict', environmentId: null, removeEnvironmentIds: [], memberId }
+  }
+  const target = keyOwner ?? memberMatches[0] ?? legacy[0]
   const removeEnvironmentIds = [
     ...memberMatches.filter((environment) => environment.id !== target?.id),
     ...legacy.filter((environment) => environment.id !== target?.id)
   ].map((environment) => environment.id)
-  const memberId = host.member_id
   if (!target) {
     return { action: 'add', environmentId: null, removeEnvironmentIds, memberId }
   }

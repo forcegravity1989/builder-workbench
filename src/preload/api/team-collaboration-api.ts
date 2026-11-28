@@ -1,4 +1,4 @@
-import type { TeamDirectory } from '../../shared/team-directory'
+import type { TeamDirectory, TeamHostSyncResult } from '../../shared/team-directory'
 import type {
   TeamGroupSpaceListResult,
   TeamGroupSpaceResolveResult
@@ -10,10 +10,7 @@ export type TeamCollaborationApi = {
     fileId: string | null
     currentMemberId: string | null
   }>
-  syncHosts: (args: {
-    groupId: string
-    spaceId: string
-  }) => Promise<{ added: number; updated: number }>
+  syncHosts: (args: { groupId: string; spaceId: string }) => Promise<TeamHostSyncResult>
   writeDirectory: (
     directory: TeamDirectory,
     baseFileId?: string | null
