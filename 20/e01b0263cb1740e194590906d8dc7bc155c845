@@ -1,0 +1,75 @@
+config/scripts/generate-workbench-skill-package.mjs
+  s_b5056c5ac6ee25::t_b692d3060a2891 8
+docs/04-design-system/guidance.md
+  s_8acf87b8b165b8::t_04a0e28e6f395f 81
+docs/05-features/version-acceptance/STATUS.md
+  s_b5056c5ac6ee25::t_7219628e255a3b 7,51
+docs/05-features/version-acceptance/design.md
+  s_68834839b02c79::t_d812ce5d334c5a 20
+docs/05-features/version-acceptance/spec.md
+  s_b5056c5ac6ee25::t_0727dd5c9a849d 23
+docs/06-module/技能与蒸馏.md
+  s_b5056c5ac6ee25::t_32ad4c529e36f3 7
+src/main/bots/bot-template-bundle-skills.test.ts
+  s_b5056c5ac6ee25::t_9fc7a45f79edb9 54,58,60,62,65,79
+src/main/bots/bot-template-skill-text.ts
+  s_b5056c5ac6ee25::t_e0ebc75bda08d9 2
+src/renderer/src/i18n/en-runtime-required.json
+  s_b5056c5ac6ee25::t_1c50bc63242fea 1903,1984-1994
+src/renderer/src/i18n/locales/en.json
+  s_b5056c5ac6ee25::t_5ee6ab47607418 30761,30776
+src/renderer/src/i18n/locales/zh.json
+  s_b5056c5ac6ee25::t_4057919a2a35f3 28222,28237
+src/shared/bots/bot-template-catalog/planning.ts
+  s_b5056c5ac6ee25::t_ae975dd71b2032 122
+src/shared/bots/bot-template-text.ts
+  s_b5056c5ac6ee25::t_6e4613a982c4b4 155-156
+src/shared/bots/bot-template-view.ts
+  s_b5056c5ac6ee25::t_0cf5d25a9e5411 33-34
+src/shared/bots/bot-templates.ts
+  s_8acf87b8b165b8::t_f6a5de2d636b33 46
+src/shared/workbench/skill-assets.ts
+  s_b5056c5ac6ee25::t_3bd5fdcaa4fb28 17-23
+src/shared/workbench/skill-package.json
+  s_b5056c5ac6ee25::t_42468763ee8cae 4-7,9
+standard/README.md
+  s_b5056c5ac6ee25::t_d02e5967eb69dc 5
+standard/skills/acceptance-meeting/SKILL.md
+  s_b5056c5ac6ee25::t_4b44c4167eb67f 1-31
+standard/skills/acceptance-meeting/references/meeting-preparation.md
+  s_b5056c5ac6ee25::t_021fc0e25de30d 1-25
+standard/skills/version-acceptance/SKILL.md
+  s_b5056c5ac6ee25::t_9dea4a9cea7a0e 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "20e01b0263cb1740e194590906d8dc7bc155c845",
+  "prompts": {},
+  "sessions": {
+    "s_68834839b02c79": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "32c97fd6-daab-43c9-b80a-361324731772",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    },
+    "s_8acf87b8b165b8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "20ad3700-9035-4ad8-ad88-abb17292b422",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    },
+    "s_b5056c5ac6ee25": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "16b76bc7-ae9d-497a-99dc-1c7d63e83b68",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
