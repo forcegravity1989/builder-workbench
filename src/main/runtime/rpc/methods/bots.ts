@@ -13,6 +13,7 @@ import {
 } from '../../../../shared/rpc-contract/bots-params'
 import { googleSetupRuns } from '../../../google/google-setup-runs'
 import { readSharedBotActivity } from '../../../bots/bot-activity-host'
+import { isWorkbenchProduct } from '../../../startup/workbench-product'
 import { runtimeBotChats, startBotSession, botOnAgent } from '../../../bots/bot-chat-session'
 import { readPairedBotRosters, withPairedBotRosters } from '../../../bots/paired-bot-rosters'
 import { botOfSession } from '../../../bots/bot-session-tabs'
@@ -229,14 +230,18 @@ export const BOT_METHODS = [
       if (bot) {
         // Before anything goes: its home's purge would drop unsaved editor text, as on the desktop.
         refuseUnsavedFolderDrafts(runtime.requireStore(), bot.folderWorkspaceId)
-        // Listed first so a crash mid-delete still cleans up; nothing goes while the bot is here.
-        await composioBotsOf(runtime).willDelete(bot.id)
+        if (!isWorkbenchProduct()) {
+          // Listed first so a crash mid-delete still cleans up; nothing goes while the bot is here.
+          await composioBotsOf(runtime).willDelete(bot.id)
+        }
         await forgetDeletedBotTools(runtime, bot)
       }
       const deleted = await runtime.bots.delete(params)
       if (bot) {
         releaseDeletedBotLinks(runtime, bot)
-        await composioBotsOf(runtime).forget(bot.id)
+        if (!isWorkbenchProduct()) {
+          await composioBotsOf(runtime).forget(bot.id)
+        }
       }
       await dropUnreadBotRequests(runtime, params.botId, 'deleted')
       googleSetupRuns().forget(params.botId)

@@ -5,6 +5,7 @@ import { readGoogleRefusal } from '../../bots/bot-google-access'
 import { botOfToken } from '../../bots/bot-of-caller'
 import { botOfSession } from '../../bots/bot-session-tabs'
 import { googleApi, type GoogleApi } from '../../google/google-api-client'
+import { isWorkbenchProduct } from '../../startup/workbench-product'
 import { InvalidArgumentError, type RpcContext } from './core'
 import { readBotWriteTurn } from './methods/bot-write-turn'
 
@@ -14,6 +15,9 @@ export async function googleApiForCaller(
   params: GoogleCaller & { account?: string },
   context: RpcContext
 ): Promise<GoogleApi> {
+  if (isWorkbenchProduct()) {
+    throw new InvalidArgumentError('Use the integrations on the Monica host.')
+  }
   const refusal = readGoogleRefusal(context.runtime, params.botToken, context.pairedDeviceId)
   if (refusal) {
     throw new InvalidArgumentError(refusal)

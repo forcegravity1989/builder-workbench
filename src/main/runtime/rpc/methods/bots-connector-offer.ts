@@ -1,3 +1,4 @@
+import { isWorkbenchProduct } from '../../../startup/workbench-product'
 // `orca bot connectors --offer`: a bot that needs Slack, Linear, GitHub or Google asks Orca to put a
 // Connect card in its chat, instead of telling its owner where to click.
 import { noWindowAnswersGoogleCards } from '../../../google/google-card-reach'
@@ -67,6 +68,9 @@ export const BOT_CONNECTOR_OFFER_METHOD = defineMethod({
   params: BotConnectorOffer,
   handler: async ({ callerSessionId, source, workspace }, { runtime, pairedDeviceId }) => {
     runtime.bots.assertEnabled()
+    if (isWorkbenchProduct()) {
+      throw new InvalidArgumentError('Use the integrations on the Monica host.')
+    }
     const bot = offeringBot(runtime, callerSessionId, pairedDeviceId)
     const signIn = signInOfferReply(
       bot,

@@ -2,6 +2,7 @@
 import type { AutomationService } from '../automations/automation-service'
 import type { Store } from '../persistence/loading-store/store'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 import { googleApi } from './google-api-client'
 import { listGoogleAccounts, readGoogleDefaultAccount } from './google-credential-store'
 import { GoogleTriggerChecker } from './google-trigger-checker'
@@ -14,6 +15,9 @@ export function bindGoogleTriggersToAutomations(
   store: Pick<Store, 'listAutomations' | 'getBots'>,
   runtime: Pick<OrcaRuntimeService, 'runAutomationForEvent'>
 ): void {
+  if (isWorkbenchProduct()) {
+    return
+  }
   const checker = new GoogleTriggerChecker({
     automations: () => store.listAutomations(),
     bots: () => store.getBots(),

@@ -1,3 +1,4 @@
+import { isWorkbenchProduct } from '../startup/workbench-product'
 import { getAppEnvironment } from '../../shared/app-lifecycle/app-environment'
 import { installConnectorHost } from '../connector-cloud/connector-host-install'
 import type { Store } from '../persistence/loading-store/store'
@@ -10,6 +11,9 @@ export function installOrcadConnector(
   store: Store,
   registerCleanup: (cleanup: BackendServiceCleanup) => void
 ): { connect: () => void } {
+  if (isWorkbenchProduct()) {
+    return { connect: () => {} }
+  }
   let stopping = false
   const host = installConnectorHost({
     runtime,
