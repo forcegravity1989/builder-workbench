@@ -95,6 +95,9 @@ export function TeamSettingsDialog({
       return
     }
     const { groupId, spaceId } = pendingSelection
+    if (!directory) {
+      setPendingSelection(null)
+    }
     const remembered = rememberedTeamBinding()
     const changingBinding =
       Boolean(remembered.groupId && remembered.spaceId) &&

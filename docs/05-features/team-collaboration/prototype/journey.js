@@ -788,7 +788,7 @@
         : '选择 WeLink 群'
     return `<div class="field group-picker"><span>WeLink 群名称</span>
       <div class="group-picker-control">
-        <button type="button" class="btn btn-secondary group-picker-trigger" role="combobox" aria-haspopup="listbox" aria-expanded="${picker.open}" aria-controls="group-picker-panel" aria-label="WeLink 群名称" data-action="toggle-group-picker"${pending ? ' disabled' : ''}>
+        <button type="button" class="btn btn-secondary group-picker-trigger" role="combobox" aria-haspopup="listbox" aria-expanded="${picker.open}" aria-controls="group-picker-panel" aria-label="${esc(picker.selection ? `WeLink 群名称：${picker.selection.name}` : 'WeLink 群名称')}" data-action="toggle-group-picker"${pending ? ' disabled' : ''}>
           <span class="group-picker-value${picker.selection || picker.resolving ? '' : ' is-placeholder'}">${esc(label)}</span>${icon('ChevronsUpDown')}
         </button>
         ${picker.open ? groupPickerPanel() : ''}

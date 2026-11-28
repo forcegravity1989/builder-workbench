@@ -199,7 +199,7 @@ export function TeamGroupSpaceCombobox({
             type="button"
             variant="outline"
             role="combobox"
-            aria-label="WeLink 群名称"
+            aria-label={selection ? `WeLink 群名称：${selection.name}` : 'WeLink 群名称'}
             disabled={disabled}
             className="h-9 w-full justify-between gap-2 px-3 text-sm font-normal"
           >
