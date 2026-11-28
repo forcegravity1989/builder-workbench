@@ -1,0 +1,30 @@
+docs/05-features/team-collaboration/prototype/journey.js
+  s_68834839b02c79::t_e260626c9e3207 101-102,1758-1760,1800-1804,1823-1829,1835,1837-1838,1911-1922
+docs/05-features/team-collaboration/prototype.html
+  h_d0d195a8c70989 201-231,267,274,288-289,293-295,307-308,311
+src/main/ipc/team-collaboration.ts
+  h_d0d195a8c70989 1,4-5,7,30-84,87-88,91
+src/main/workbench/team-collaboration/onebox-group-space-client.ts
+  h_d0d195a8c70989 9-12,32-33,36,39,67-72,196-199,208-210,214
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "b027cbfd55a0fd89e762568792a0dd550a67933f",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_68834839b02c79": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "32c97fd6-daab-43c9-b80a-361324731772",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
