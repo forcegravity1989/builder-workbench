@@ -1,0 +1,26 @@
+docs/05-features/team-collaboration/design.md
+  h_d0d195a8c70989 7,13,47
+docs/05-features/team-collaboration/intent.md
+  h_d0d195a8c70989 31
+docs/05-features/team-collaboration/prototype.html
+  h_d0d195a8c70989 296
+src/main/ipc/team-collaboration.ts
+  h_d0d195a8c70989 58-76
+src/renderer/src/workbench/TeamGroupSpaceCombobox.tsx
+  h_d0d195a8c70989 171-181,224
+src/renderer/src/workbench/TeamSettingsDialog.tsx
+  h_d0d195a8c70989 198
+src/renderer/src/workbench/use-team-group-picker.ts
+  h_d0d195a8c70989 76-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "8b664491b78da0b9066815600d958e15e140b55b",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
