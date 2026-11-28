@@ -1,0 +1,55 @@
+docs/04-design-system/guidance.md
+  s_91af594814062b::t_9c04e9885af4c8 81
+docs/05-features/version-acceptance/STATUS.md
+  s_91af594814062b::t_67a4d4ea4e31f5 7,51
+docs/05-features/version-acceptance/design.md
+  s_91af594814062b::t_b3973e3a0f4076 20-21
+docs/05-features/version-acceptance/spec.md
+  s_91af594814062b::t_7be97fed09a3ef 23-24,33
+src/main/bots/bot-template-bundle-skills.test.ts
+  s_91af594814062b::t_7b58795fa05dda 1-82
+src/main/bots/bot-template-bundle-skills.ts
+  s_91af594814062b::t_64d11ada12a381 1-54
+src/main/bots/bot-template-create.ts
+  s_91af594814062b::t_6755a14306b34c 6-11,19,37,77-80,84-88
+src/main/bots/bot-template-skill-text.ts
+  s_91af594814062b::t_c447eed5b6d3cf 1-4,19-22
+src/renderer/src/i18n/locales/en.json
+  s_91af594814062b::t_a612238dbc717c 29627-29637,30761,30775-30776
+src/renderer/src/i18n/locales/zh.json
+  s_91af594814062b::t_27e8dd522c9f0e 27413-27423,28222,28236-28237
+src/shared/bots/bot-template-catalog/planning.ts
+  s_91af594814062b::t_3e6f72e7c1468f 107-127
+src/shared/bots/bot-template-text.ts
+  s_91af594814062b::t_57f471a55343c7 155-156
+src/shared/bots/bot-template-view.ts
+  s_91af594814062b::t_40a67f9aef6991 32-34
+src/shared/bots/bot-templates.ts
+  s_91af594814062b::t_9156ccdfa11a70 44-51
+src/shared/workbench/improvement-skill-package.json
+  s_91af594814062b::t_53de7ecff3f415 4-7,9
+src/shared/workbench/skill-package.json
+  s_91af594814062b::t_7dc83cdc966c1c 4-7,9
+standard/references/execution.md
+  s_91af594814062b::t_e362677ac52477 24
+standard/skills/version-acceptance/SKILL.md
+  s_91af594814062b::t_a155535f2f10d0 3
+standard/skills/version-acceptance/references/meeting-preparation.md
+  s_91af594814062b::t_5af12eb6e4f169 8-13,17-19,24,29-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "995a1f48c0379fe851597f0c60a12792fed6718b",
+  "prompts": {},
+  "sessions": {
+    "s_91af594814062b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "230d2283-96d4-4f09-8124-2fd3bbb80d94",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
