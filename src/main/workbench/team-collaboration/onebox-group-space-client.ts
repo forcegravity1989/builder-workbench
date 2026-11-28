@@ -43,7 +43,8 @@ const NUMERIC_ID = /^\d{1,32}$/
 const RATE_LIMIT_RETRY_DELAYS_MS = [1_000, 2_000, 4_000]
 
 export const ONEBOX_PAGE_SIZE = 80
-/** 346 spaces took 5 pages when probed; this only bounds a runaway walk. */
+/** 346 spaces took 5 pages when probed; this only bounds a runaway walk. One
+ * probe page past the cap decides the `truncated` flag exactly. */
 export const ONEBOX_MAX_PAGES = 20
 
 export type OneboxFetchInit = {
@@ -263,11 +264,11 @@ export async function listTeamGroupSpaces(
   const spaces: TeamGroupSpaceOption[] = []
   const seen = new Set<string>()
   let truncated = false
+  const listUrl = (pageNumber: number) =>
+    `${ONEBOX_ORIGIN}${TEAM_SPACE_LIST_PATH}?pageNumber=${pageNumber}` +
+    `&pageSize=${ONEBOX_PAGE_SIZE}&mode=new&appIdValue=espace&_=${resolved.now()}`
   for (let pageNumber = 1; ; pageNumber += 1) {
-    const url =
-      `${ONEBOX_ORIGIN}${TEAM_SPACE_LIST_PATH}?pageNumber=${pageNumber}` +
-      `&pageSize=${ONEBOX_PAGE_SIZE}&mode=new&appIdValue=espace&_=${resolved.now()}`
-    const result = await getOneboxJson(resolved, acquired.session, url)
+    const result = await getOneboxJson(resolved, acquired.session, listUrl(pageNumber))
     if ('failure' in result) {
       return { ok: false, reason: result.failure }
     }
@@ -285,7 +286,17 @@ export async function listTeamGroupSpaces(
       break
     }
     if (pageNumber >= ONEBOX_MAX_PAGES) {
-      truncated = true
+      // Probe one page past the cap so `truncated` only claims groups are
+      // actually missing, never that the cap coincided with the exact end.
+      // A failed probe keeps the loaded pages and reports truncated — the
+      // honest direction when completeness is unknown.
+      const probe = await getOneboxJson(resolved, acquired.session, listUrl(ONEBOX_MAX_PAGES + 1))
+      if ('failure' in probe) {
+        truncated = true
+        break
+      }
+      const probePage = parseTeamSpacePage(probe.body)
+      truncated = probePage === null || probePage.rawCount > 0
       break
     }
   }

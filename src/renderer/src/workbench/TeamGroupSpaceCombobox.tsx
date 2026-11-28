@@ -130,7 +130,7 @@ function ListBody({
       {resolveFailure ? <FailureBlock reason={resolveFailure} /> : null}
       {listState.truncated ? (
         <p className="border-t border-border px-3 py-2 text-[10px] text-muted-foreground">
-          群数量超过上限，只列出了最近的一部分。输入群名称缩小范围。
+          群数量超过上限，只列出最近的一部分；搜索也仅覆盖已列出的群。
         </p>
       ) : null}
     </>
@@ -204,9 +204,12 @@ export function TeamGroupSpaceCombobox({
           <ChevronsUpDown className="size-3.5 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      {/* Group names run to 65 characters, so the panel is wider than the trigger's minimum. */}
+      {/* Group names run to 65 characters, so the panel is wider than the trigger's minimum.
+          wheelScroll: the dialog's Radix scroll lock swallows native wheel events over
+          portaled popovers, and TC01 requires scrolling the whole list without typing. */}
       <PopoverContent
         align="start"
+        wheelScroll
         className="w-[min(420px,calc(100vw-1rem))] min-w-[var(--radix-popover-trigger-width)] p-0"
       >
         <Command shouldFilter={false}>

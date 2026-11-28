@@ -38,6 +38,10 @@ export type TeamGroupPicker = {
 // every dialog open. Same pattern as the directory snapshot in TeamSettingsDialog.
 const LIST_CACHE_TTL_MS = 5 * 60_000
 let listCache: { at: number; spaces: TeamGroupSpaceOption[]; truncated: boolean } | null = null
+// Bumped on every W3 account status change so a walk that started under the
+// previous account drops its result instead of caching it (the list is
+// account-scoped; TC09 requires the unlogged reason, not a stale list).
+let listCacheEpoch = 0
 
 function readCache(): TeamGroupListState | null {
   if (!listCache || Date.now() - listCache.at >= LIST_CACHE_TTL_MS) {
@@ -65,6 +69,19 @@ export function useTeamGroupPicker(
   const reportSelection = useRef(onSelectionChange)
   reportSelection.current = onSelectionChange
 
+  // Why drop the cache on every W3 status change: the list is account-scoped,
+  // and signing out or switching accounts must surface the TC09 reason on the
+  // next open instead of the previous account's groups.
+  useEffect(() => {
+    return window.api.w3Account.onStatusChanged(() => {
+      listCache = null
+      listCacheEpoch += 1
+      setListState((current) =>
+        current.phase === 'ready' || current.phase === 'failed' ? { phase: 'idle' } : current
+      )
+    })
+  }, [])
+
   const loadList = useCallback(async (): Promise<void> => {
     const cached = readCache()
     if (cached) {
@@ -81,6 +98,7 @@ export function useTeamGroupPicker(
     }
     inFlight.current = true
     setListState({ phase: 'loading' })
+    const epoch = listCacheEpoch
     let result: TeamGroupSpaceListResult
     try {
       result = await window.api.teamCollaboration.listGroupSpaces()
@@ -89,6 +107,11 @@ export function useTeamGroupPicker(
       result = { ok: false, reason: 'unreachable' }
     } finally {
       inFlight.current = false
+    }
+    if (epoch !== listCacheEpoch) {
+      // The W3 account changed mid-walk; the result belongs to the old
+      // account and must neither reach the form nor the cache.
+      return
     }
     if (result.ok) {
       listCache = { at: Date.now(), spaces: result.spaces, truncated: result.truncated }

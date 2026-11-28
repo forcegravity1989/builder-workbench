@@ -30,6 +30,24 @@ const TEXT_ID = /^.{1,256}$/u
 /** How long the hidden warm-up page may take to seed the CSRF cookie. */
 const ONEBOX_WARMUP_TIMEOUT_MS = 8_000
 const ONEBOX_WARMUP_POLL_INTERVAL_MS = 250
+/** Bound for each OneBox API round trip; a hung response must not wedge the IPC. */
+const ONEBOX_REQUEST_TIMEOUT_MS = 15_000
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('onebox request timed out')), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      }
+    )
+  })
+}
 
 /**
  * Why a hidden window instead of session.fetch: the OneBox entry page is an
@@ -109,9 +127,15 @@ const oneboxDeps: OneboxGroupSpaceDeps = {
   warmSession: warmOneboxSession,
   fetch: async (partition, url, init) => {
     try {
-      const response = await session.fromPartition(partition).fetch(url, init)
-      const textPromise = response.text().catch(() => '')
-      return { status: response.status, url: response.url, text: () => textPromise }
+      // Both the request and the body read are bounded: a server that accepts
+      // the connection but never finishes answering must surface as
+      // `unreachable`, not as a list that never stops loading.
+      const response = await withTimeout(
+        session.fromPartition(partition).fetch(url, init),
+        ONEBOX_REQUEST_TIMEOUT_MS
+      )
+      const text = await withTimeout(response.text(), ONEBOX_REQUEST_TIMEOUT_MS)
+      return { status: response.status, url: response.url, text: async () => text }
     } catch {
       return { status: 0, url: '', networkError: true, text: async () => '' }
     }
