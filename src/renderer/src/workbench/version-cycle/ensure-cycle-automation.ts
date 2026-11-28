@@ -9,7 +9,7 @@ import { notifyWorkbenchError } from '../error-feedback'
  * 四铁律：定时任务由人启用后才到点，BW 不代启，也不按版本补登记。
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useAppStore } from '@/store'
 import {
   LOCAL_EXECUTION_HOST_ID,
@@ -32,7 +32,21 @@ import { automationRuntimePairingRevision } from '@/components/automations/hosts
 import type { CycleScope } from './ports'
 import { cycleScopeKey } from './native-cycle-workspace'
 import { buildCyclePrompt } from './cycle-prompt'
-import { cycleAutomationHost } from './use-cycle-automation-draft'
+
+/** Automation ownership follows the worktree's native host identity, never the current focus. */
+export function cycleAutomationHost(scope: CycleScope): StableAutomationHostRef {
+  if (scope.runtimeOwnerEnvironmentId) {
+    return {
+      authority: { kind: 'runtime', environmentId: scope.runtimeOwnerEnvironmentId },
+      selector: { kind: 'self' }
+    }
+  }
+  const host = parseExecutionHostId(scope.hostId)
+  if (host?.kind === 'ssh') {
+    return { authority: { kind: 'desktop' }, selector: { kind: 'ssh', targetId: host.targetId } }
+  }
+  return { authority: { kind: 'desktop' }, selector: { kind: 'self' } }
+}
 
 /** 首项是此前自动登记用的名字；其余是更早的预填名字。进屏只用来认出已有条目。 */
 const AUTOMATION_NAMES: Record<VersionWorkflow, readonly string[]> = {
@@ -122,8 +136,8 @@ export function cycleAutomationOwner(scope: CycleScope): AutomationOwnerRef {
   return { authority, selector: destination.selector }
 }
 
-// 同一身份并发只发一次创建；后到者共享在途结果（仿 native-workspace.ts）。
-const creating = new Map<string, Promise<EnsureCycleAutomationResult>>()
+// 进屏和手动配置可以共享同一工作区的在途核对。
+const pendingChecks = new Map<string, Promise<EnsureCycleAutomationResult>>()
 
 export async function ensureCycleAutomation(
   scope: CycleScope,
@@ -131,16 +145,22 @@ export async function ensureCycleAutomation(
   version?: string | null
 ): Promise<EnsureCycleAutomationResult> {
   const creationKey = cycleAutomationCreationKey(scope, version)
-  const pending = creating.get(creationKey)
+  const pendingKey = JSON.stringify([
+    creationKey,
+    scope.hostId,
+    scope.runtimeOwnerEnvironmentId,
+    fixedId
+  ])
+  const pending = pendingChecks.get(pendingKey)
   if (pending) {
     return await pending
   }
   const task = runEnsure(scope, fixedId, creationKey, version ?? null)
-  creating.set(creationKey, task)
+  pendingChecks.set(pendingKey, task)
   try {
     return await task
   } finally {
-    creating.delete(creationKey)
+    pendingChecks.delete(pendingKey)
   }
 }
 
@@ -169,12 +189,11 @@ async function runEnsure(
   if (existing) {
     // BW 持续演进：提示词是 BW 所有字段，每次进屏覆盖同步为当前版本；
     // 人所有字段（启用开关、触发时间、模型、会话复用）永不触碰。
-    const prompt = await buildCyclePrompt(scope, fixedId)
-    if (existing.prompt === prompt) {
-      return { status: 'exists', automationId: existing.id }
-    }
     try {
-      await updateAutomationForOwner(cycleAutomationOwner(scope), existing.id, { prompt })
+      const prompt = await buildCyclePrompt(scope, fixedId)
+      if (existing.prompt !== prompt) {
+        await updateAutomationForOwner(cycleAutomationOwner(scope), existing.id, { prompt })
+      }
       return { status: 'exists', automationId: existing.id }
     } catch (reason) {
       // 同步失败不阻断：已有条目仍可手动运行，如实提示让人核对。
@@ -188,11 +207,6 @@ async function runEnsure(
   return { status: 'absent' }
 }
 
-/**
- * 壳层接线：固定树就绪后认出已有条目，并覆盖同步 BW 所有的提示词。
- * 没有条目不新建、不提示。返回已有条目 id 与身份键，供「配置自动化」决定编辑还是预填。
- * 跳过与失败都非致命，失败通过全局通知报告。
- */
 export function useEnsureCycleAutomation({
   cycleScope,
   fixedId,
@@ -204,12 +218,9 @@ export function useEnsureCycleAutomation({
   onNotice(message: string): void
   /** 绑定树的版本，只进入身份与命名；提示词由 resolveWorkbenchPromptAssets 按树绑定自检。 */
   version?: string | null
-}): { automationId: string | null; creationKey: string | null } {
-  const [registered, setRegistered] = useState<{ key: string; id: string } | null>(null)
-  const scopeKey =
-    cycleScope && fixedId ? `${cycleScopeKey(cycleScope)}:${fixedId}:${version ?? ''}` : null
+}): void {
   useEffect(() => {
-    if (!cycleScope || !fixedId || !scopeKey) {
+    if (!cycleScope || !fixedId) {
       return
     }
     let active = true
@@ -223,11 +234,7 @@ export function useEnsureCycleAutomation({
           onNotice(result.reason)
           return
         }
-        if (result.status === 'absent') {
-          return
-        }
-        setRegistered({ key: scopeKey, id: result.automationId })
-        if (result.syncError) {
+        if (result.status === 'exists' && result.syncError) {
           notifyWorkbenchError('周期自动化未更新', result.syncError, '可从配置自动化入口重试。')
         }
       } catch (reason) {
@@ -239,9 +246,5 @@ export function useEnsureCycleAutomation({
     return () => {
       active = false
     }
-  }, [scopeKey, cycleScope, fixedId, onNotice, version])
-  return {
-    automationId: registered?.key === scopeKey ? registered.id : null,
-    creationKey: cycleScope ? cycleAutomationCreationKey(cycleScope, version) : null
-  }
+  }, [cycleScope, fixedId, onNotice, version])
 }
