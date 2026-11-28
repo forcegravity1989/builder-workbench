@@ -224,7 +224,7 @@ function requireDirectory(value: unknown): TeamDirectory {
 export function registerTeamCollaborationHandlers(): void {
   const userDataPath = app.getPath('userData')
   loadTeamIdentity(userDataPath)
-  let activeBinding: { groupId: string; spaceId: string } | undefined
+  let activeBinding: { groupId: string; spaceId: string; initializedByRead: boolean } | undefined
   ipcMain.handle(
     'teamCollaboration:readDirectory',
     async (_event, args: { groupId: string; spaceId: string; switching?: boolean }) => {
@@ -237,7 +237,13 @@ export function registerTeamCollaborationHandlers(): void {
         groupId,
         spaceId
       })
-      if (activeBinding !== previousBinding) {
+      const matchesActiveBinding =
+        activeBinding?.groupId === groupId && activeBinding.spaceId === spaceId
+      // The wall and the settings can both read the saved team before either
+      // has initialized the process binding. An explicit switch still invalidates old reads.
+      const sharesInitialization =
+        !switching && !previousBinding && activeBinding?.initializedByRead && matchesActiveBinding
+      if (activeBinding !== previousBinding && !sharesInitialization) {
         throw new Error('The team binding changed while reading the directory.')
       }
       if (
@@ -247,12 +253,8 @@ export function registerTeamCollaborationHandlers(): void {
         throw new Error('The signed-in WeLink account could not be matched to a team member.')
       }
       // Invalidate reads started before a successful change of binding.
-      if (
-        switching ||
-        previousBinding?.groupId !== groupId ||
-        previousBinding.spaceId !== spaceId
-      ) {
-        activeBinding = { groupId, spaceId }
+      if (switching || !matchesActiveBinding) {
+        activeBinding = { groupId, spaceId, initializedByRead: !switching && !previousBinding }
       }
       rememberTeamIdentity(userDataPath, result.directory.hosts, result.currentMemberId)
       return result
