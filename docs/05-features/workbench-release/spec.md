@@ -10,8 +10,10 @@
 
 1. 记录当前工作区状态和 `git rev-parse HEAD`。
 2. 运行 `pnpm run build:win:workbench`。
-3. 核对 `dist/workbench-windows-setup.exe`、`dist/workbench-windows-setup.exe.blockmap` 和 `dist/latest.yml`。
+3. 核对 `dist/monica-windows-setup.exe`、`dist/monica-windows-setup.exe.blockmap` 和 `dist/latest.yml`。
 4. 汇报产物路径、大小、构建提交和仍未验证的项目。
+
+正式发布的更新清单指向 Monica 安装包。旧名 workbench-windows-setup.exe 及其 blockmap 作为同字节兼容资产供旧固定链接使用。
 
 构建脚本以 Workbench 壳配置运行 Electron 构建，并以 `--publish never` 结束。出包阶段不创建标签或 GitHub Release。
 

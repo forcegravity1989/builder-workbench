@@ -342,12 +342,18 @@ export function openBotHome(bot: Bot): boolean {
  * The bot's page on its Home tab, whatever tab was last open there. False when its home can't open yet.
  * `draft` is added to Home's unsent message, never sent, and its composer takes focus.
  */
-export async function openBotHomeTab(bot: Bot, options?: { draft?: string }): Promise<boolean> {
+export async function openBotHomeTab(
+  bot: Bot,
+  options?: { draft?: string; requireChat?: boolean }
+): Promise<boolean> {
   // Home exists before the page opens, so the page lands on it rather than on a new terminal.
   const chatSessionId = await openBotChat(bot).catch((error: unknown) => {
     console.error('Failed to open the bot chat:', error)
     return null
   })
+  if (!chatSessionId && options?.requireChat) {
+    return false
+  }
   // The home must be in the catalog before it can open.
   await useAppStore
     .getState()

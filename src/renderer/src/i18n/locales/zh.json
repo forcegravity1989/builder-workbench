@@ -27130,6 +27130,22 @@
         "personal": "个人助理"
       },
       "paletteLine": "Bot 模板",
+      "bw-maintenance": {
+        "name": "Monica Fix",
+        "line": "在指定项目中，把维护者标记的 GitHub Issue 排队交给修复 worker。",
+        "firstChat": "在项目的执行机创建此 Bot。通过 repo list 选择已登记项目，记下项目 ID 与用户的执行要求，确认后启用定时检查。",
+        "watches": "项目中带 bw-bot-fix 标签的开放 Issue，包括后来补标的旧单",
+        "does": "依次开工，在原 Bot 中返回问题、进度与 PR。",
+        "reports": "排队、需要介入和 PR 就绪时",
+        "example1": "#42 正在修复，#51 排队中。",
+        "example2": "#42 已提交 PR，可在此查看改动和检查结果。",
+        "schedules": {
+          "labeled-issues": {
+            "when": "每 5 分钟",
+            "what": "核对已派给 Bot 的 Issue"
+          }
+        }
+      },
       "pr-review": {
         "name": "PR 评审",
         "line": "评审请你评审的 PR，并列出有风险的更改",
@@ -30384,6 +30400,8 @@
     }
   },
   "guidance": {
+    "askMonica": "问 Monica",
+    "monicaOpenFailed": "未能打开 Monica",
     "feedbackOnDesktop": "请到 BW 桌面应用的「帮助」中发送反馈。",
     "skillsOnDesktop": "请在 BW 桌面应用中打开「设置 → 技能」。",
     "about": "关于 BW",

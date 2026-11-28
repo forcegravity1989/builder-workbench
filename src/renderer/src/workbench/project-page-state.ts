@@ -77,10 +77,10 @@ export function openProjectOverviewSource(source: Repo | null): void {
   }
 }
 
-export function openKnowledgePage(): void {
+export function openKnowledgePage(repo?: Repo): void {
   const state = useAppStore.getState()
   const current = currentProjectRepo(state)
-  const source = current && resolveProjectSource(state, current, true)
+  const source = repo ?? (current && resolveProjectSource(state, current, true))
   state.openSpacePage('inline')
   setProjectPage({ kind: 'knowledge', options: projectSource(source) })
 }

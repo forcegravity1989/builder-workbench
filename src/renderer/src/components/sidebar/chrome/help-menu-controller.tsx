@@ -1,3 +1,11 @@
+import {
+  agentMenuRowReady,
+  agentMenuRowSupportsChat
+} from '../../../../../shared/agent-launch/picker/agent-launch-picker-rows'
+import { ownBotHost } from '@/lib/bot-hosts'
+import { useBotsEnabled } from '@/lib/bot-catalog'
+import { useBotAgentMenu } from '../../bots/use-bot-agent-choices'
+import { openMonicaSupport } from '@/workbench/improvement/open-monica-support'
 import { DiscordIcon } from '../../icons/DiscordIcon'
 import React, { useState } from 'react'
 import {
@@ -82,6 +90,21 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
   const t = useTranslate()
   const isBW = isWorkbenchShell()
   const showWorkbenchDesktopHelp = isBW && !isWebClientLocation()
+  const botsEnabled = useBotsEnabled()
+  const [helpOpen, setHelpOpen] = useState(false)
+  const { model, choices } = useBotAgentMenu(
+    ownBotHost().hostId,
+    showWorkbenchDesktopHelp && botsEnabled && helpOpen
+  )
+  const preferred = useAppStore((s) => s.settings?.defaultTuiAgent)
+  const ready = choices.filter(
+    (agent) =>
+      model.state === 'settled' &&
+      model.rows.some(
+        (row) => row.agent === agent && agentMenuRowSupportsChat(row) && agentMenuRowReady(row)
+      )
+  )
+  const supportAgent = ready.find((agent) => agent === preferred) ?? ready[0]
   const openModal = useAppStore((s) => s.openModal)
   const openSettingsPage = useAppStore((s) => s.openSettingsPage)
   const openSettingsTarget = useAppStore((s) => s.openSettingsTarget)
@@ -93,6 +116,7 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
   const updateCheckHint = getUpdateCheckHint()
 
   const handleMenuOpenChange = (open: boolean): void => {
+    setHelpOpen(open)
     updateCheckModifiersRef.current = NO_UPDATE_CHECK_MODIFIERS
     if (open) {
       // Warm while users read the menu so feedback is loaded before selection.
@@ -166,6 +190,27 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
       <>
         {isBW ? (
           <>
+            {showWorkbenchDesktopHelp && (
+              <DropdownMenuItem
+                disabled={!botsEnabled || model.state === 'loading'}
+                onSelect={() => {
+                  void openMonicaSupport(supportAgent)
+                    .then((warning) => {
+                      if (warning) {
+                        toast.warning(warning)
+                      }
+                    })
+                    .catch((error: unknown) => {
+                      toast.error(t('guidance.monicaOpenFailed', 'Could not open Monica'), {
+                        description: error instanceof Error ? error.message : undefined
+                      })
+                    })
+                }}
+              >
+                <MessageSquareText className="size-3.5" />
+                {t('guidance.askMonica', 'Ask Monica')}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onSelect={openMilestones}>
               <School className="size-3.5" />
               {t('guidance.gettingStarted', 'Getting Started with BW')}

@@ -29339,6 +29339,22 @@
         "personal": "Personal assistant"
       },
       "paletteLine": "Bot template",
+      "bw-maintenance": {
+        "name": "Monica Fix",
+        "line": "Queues GitHub issues marked by a maintainer and hands them to repair workers.",
+        "firstChat": "Create this bot on the project computer. Select a registered project, then enable its scheduled check.",
+        "watches": "Open GitHub issues labeled bw-bot-fix, including older issues labeled later",
+        "does": "Starts one repair worker at a time and reports questions, progress and the pull request here.",
+        "reports": "When work is queued, needs attention or has a pull request",
+        "example1": "#42 is being fixed. #51 is queued.",
+        "example2": "The pull request for #42 is ready to review.",
+        "schedules": {
+          "labeled-issues": {
+            "when": "Every 5 minutes",
+            "what": "Check issues assigned to the bot"
+          }
+        }
+      },
       "pr-review": {
         "name": "Pull request review",
         "line": "Reviews pull requests you’re asked to review and lists risky changes.",
@@ -31223,6 +31239,8 @@
     "setupGuideReopen": "You can reopen it from Help → Getting Started with BW.",
     "selectSetupScriptProject": "Select a Git project first, then configure its setup script here.",
     "setupScriptProject": "Target project: {{project}}",
+    "askMonica": "Ask Monica",
+    "monicaOpenFailed": "Could not open Monica",
     "explore": "Explore BW",
     "exploreDescription": "Browse work journeys and feature demonstrations in BW.",
     "exploreFooter": "Reopen any time from the bottom question mark > Explore BW.",

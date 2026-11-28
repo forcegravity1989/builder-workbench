@@ -194,7 +194,7 @@ async function readGuideReferences(repoRoot, guideName) {
       'issue-delivery',
       'version-acceptance'
     ]
-    return Promise.all(
+    const references = await Promise.all(
       journeys.map(async (name) => {
         const source = path.join(repoRoot, 'docs', '03-guide', name, 'README.md')
         const body = normalizeMarkdown(await readFile(source, 'utf8'))
@@ -210,6 +210,32 @@ async function readGuideReferences(repoRoot, guideName) {
         return { name, markdown: markdown.trim() }
       })
     )
+    const catalog = JSON.parse(
+      await readFile(path.join(repoRoot, 'src/shared/workbench/monica-navigation.json'), 'utf8')
+    )
+    const prefixes = {
+      pages: '',
+      guides: 'guide-',
+      journeys: 'journey-',
+      features: 'feature-',
+      settings: 'settings-'
+    }
+    const destinations = Object.entries(prefixes).flatMap(([group, prefix]) =>
+      Object.entries(catalog[group]).map(([id, label]) => `| ${prefix}${id} | ${label} |`)
+    )
+    return [
+      ...references,
+      {
+        name: 'navigation',
+        markdown: [
+          '# Monica 应用内目的地',
+          '',
+          '| 目标 | 页面或主题 |',
+          '| --- | --- |',
+          ...destinations
+        ].join('\n')
+      }
+    ]
   }
   const referenceRoot = path.join(repoRoot, 'skill-guides', guideName, 'references')
   let entries

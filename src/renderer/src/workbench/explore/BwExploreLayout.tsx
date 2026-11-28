@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type JSX, type ReactNode } from 'react'
 import { ChevronDown, ChevronRight, RotateCcw } from 'lucide-react'
+import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { translate } from '@/i18n/i18n'
@@ -48,10 +49,25 @@ export function BwExploreLayout({
   const catalog = getBwExploreCatalog()
   const { labels, groups, journeys } = catalog
   const features: Record<ExploreFeatureId, ExploreFeature> = catalog.features
-  const [tab, setTab] = useState('feature')
-  const [groupId, setGroupId] = useState<string>('execution')
-  const [featureId, setFeatureId] = useState<ExploreFeatureId>('workspace')
-  const [journeyIndex, setJourneyIndex] = useState(0)
+  const modalData = useAppStore((state) => state.modalData)
+  const initialJourney = journeys.findIndex((entry) => entry.id === modalData.journey)
+  const initialFeature =
+    typeof modalData.feature === 'string' && Object.hasOwn(features, modalData.feature)
+      ? (modalData.feature as ExploreFeatureId)
+      : undefined
+  const initialGroup = groups.find((group) => group.items.some((id) => id === initialFeature))
+  const [tab, setTab] = useState(initialJourney !== -1 ? 'journey' : 'feature')
+  const [groupId, setGroupId] = useState<string>(initialGroup?.id ?? 'execution')
+  const [featureId, setFeatureId] = useState<ExploreFeatureId>(initialFeature ?? 'workspace')
+  const [journeyIndex, setJourneyIndex] = useState(Math.max(0, initialJourney))
+  const initialDemo = useRef(initialFeature ? features[initialFeature].demo : undefined)
+  useLayoutEffect(() => {
+    if (initialDemo.current) {
+      const selected = initialDemo.current
+      initialDemo.current = undefined
+      onSelectDemo(selected)
+    }
+  }, [onSelectDemo])
   const feature = features[featureId]
   const guide = featureGuides[featureId]
   const journey: ExploreJourney = journeys[journeyIndex] ?? journeys[0]
