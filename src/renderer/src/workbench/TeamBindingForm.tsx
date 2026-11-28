@@ -1,10 +1,7 @@
 import { LoaderCircle, UsersRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TeamGroupSpaceCombobox } from './TeamGroupSpaceCombobox'
-import {
-  useTeamGroupPicker,
-  type TeamBindingSelection
-} from './use-team-group-picker'
+import { useTeamGroupPicker, type TeamBindingSelection } from './use-team-group-picker'
 
 type TeamBindingFormProps = {
   selection: TeamBindingSelection | null
@@ -50,6 +47,7 @@ export function TeamBindingForm({
           listState={picker.listState}
           options={picker.options}
           selection={selection}
+          query={picker.query}
           resolving={picker.resolving}
           resolveFailure={picker.resolveFailure}
           disabled={loading}

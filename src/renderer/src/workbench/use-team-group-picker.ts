@@ -28,7 +28,6 @@ export type TeamGroupPicker = {
   options: TeamGroupSpaceOption[]
   resolving: boolean
   resolveFailure: TeamGroupSpaceResolveFailure | null
-  dismissResolveFailure: () => void
   reload: () => void
   choose: (space: TeamGroupSpaceOption) => void
 }
@@ -38,10 +37,24 @@ export type TeamGroupPicker = {
 // every dialog open. Same pattern as the directory snapshot in TeamSettingsDialog.
 const LIST_CACHE_TTL_MS = 5 * 60_000
 let listCache: { at: number; spaces: TeamGroupSpaceOption[]; truncated: boolean } | null = null
-// Bumped on every W3 account status change so a walk that started under the
-// previous account drops its result instead of caching it (the list is
-// account-scoped; TC09 requires the unlogged reason, not a stale list).
 let listCacheEpoch = 0
+let watchingW3Account = false
+const accountChangeListeners = new Set<() => void>()
+
+function watchW3Account(): void {
+  if (watchingW3Account) {
+    return
+  }
+  // The cache outlives the form, including while the user is in W3 settings.
+  window.api.w3Account.onStatusChanged(() => {
+    listCache = null
+    listCacheEpoch += 1
+    for (const listener of accountChangeListeners) {
+      listener()
+    }
+  })
+  watchingW3Account = true
+}
 
 function readCache(): TeamGroupListState | null {
   if (!listCache || Date.now() - listCache.at >= LIST_CACHE_TTL_MS) {
@@ -58,61 +71,41 @@ function readCache(): TeamGroupListState | null {
 export function useTeamGroupPicker(
   onSelectionChange: (next: TeamBindingSelection | null) => void
 ): TeamGroupPicker {
-  const [listState, setListState] = useState<TeamGroupListState>(() => readCache() ?? { phase: 'idle' })
+  const [listState, setListState] = useState<TeamGroupListState>(
+    () => readCache() ?? { phase: 'idle' }
+  )
   const [query, setQuery] = useState('')
   const [resolving, setResolving] = useState(false)
   const [resolveFailure, setResolveFailure] = useState<TeamGroupSpaceResolveFailure | null>(null)
-  // Why two guards: the list walk must not run twice at once, and an
-  // out-of-order resolve must not overwrite a newer pick.
-  const inFlight = useRef(false)
+  const listRequest = useRef<{ epoch: number } | null>(null)
   const resolveRequest = useRef(0)
   const reportSelection = useRef(onSelectionChange)
   reportSelection.current = onSelectionChange
 
-  // Why drop the cache on every W3 status change: the list is account-scoped,
-  // and signing out or switching accounts must surface the TC09 reason on the
-  // next open instead of the previous account's groups.
-  useEffect(() => {
-    return window.api.w3Account.onStatusChanged(() => {
-      listCache = null
-      listCacheEpoch += 1
-      setListState((current) =>
-        current.phase === 'ready' || current.phase === 'failed' ? { phase: 'idle' } : current
-      )
-    })
-  }, [])
-
   const loadList = useCallback(async (): Promise<void> => {
+    const epoch = listCacheEpoch
     const cached = readCache()
     if (cached) {
       setListState(cached)
       return
     }
-    // Why an in-flight latch rather than reading the phase: the popover calls
-    // this on every open, and a second concurrent walk would double the OneBox
-    // paging requests for the same list. The latch is per hook instance only;
-    // a remount before the walk finishes starts a second one, which is
-    // harmless — both walks read the same list and the cache converges.
-    if (inFlight.current) {
+    if (listRequest.current?.epoch === epoch) {
       return
     }
-    inFlight.current = true
+    const request = { epoch }
+    listRequest.current = request
     setListState({ phase: 'loading' })
-    const epoch = listCacheEpoch
     let result: TeamGroupSpaceListResult
     try {
       result = await window.api.teamCollaboration.listGroupSpaces()
     } catch {
       // A rejected IPC call carries no reason; the service was unreachable.
       result = { ok: false, reason: 'unreachable' }
-    } finally {
-      inFlight.current = false
     }
-    if (epoch !== listCacheEpoch) {
-      // The W3 account changed mid-walk; the result belongs to the old
-      // account and must neither reach the form nor the cache.
+    if (epoch !== listCacheEpoch || listRequest.current !== request) {
       return
     }
+    listRequest.current = null
     if (result.ok) {
       listCache = { at: Date.now(), spaces: result.spaces, truncated: result.truncated }
       setListState({ phase: 'ready', spaces: result.spaces, truncated: result.truncated })
@@ -123,7 +116,22 @@ export function useTeamGroupPicker(
   }, [])
 
   useEffect(() => {
+    watchW3Account()
+    const resetForAccount = (): void => {
+      resolveRequest.current += 1
+      reportSelection.current(null)
+      setQuery('')
+      setResolving(false)
+      setResolveFailure(null)
+      void loadList()
+    }
+    accountChangeListeners.add(resetForAccount)
     void loadList()
+    return () => {
+      accountChangeListeners.delete(resetForAccount)
+      listRequest.current = null
+      resolveRequest.current += 1
+    }
   }, [loadList])
 
   const choose = useCallback(async (space: TeamGroupSpaceOption): Promise<void> => {
@@ -160,8 +168,6 @@ export function useTeamGroupPicker(
   )
 
   const reload = useCallback((): void => {
-    // Called on every popover open: a cached list is reused, a failed one is
-    // retried, and loadList's latch drops the call while one is already running.
     void loadList()
   }, [loadList])
 
@@ -172,7 +178,6 @@ export function useTeamGroupPicker(
     options,
     resolving,
     resolveFailure,
-    dismissResolveFailure: useCallback(() => setResolveFailure(null), []),
     reload,
     choose: useCallback((space: TeamGroupSpaceOption) => void choose(space), [choose])
   }

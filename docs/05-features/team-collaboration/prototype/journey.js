@@ -240,6 +240,7 @@
         picker.truncated = mode === 'truncated'
       } else {
         picker.phase = 'failed'
+        picker.open = false
         picker.truncated = false
         picker.listFailure = mode
       }
@@ -792,6 +793,8 @@
         </button>
         ${picker.open ? groupPickerPanel() : ''}
       </div>
+      ${picker.resolveFailure ? groupFailure(picker.resolveFailure) : ''}
+      ${picker.phase === 'failed' ? groupFailure(picker.listFailure) : ''}
     </div>`
   }
 
@@ -809,13 +812,11 @@
       return `<p class="group-picker-busy"><span class="spin">${icon('LoaderCircle')}</span>正在读取 W3 账户可见的群…</p>`
     }
     if (picker.phase === 'failed') {
-      return groupFailure(picker.listFailure)
+      return ''
     }
     return `<div class="group-picker-list" role="listbox" aria-label="WeLink 群列表">${groupOptionRows()}</div>${
-      picker.resolveFailure ? groupFailure(picker.resolveFailure) : ''
-    }${
       picker.truncated
-        ? '<p class="group-picker-foot">群数量超过上限，只列出了最近的一部分。输入群名称缩小范围。</p>'
+        ? '<p class="group-picker-foot">群数量超过上限，只列出最近的一部分；搜索也仅覆盖已列出的群。</p>'
         : ''
     }`
   }
@@ -1427,9 +1428,7 @@
         if (space.groupId) {
           picker.selection = { spaceId: space.spaceId, groupId: space.groupId, name: space.name }
         } else {
-          // 空间还在但群已解散：重开面板，把原因显示在列表下方。
           picker.resolveFailure = 'not-a-group-space'
-          picker.open = true
         }
         if (actor.value === person) {
           render()
