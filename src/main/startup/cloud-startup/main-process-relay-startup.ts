@@ -1,3 +1,4 @@
+import { isWorkbenchProduct } from '../workbench-product'
 import { app, powerMonitor } from 'electron'
 import { getProfileUserDataPath } from '../../orca-profiles/profile-storage-paths'
 import type { OrcaRuntimeRpcServer } from '../../runtime/rpc/server/runtime-rpc'
@@ -10,6 +11,9 @@ import { mainProcessState as state } from '../main-process-state'
  * reach it without a direct path. Register before proxy readiness; the install waits for it.
  */
 export function startMainProcessRelayService(runtimeRpc: OrcaRuntimeRpcServer): void {
+  if (isWorkbenchProduct()) {
+    return
+  }
   state.core.relayHost = installRelayHost({
     runtimeRpc,
     userDataPath: getProfileUserDataPath(),

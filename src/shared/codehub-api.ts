@@ -42,11 +42,13 @@ export const CodeHubCreateIssue = Repo.extend({
   assignee: z.string().optional()
 })
 export const CodeHubUpdateIssueTitle = Repo.extend({ iid: Iid, title: z.string().trim().min(1) })
-// Labels are replace-semantics (`issue update --labels a,b,c`); names not
-// yet in the project are auto-created by CodeHub on save.
+// Labels are replace-semantics (`issue update --labels a,b,c`) unless
+// `append` is set. Append uses the issue API `add_labels` field, so names
+// already on the issue stay. Names not yet in the project are auto-created.
 export const CodeHubUpdateIssueLabels = Repo.extend({
   iid: Iid,
-  labels: z.array(z.string().trim().min(1))
+  labels: z.array(z.string().trim().min(1)),
+  append: z.boolean().optional()
 })
 // Project label names for the issue-detail picker (`project label list`).
 export const CodeHubListLabels = Repo

@@ -10,7 +10,7 @@ import type { MilestoneDraft } from '../../../../shared/workbench/project-milest
 import '../project-milestones.css'
 
 const ignore = () => {}
-const outcome = '首场交换开放预约'
+const outcome = '首版运营看板上线'
 const empty: MilestoneDraft = {
   material: { schema_version: 4, milestones: [], features: [] },
   versions: []
@@ -39,9 +39,9 @@ function demoDraft(hasNode: boolean, hasFeature: boolean, moved: boolean): Miles
       features: hasFeature
         ? [
             {
-              id: 'booking',
-              title: '手机预约',
-              owner: '林小满',
+              id: 'operations-summary',
+              title: '运营数据汇总',
+              owner: '运营小组',
               deliveries: [
                 {
                   id: 'build',

@@ -23,6 +23,8 @@ import type { PluginLanguagePackRegistration } from '../../../shared/plugins/art
 import { withTimeout } from '../../../shared/concurrency/promise-timeout-fallback'
 import { supportedIntlLocale } from './intl-locale-support'
 import { createOrcaI18n } from '../../../shared/i18n/orca-i18n-instance'
+import { applyMonicaProductCopy } from '../../../shared/i18n/monica-product-copy'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 // Fetch catalogs as data: Chromium caches rejected module imports for the document's lifetime.
 const NON_DEFAULT_LOCALE_URLS: Record<Exclude<SupportedUiLocale, 'en'>, string> = {
@@ -46,7 +48,8 @@ async function fetchLocaleCatalog(url: string): Promise<Record<string, unknown>>
   if (!response.ok) {
     throw new Error(`Language catalog request failed: ${response.status}`)
   }
-  return response.json()
+  const catalog: Record<string, unknown> = await response.json()
+  return isWorkbenchShell() ? applyMonicaProductCopy(catalog) : catalog
 }
 
 // The provider, onboarding switcher and backend can ask for one locale at once; share the fetch.
@@ -71,7 +74,9 @@ function loadLocaleCatalog(language: string): Promise<Record<string, unknown>> |
 const orcaI18n = createOrcaI18n({
   loadCatalog: loadLocaleCatalog,
   // Inline defaults cover most English; sync:localization-runtime-catalog retains plural/dynamic/edited entries. en.json remains the translator source for lazy catalogs.
-  englishResources: enRuntimeRequired,
+  englishResources: isWorkbenchShell()
+    ? applyMonicaProductCopy(enRuntimeRequired, true)
+    : enRuntimeRequired,
   modules: [initReactI18next],
   initOptions: { react: { useSuspense: false } }
 })

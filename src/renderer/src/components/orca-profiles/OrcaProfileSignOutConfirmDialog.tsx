@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useTranslate } from '@/i18n/use-translate'
 
 export function OrcaProfileSignOutConfirmDialog({
@@ -30,10 +31,15 @@ export function OrcaProfileSignOutConfirmDialog({
             {t('auto.components.orca.profiles.signout.confirm.title', 'Sign out of Orca?')}
           </DialogTitle>
           <DialogDescription>
-            {t(
-              'auto.components.orca.profiles.signout.confirm.description',
-              "Artifacts and Orca Relay will be unavailable until you sign in again. Your local projects and worktrees won't be affected."
-            )}
+            {isWorkbenchShell()
+              ? t(
+                  'auto.components.orca.profiles.signout.confirm.workbenchDescription',
+                  'Existing Orca cloud connectors on this host will stop, and their pending replies will be cleared. You can still use local projects and worktrees.'
+                )
+              : t(
+                  'auto.components.orca.profiles.signout.confirm.description',
+                  "Artifacts and Orca Relay will be unavailable until you sign in again. Your local projects and worktrees won't be affected."
+                )}
           </DialogDescription>
         </DialogHeader>
 

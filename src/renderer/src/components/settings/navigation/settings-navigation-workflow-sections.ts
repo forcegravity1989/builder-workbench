@@ -9,6 +9,7 @@ import { getMobileEmulatorSearchEntries } from '@/components/settings/mobile/emu
 import { getQuickCommandsPaneSearchEntries } from '@/components/settings/quick-commands/quick-commands-search'
 import { getShareSkillsSettingsSearchEntries } from '@/components/settings/skills/sharing/share-skills-settings-search'
 import { getTasksPaneSearchEntries } from '@/components/settings/tasks/tasks-search'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { translate } from '@/i18n/i18n'
 import type { Translate } from '@/i18n/use-translate'
 import type { SettingsNavSection } from '@/components/settings/navigation/settings-navigation-types'
@@ -34,6 +35,7 @@ export function buildWorkflowSettingsSections(
   t: Translate = translate
 ): SettingsNavSection[] {
   const showDesktopOnlySettings = !isWebClient
+  const workbenchShell = isWorkbenchShell()
   return [
     {
       id: 'automations',
@@ -60,19 +62,25 @@ export function buildWorkflowSettingsSections(
     },
     {
       id: 'share-skills',
-      title: t('auto.hooks.useSettingsNavigationMetadata.shareSkillsTitle', 'Share Skills'),
-      description: t(
-        'auto.hooks.useSettingsNavigationMetadata.shareSkillsDescription',
-        'Share your skills with an unlisted link. Anyone who has it can install them.'
-      ),
+      title: workbenchShell
+        ? t('auto.components.skills.SkillsPage.f43ad6edf3', 'Skills')
+        : t('auto.hooks.useSettingsNavigationMetadata.shareSkillsTitle', 'Share Skills'),
+      description: workbenchShell
+        ? ''
+        : t(
+            'auto.hooks.useSettingsNavigationMetadata.shareSkillsDescription',
+            'Share your skills with an unlisted link. Anyone who has it can install them.'
+          ),
       // Match the skills sidebar/page icon in its settings entry.
       icon: BookOpen,
-      searchEntries: getShareSkillsSettingsSearchEntries(),
+      searchEntries: workbenchShell ? [] : getShareSkillsSettingsSearchEntries(),
       group: 'workflows',
-      badge: t('auto.hooks.useSettingsNavigationMetadata.40d80bad8a', 'Beta')
+      badge: workbenchShell
+        ? undefined
+        : t('auto.hooks.useSettingsNavigationMetadata.40d80bad8a', 'Beta')
     },
     // Bots run on this computer, so their links are managed here, beside skill links.
-    ...(botsEnabled && !isWebClient
+    ...((botsEnabled || workbenchShell) && !isWebClient
       ? [
           {
             id: 'shared-links',

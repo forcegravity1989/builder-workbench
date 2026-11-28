@@ -1,5 +1,6 @@
 import { versionTreeKey } from './version-material-selection'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { isSameRepoRow } from '@/store/repos/repo-host-identity'
 import { useAppStore } from '@/store'
 import {
   getRepoExecutionHostId,
@@ -58,7 +59,8 @@ function sameRegistration(a: Repo, b: Repo): boolean {
 export function useProjectVersionCatalog(
   primaryRepo: Repo | null,
   refresh?: ReturnType<typeof useWallRefresh>,
-  preference?: ProjectVersionPreference
+  preference?: ProjectVersionPreference,
+  registrationOnly = false
 ) {
   const repos = useAppStore((state) => state.repos)
   const environments = useAppStore((state) => state.runtimeEnvironments)
@@ -68,6 +70,9 @@ export function useProjectVersionCatalog(
     }
     const identity = versionRepoIdentity(primaryRepo)
     return repos.flatMap((repo) => {
+      if (registrationOnly && !isSameRepoRow(repo, primaryRepo)) {
+        return []
+      }
       if (
         !sameRegistration(repo, primaryRepo) &&
         (!identity || versionRepoIdentity(repo) !== identity)
@@ -83,7 +88,7 @@ export function useProjectVersionCatalog(
       }
       return [{ repo, key: versionCatalogSourceKey([repo]) }]
     })
-  }, [environments, primaryRepo, repos])
+  }, [environments, primaryRepo, repos, registrationOnly])
   const [reads, setReads] = useState<Record<string, CatalogRead>>({})
   const report = useCallback((key: string, state: VersionCatalogState | null) => {
     setReads((current) => {

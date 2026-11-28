@@ -14,6 +14,7 @@ const SCRIPT_DIR = import.meta.dirname
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '../../..', '..')
 
 const CANONICAL_GUIDE_NAMES = [
+  'bw',
   'orca-computer-use',
   'jira-tickets',
   'linear-tickets',
@@ -29,6 +30,7 @@ const CANONICAL_GUIDE_NAMES = [
 
 // Aliases preserve renamed discovery stubs; append ledger entries, never remove them.
 const GUIDE_ALIASES = {
+  bw: [],
   'orca-computer-use': skillRenames['orca-computer-use'],
   'jira-tickets': [],
   'linear-tickets': [],
@@ -57,6 +59,8 @@ const STUB_TOPICS = [
   'orca-plugin-authoring',
   'orchestration'
 ]
+
+const CLI_ONLY_TOPICS = new Set(['bw'])
 
 function normalizeMarkdown(markdown) {
   return markdown.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
@@ -183,6 +187,56 @@ function serializeEmbeddedModule(guides) {
 }
 
 async function readGuideReferences(repoRoot, guideName) {
+  if (guideName === 'bw') {
+    const journeys = [
+      'project-direction',
+      'version-planning',
+      'issue-delivery',
+      'version-acceptance'
+    ]
+    const references = await Promise.all(
+      journeys.map(async (name) => {
+        const source = path.join(repoRoot, 'docs', '03-guide', name, 'README.md')
+        const body = normalizeMarkdown(await readFile(source, 'utf8'))
+        const markdown = body
+          .replace(/^>.*(?:\n|$)/gm, '')
+          .replace(/!?\[([^\]]+)\]\((?!https?:)([^)]+)\)/g, (_, label, relative) => {
+            const target = new URL(
+              relative,
+              `https://github.com/forcegravity1989/builder-workbench/blob/main/docs/03-guide/${name}/README.md`
+            )
+            return `[${label}](${target.href})`
+          })
+        return { name, markdown: markdown.trim() }
+      })
+    )
+    const catalog = JSON.parse(
+      await readFile(path.join(repoRoot, 'src/shared/workbench/monica-navigation.json'), 'utf8')
+    )
+    const prefixes = {
+      pages: '',
+      guides: 'guide-',
+      journeys: 'journey-',
+      features: 'feature-',
+      settings: 'settings-'
+    }
+    const destinations = Object.entries(prefixes).flatMap(([group, prefix]) =>
+      Object.entries(catalog[group]).map(([id, label]) => `| ${prefix}${id} | ${label} |`)
+    )
+    return [
+      ...references,
+      {
+        name: 'navigation',
+        markdown: [
+          '# Monica 应用内目的地',
+          '',
+          '| 目标 | 页面或主题 |',
+          '| --- | --- |',
+          ...destinations
+        ].join('\n')
+      }
+    ]
+  }
   const referenceRoot = path.join(repoRoot, 'skill-guides', guideName, 'references')
   let entries
   try {
@@ -299,6 +353,9 @@ async function buildArtifacts(repoRoot = REPO_ROOT) {
       aliases,
       references
     })
+    if (CLI_ONLY_TOPICS.has(name)) {
+      continue
+    }
     const stubPath = path.join(repoRoot, 'skill-stubs', `${name}.md`)
     const content = stubTopics.has(name)
       ? composeStubProjection(

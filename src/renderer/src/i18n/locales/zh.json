@@ -89,6 +89,7 @@
       "windows": {
         "administratorDialogScope": "这会更改整个应用的权限，SSH 和 WSL 保留各自的权限",
         "administratorDocumentation": "阅读指南",
+        "orcaAdministratorDocumentation": "阅读 Orca 终端指南",
         "administratorLabel": "管理员模式",
         "administratorScope": "Orca 应用的权限，现有终端可能有所不同",
         "administratorSearchDescription": "查看 Orca 的 Windows 权限，或通过管理员批准进行重启",
@@ -13093,6 +13094,7 @@
           "signIn": "登录 Orca",
           "title": "Orca 账户",
           "description": "即时分享工作，并随时通过 Orca Mobile 访问桌面",
+          "workbenchDescription": "此账号供 Bot 运行主机上的 Orca 云连接器使用。",
           "searchDescription": "登录或退出产物和 Orca Relay 使用的账户",
           "benefitsTitle": "账户已包含",
           "artifactsTitle": "产物分享",
@@ -19341,6 +19343,7 @@
         "profiles": {
           "signout": {
             "confirm": {
+              "workbenchDescription": "退出后，这台主机上的 Orca 云连接器将停止，待发回执会被清除。你仍可使用本地项目和工作树。",
               "title": "退出 Orca？",
               "description": "重新登录前，产物和 Orca Relay 将不可用，本地项目和工作树不会受到影响",
               "cancel": "取消",
@@ -25127,6 +25130,8 @@
       "table": "表格"
     },
     "unsupported": {
+      "workbenchLayoutNotSupported": "BW 暂不支持 {{layout}} 项目视图。",
+      "workbenchSwitchLayout": "切换到表格、看板或路线图视图，即可在 BW 中使用该项目。",
       "switchLayout": "切换到表格、看板或路线图视图以在 Orca 中处理此项目",
       "description": "Orca 可渲染表格、看板和路线图项目视图，此视图使用的布局尚无法渲染",
       "layoutNotSupported": "Orca 尚不支持{{layout}}项目视图"
@@ -26899,6 +26904,11 @@
     "failed": "无法停止 {{host}}。请在“设置 > SSH”中关闭其浏览器控制。"
   },
   "macosUpdateRequirement": {
+    "workbenchTitle": "BW 更新需要 macOS {{macos}}",
+    "workbenchDescription": "BW {{version}} 需要 macOS {{macos}} 或更高版本。当前版本仍可使用，但这台 Mac 将收不到新的更新。",
+    "workbenchUpgradeDescription": "这台 Mac 可以升级。更新 macOS 后即可安装最新版 BW。",
+    "workbenchWhyIntro": "BW 更新了包括 Electron 在内的桌面运行环境，以支持以下改进：",
+    "workbenchHelpAction": "打开 BW 文档",
     "title": "Orca 更新现在需要 macOS {{macos}}",
     "description": "Orca {{version}} 需要 macOS {{macos}} 或更高版本。此版本仍可使用，但不会在此 Mac 上获得新更新。",
     "checking": "正在检查此 Mac 是否可以升级…",
@@ -27120,6 +27130,22 @@
         "personal": "个人助理"
       },
       "paletteLine": "Bot 模板",
+      "bw-maintenance": {
+        "name": "Monica Fix",
+        "line": "在指定项目中，把维护者标记的 GitHub Issue 排队交给修复 worker。",
+        "firstChat": "在项目的执行机创建此 Bot。通过 repo list 选择已登记项目，记下项目 ID 与用户的执行要求，确认后启用定时检查。",
+        "watches": "项目中带 bw-bot-fix 标签的开放 Issue，包括后来补标的旧单",
+        "does": "依次开工，在原 Bot 中返回问题、进度与 PR。",
+        "reports": "排队、需要介入和 PR 就绪时",
+        "example1": "#42 正在修复，#51 排队中。",
+        "example2": "#42 已提交 PR，可在此查看改动和检查结果。",
+        "schedules": {
+          "labeled-issues": {
+            "when": "每 5 分钟",
+            "what": "核对已派给 Bot 的 Issue"
+          }
+        }
+      },
       "pr-review": {
         "name": "PR 评审",
         "line": "评审请你评审的 PR，并列出有风险的更改",
@@ -30374,6 +30400,10 @@
     }
   },
   "guidance": {
+    "askMonica": "问 Monica",
+    "monicaOpenFailed": "未能打开 Monica",
+    "feedbackOnDesktop": "请到 BW 桌面应用的「帮助」中发送反馈。",
+    "skillsOnDesktop": "请在 BW 桌面应用中打开「设置 → 技能」。",
     "about": "关于 BW",
     "reportCrash": "报告崩溃",
     "experiences": "能力体验",
@@ -30492,6 +30522,18 @@
       }
     },
     "direction": {
+      "recording": {
+        "wall": "从项目墙进入运营看板的项目总览。",
+        "direction": "编辑共同方向，核对改动后提交评审。",
+        "milestones": "添加阶段成果与特性，保存到项目材料工作区。",
+        "review": "核对本次改动并提交评审，等待人确认合入。",
+        "steps": "旅程步骤",
+        "play": "播放",
+        "loadError": "演示视频未能加载。",
+        "retry": "重试",
+        "video": "运营看板：真实 BW 窗口录制",
+        "footer": "样例项目 · 真实 BW 录屏 · 等待过程已压缩，评审由人确认"
+      },
       "wall": {
         "title": "找到项目",
         "body": "从项目墙进入项目总览。"
