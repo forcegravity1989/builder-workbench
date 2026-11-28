@@ -1,9 +1,22 @@
 import { useState } from 'react'
 import { Link2, LoaderCircle, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 import type { TeamDirectoryMember } from '../../../shared/team-directory'
+import { isTailnetIPv4Address } from '../../../shared/network/tailnet-address'
+import { isOfficeIPv4Address } from '../../../shared/team-host-address'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { openMonicaSupport } from './improvement/open-monica-support'
+
+export type TeamNetworkInterface = { name: string; address: string }
 
 type TeamSettingsMembersProps = {
   hosts: TeamDirectoryMember[]
@@ -11,9 +24,38 @@ type TeamSettingsMembersProps = {
   loading: boolean
   disabled: boolean
   generatingHostId: string | null
+  networkInterfaces: TeamNetworkInterface[]
+  selectedAddress: string
+  onSelectedAddressChange: (address: string) => void
   onRefresh: () => void
   onEndpointChange: (memberId: string, endpoint: string) => void
   onGenerateHostAddress: (memberId: string) => void
+}
+
+function segmentLabel(networkInterface: TeamNetworkInterface): string {
+  if (isOfficeIPv4Address(networkInterface.address)) {
+    return `办公网 ${networkInterface.address}（${networkInterface.name}）`
+  }
+  if (isTailnetIPv4Address(networkInterface.address)) {
+    return `Tailscale ${networkInterface.address}`
+  }
+  return `${networkInterface.address}（${networkInterface.name}）`
+}
+
+function officeAddressHint(address: string, interfaceCount: number): string {
+  if (!address) {
+    return interfaceCount > 0
+      ? '先选中办公网 10 网段再生成，然后保存到群空间。卡住时'
+      : '没有读到可用网卡。检查网络后重试，仍不行就'
+  }
+  if (isOfficeIPv4Address(address)) {
+    return interfaceCount > 1
+      ? `已选办公网 ${address}。生成后保存到群空间。要换网卡，先改选网段。卡住时`
+      : `将用办公网 ${address} 生成。生成后保存到群空间。卡住时`
+  }
+  return interfaceCount > 1
+    ? `当前 ${address} 不是办公网 10 网段。选中 10 网段再生成，然后保存到群空间。卡住时`
+    : `当前只有 ${address}，不是办公网 10 网段。生成后保存到群空间。地址不对就`
 }
 
 function isLeaderMember(member: TeamDirectoryMember): boolean {
@@ -46,6 +88,9 @@ export function TeamSettingsMembers({
   loading,
   disabled,
   generatingHostId,
+  networkInterfaces,
+  selectedAddress,
+  onSelectedAddressChange,
   onRefresh,
   onEndpointChange,
   onGenerateHostAddress
@@ -116,6 +161,30 @@ export function TeamSettingsMembers({
                               onEndpointChange(host.member_id, event.target.value)
                             }
                           />
+                          {isCurrent && selectedAddress && networkInterfaces.length > 1 ? (
+                            <Select
+                              value={selectedAddress}
+                              onValueChange={onSelectedAddressChange}
+                              disabled={disabled || !selectedAddress}
+                            >
+                              <SelectTrigger
+                                className="h-8 w-52 shrink-0 text-xs"
+                                aria-label="生成地址使用的网段"
+                              >
+                                <SelectValue placeholder="选择网段" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {networkInterfaces.map((networkInterface) => (
+                                  <SelectItem
+                                    key={networkInterface.address}
+                                    value={networkInterface.address}
+                                  >
+                                    {segmentLabel(networkInterface)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : null}
                           {isCurrent ? (
                             <span className="flex shrink-0 items-center gap-1">
                               <Tooltip>
@@ -146,6 +215,32 @@ export function TeamSettingsMembers({
                             </span>
                           ) : null}
                         </div>
+                        {isCurrent ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {officeAddressHint(selectedAddress, networkInterfaces.length)}
+                            <button
+                              type="button"
+                              className="ml-1 text-foreground underline underline-offset-2"
+                              onClick={() => {
+                                void openMonicaSupport()
+                                  .then((warning) => {
+                                    if (warning) {
+                                      toast.warning(warning)
+                                    }
+                                  })
+                                  .catch((error: unknown) => {
+                                    toast.error('无法打开 Monica', {
+                                      description:
+                                        error instanceof Error ? error.message : undefined
+                                    })
+                                  })
+                              }}
+                            >
+                              问 Monica
+                            </button>
+                            。
+                          </p>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
