@@ -98,7 +98,25 @@ export async function runDirectionJourney(
 
   await observer.chapter?.(2)
   await click(board.getByRole('button', { name: '规划里程碑', exact: true }))
-  await dismissGuide()
+  const milestoneGuide = page.locator('[data-contextual-tour-panel="workbench-milestones"]')
+  const skipMilestoneGuide = milestoneGuide.locator('[data-contextual-tour-skip]')
+  await expect
+    .poll(
+      async () => {
+        if (await skipMilestoneGuide.isVisible()) {
+          return true
+        }
+        return page.evaluate(async () =>
+          (await window.api.ui.get()).contextualToursSeenIds?.includes('workbench-milestones')
+        )
+      },
+      { timeout: 30_000, message: 'Wait for the milestone guide to appear or already be seen' }
+    )
+    .toBe(true)
+  if (await skipMilestoneGuide.isVisible()) {
+    await skipMilestoneGuide.click()
+  }
+  await expect(milestoneGuide).toBeHidden()
   await board.getByLabel('定位日期', { exact: true }).fill('2026-11-23')
   await click(board.getByRole('button', { name: '添加里程碑', exact: true }))
   const milestone = page.getByRole('dialog', { name: '添加里程碑', exact: true })
