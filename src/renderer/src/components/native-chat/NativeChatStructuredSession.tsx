@@ -30,6 +30,7 @@ import { nativeChatQueueFollowUps } from '../../../../shared/native-chat/input/c
 import { useNativeChatFileLinkContext } from './links/actions/use-native-chat-file-link-context'
 import { useRecheckNativeChatFileLinksWhenTurnEnds } from './links/actions/use-native-chat-file-link-existence'
 import { useBotChatOwner } from '../bots/use-bot-chat-identity'
+import { monicaHomeLinkHandler } from '@/workbench/improvement/monica-chat-link'
 import {
   NativeChatSlackMirrorContext,
   useNativeChatSlackMirror
@@ -261,6 +262,7 @@ export function NativeChatStructuredSession(props: Omit<NativeChatStructuredView
         <NativeChatCrewContext.Provider value={crew}>
           <NativeChatSurface
             surface={surface}
+            onOpenLink={subagentOpen ? undefined : monicaHomeLinkHandler(chatBot, props.sessionId)}
             working={controller.isWorking}
             className="[container-type:size]"
           >

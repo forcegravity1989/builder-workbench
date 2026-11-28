@@ -1,3 +1,4 @@
+import { DirectionRecording } from './DirectionRecording'
 import { translate } from '@/i18n/i18n'
 import { DirectionWallDemo } from './DirectionWallDemo'
 import { DirectionCharterDemo } from './DirectionCharterDemo'
@@ -64,8 +65,7 @@ const pointerCues: readonly (readonly [at: number, target: string][])[] = [
   [
     [1050, '[data-contextual-tour-target="milestone-submit"]'],
     [3500, '[data-demo-action="confirm"]'],
-    [5100, '[data-contextual-tour-target="milestone-submit"]'],
-    [7660, '[data-contextual-tour-target="milestone-submit"]']
+    [5100, '[data-contextual-tour-target="milestone-submit"]']
   ]
 ]
 
@@ -79,7 +79,7 @@ function getSteps(): JourneyStep[] {
 }
 
 export function DirectionJourney() {
-  return <JourneyPlayer steps={getSteps()} />
+  return <DirectionRecording />
 }
 export function DirectionWall() {
   return <JourneyPlayer steps={getSteps().slice(0, 1)} />

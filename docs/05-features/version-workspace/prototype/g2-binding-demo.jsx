@@ -1,3 +1,21 @@
+const ROLE_LABEL = {
+  plan: '计划',
+  acceptance: '验收',
+  goal: '目标工作区',
+  issue: 'Issue 工作区'
+}
+
+function bindMode(tree) {
+  const match = /^bw\/([^/]+)\/(plan|acceptance)$/.exec(tree?.branch || '')
+  if (match) {
+    return { kind: 'flow', workflow: match[2], version: match[1] }
+  }
+  if (tree?.issue) {
+    return { kind: 'linked-issue' }
+  }
+  return { kind: 'manual' }
+}
+
 const {
   // React is used by the shared JSX build factory.
   // eslint-disable-next-line no-unused-vars
@@ -104,6 +122,7 @@ export function useBindingDemo({
           }
         }
       : {}
+  const draftMode = draft ? bindMode(draft) : null
   const goalOptions = draft ? plans[draft.version]?.goals || [] : []
   const issues = draft
     ? (plans[draft.version]?.tasks || []).filter((task) => task.goalId === draft.goal)
@@ -182,9 +201,18 @@ export function useBindingDemo({
               }
               title={!versionsForTree(menu.tree).length ? '此项目暂无版本' : undefined}
               onClick={() => {
+                const mode = bindMode(menu.tree)
                 setDraft({
                   ...menu.tree,
-                  version: menu.tree.version || versionsForTree(menu.tree)[0],
+                  version:
+                    menu.tree.version ||
+                    (mode.kind === 'flow' ? mode.version : versionsForTree(menu.tree)[0]),
+                  role:
+                    mode.kind === 'flow'
+                      ? mode.workflow
+                      : mode.kind === 'linked-issue'
+                        ? 'issue'
+                        : menu.tree.role || 'goal',
                   goal: menu.tree.goal || '',
                   issue: menu.tree.issue || ''
                 })
@@ -224,26 +252,35 @@ export function useBindingDemo({
                 id="binding-version"
                 value={draft.version}
                 onChange={(event) =>
-                  setDraft({ ...draft, version: event.target.value, goal: '', issue: '' })
+                  setDraft({
+                    ...draft,
+                    version: event.target.value,
+                    goal: '',
+                    issue: draftMode.kind === 'linked-issue' ? draft.issue : ''
+                  })
                 }
               >
                 {versionsForTree(draft).map((version) => (
                   <option key={version}>{version}</option>
                 ))}
               </select>
-              <label htmlFor="binding-role">用途</label>
-              <select
-                id="binding-role"
-                value={draft.role}
-                onChange={(event) =>
-                  setDraft({ ...draft, role: event.target.value, goal: '', issue: '' })
-                }
-              >
-                <option value="plan">计划</option>
-                <option value="acceptance">验收</option>
-                <option value="goal">目标协作</option>
-                <option value="issue">Issue 执行</option>
-              </select>
+              <label htmlFor={draftMode.kind === 'manual' ? 'binding-role' : undefined}>用途</label>
+              {draftMode.kind === 'manual' ? (
+                <select
+                  id="binding-role"
+                  value={draft.role}
+                  onChange={(event) =>
+                    setDraft({ ...draft, role: event.target.value, goal: '', issue: '' })
+                  }
+                >
+                  <option value="plan">计划</option>
+                  <option value="acceptance">验收</option>
+                  <option value="goal">{ROLE_LABEL.goal}</option>
+                  <option value="issue">{ROLE_LABEL.issue}</option>
+                </select>
+              ) : (
+                <p>{ROLE_LABEL[draft.role]}</p>
+              )}
               {['goal', 'issue'].includes(draft.role) && (
                 <>
                   <label htmlFor="binding-goal">所属目标</label>
@@ -252,7 +289,11 @@ export function useBindingDemo({
                     value={draft.goal}
                     required
                     onChange={(event) =>
-                      setDraft({ ...draft, goal: event.target.value, issue: '' })
+                      setDraft({
+                        ...draft,
+                        goal: event.target.value,
+                        issue: draftMode.kind === 'linked-issue' ? draft.issue : ''
+                      })
                     }
                   >
                     <option value="">选择目标</option>
@@ -265,7 +306,16 @@ export function useBindingDemo({
                   {!goalOptions.length && <p className="muted">本版尚无目标，请先保存版本计划。</p>}
                 </>
               )}
-              {draft.role === 'issue' && (
+              {draftMode.kind === 'linked-issue' && (
+                <>
+                  <label>对应 Issue</label>
+                  <p>
+                    #{draft.issue}
+                    {draft.linkedTitle ? ` · ${draft.linkedTitle}` : ''}
+                  </p>
+                </>
+              )}
+              {draft.role === 'issue' && draftMode.kind === 'manual' && (
                 <>
                   <label htmlFor="binding-issue">对应 Issue</label>
                   <select
@@ -286,7 +336,8 @@ export function useBindingDemo({
               {workflowMismatch && (
                 <p className="form-error" role="alert">
                   此工作树分支不是 bw/{draft.version}/{draft.role}，不能作为该版
-                  {draft.role === 'plan' ? '计划' : '验收'}树。请改选用途或工作树。
+                  {draft.role === 'plan' ? '计划' : '验收'}树。
+                  {draftMode.kind === 'manual' ? '请改选用途或工作树。' : '请改选版本。'}
                 </p>
               )}
               <div className="dialog-actions">

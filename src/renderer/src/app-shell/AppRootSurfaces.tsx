@@ -50,6 +50,13 @@ const StatusBar = lazy(() =>
   import('../components/status-bar/StatusBar').then((module) => ({ default: module.StatusBar }))
 )
 const SetupGuideModal = lazy(() => import('../components/setup-guide/SetupGuideModal'))
+const SidebarFeedbackDialog = lazy(
+  () =>
+    import('../components/sidebar/sidebar-feedback/SidebarFeedbackDialog').then((module) => ({
+      default: module.SidebarFeedbackDialog
+    })),
+  { reloadKey: 'sidebar-feedback-dialog' }
+)
 const FeatureWallModal = lazy(() => import('../components/feature-wall/FeatureWallModal'))
 const FeatureTipsModal = lazy(() => import('../components/feature-tips/FeatureTipsModal'))
 const AddRepoDialog = lazy(
@@ -274,6 +281,19 @@ export const AppRootSurfaces = memo(function AppRootSurfaces(props: {
         {mountedLazyModalIds.has('feature-wall') ? (
           <ModalBoundary boundaryId="modal.feature-wall" resetKey={activeModal === 'feature-wall'}>
             <FeatureWallModal />
+          </ModalBoundary>
+        ) : null}
+        {mountedLazyModalIds.has('feedback') ? (
+          <ModalBoundary boundaryId="modal.feedback" resetKey={activeModal === 'feedback'}>
+            <SidebarFeedbackDialog
+              open={activeModal === 'feedback'}
+              onOpenChange={(open) => {
+                const state = useAppStore.getState()
+                if (!open && state.activeModal === 'feedback') {
+                  state.closeModal()
+                }
+              }}
+            />
           </ModalBoundary>
         ) : null}
         {mountedLazyModalIds.has('feature-tips') ? (

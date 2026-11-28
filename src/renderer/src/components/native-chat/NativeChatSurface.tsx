@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useCallback, type ReactNode } from 'react'
+import type { CommentMarkdownLinkClickHandler } from '@/components/comment-markdown/comment-markdown-element-renderers'
 import { cn } from '@/lib/class-names'
 import { LinkActionPopover } from '@/components/link-actions/LinkActionPopover'
 import { NATIVE_CHAT_APPEARANCE_ROOT_CLASS } from './appearance/native-chat-appearance-style'
@@ -12,17 +13,29 @@ import type { NativeChatSurfaceState } from './use-native-chat-surface'
  *  the link handler its rows read, and the Session History its composer's `/resume` opens. */
 export function NativeChatSurface({
   surface,
+  onOpenLink,
   working,
   children,
   className,
   ...dataAttributes
 }: {
   surface: NativeChatSurfaceState
+  onOpenLink?: (href: string) => boolean
   working: boolean
   children: ReactNode
   /** Extra root classes, e.g. the size container a structured chat's worker dock measures. */
   className?: string
 } & Record<`data-${string}`, string | undefined>): React.JSX.Element {
+  const onLinkClick = useCallback<CommentMarkdownLinkClickHandler>(
+    (event, href) => {
+      if (href && onOpenLink?.(href)) {
+        event.preventDefault()
+        return
+      }
+      surface.onLinkClick?.(event, href)
+    },
+    [onOpenLink, surface.onLinkClick]
+  )
   return (
     <div
       ref={surface.rootRef}
@@ -39,7 +52,7 @@ export function NativeChatSurface({
       style={surface.appearance}
       data-native-chat-scheme={surface.appearance.colorScheme}
     >
-      <NativeChatLinkClickContext value={surface.onLinkClick}>
+      <NativeChatLinkClickContext value={onOpenLink ? onLinkClick : surface.onLinkClick}>
         <NativeChatSessionHistoryScopeContext.Provider value={surface.sessionHistory}>
           <NativeChatFindQueryContext value={surface.find.isOpen ? surface.find.query : ''}>
             {children}

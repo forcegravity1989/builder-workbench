@@ -8,6 +8,8 @@
 
 当前实现已经接入自由日期排期、材料保存与版本来源读取、指标目录和历史读数协议、记分牌配对、版本目标推出的聚焦、配置指标会话和失败/未知语义。真实指标来源、外部宿主、配置会话完整旅程和 W05 的后续计划/任务回写仍需真实环境验证。
 
+W01 的阶段安排复用 `tests/e2e/workbench/journeys/w01-project-handoff.spec.ts` 中的共享操作，标题 `BW first-run project handoff › hands off the first project, agrees on direction and prepares milestone review`。CI 的本地 Git fixture 观察草稿与变更核对；Windows CDP 在专用 GitHub 沙箱已两轮真实提交并核对磁盘材料、远端提交和 PR，见 [#758 验证](https://github.com/forcegravity1989/builder-workbench/pull/758#issuecomment-7091322345)。这不覆盖人工合入、正式结果更新、指标或 W05 全链。
+
 ## W05 交叉索引
 
 | W05 步骤 | 本特性负责 | 关联功能 | 当前证据边界 |

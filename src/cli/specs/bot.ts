@@ -200,6 +200,13 @@ export const BOT_COMMAND_SPECS: CommandSpec[] = [
     ]
   },
   {
+    path: ['bot', 'maintenance', 'tick'],
+    hidden: true,
+    summary: 'Read labeled GitHub issues and advance the maintenance bot queue on this host',
+    usage: 'orca bot maintenance tick --repo <registered-repo-id> [--skip-ci]',
+    allowedFlags: [...GLOBAL_FLAGS, 'repo', 'skip-ci']
+  },
+  {
     path: ['bot', 'work', 'list'],
     hidden: true,
     summary: 'List the work a bot started: each worker, its state, PR and CI, age and source',

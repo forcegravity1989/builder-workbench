@@ -1,3 +1,5 @@
+import { isWorkbenchProduct } from '../workbench-product'
+import { MONICA_DISPLAY_NAME } from '../../../shared/i18n/monica-display-name'
 import { app, BrowserWindow } from 'electron'
 import { setMainUiLanguage } from '../../i18n/main-i18n'
 import {
@@ -30,7 +32,9 @@ export async function initializeMainProcessI18nAndMenu(): Promise<void> {
   await setMainUiLanguage(store.getSettings().uiLanguage)
   logStartupMilestone('i18n-ready')
   registerAppMenu({
-    appMenuLabel: state.devInstanceIdentity?.name ?? app.name,
+    appMenuLabel: isWorkbenchProduct()
+      ? MONICA_DISPLAY_NAME
+      : (state.devInstanceIdentity?.name ?? app.name),
     ...getAppMenuQuitHandlers(),
     onCheckForUpdates: (options) => {
       ensureAutoUpdaterConfigured()

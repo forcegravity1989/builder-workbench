@@ -72,7 +72,7 @@ export function SkillDetailDialog({
   /** Remote deletion is supported, so disabled actions need a specific cause. */
   deleteDisabledReason: string | null
   onOpenChange: (open: boolean) => void
-  onShare: () => void
+  onShare?: () => void
   onDelete: () => void
   onReveal: () => void
   /** Host the skill file lives on. */
@@ -175,10 +175,12 @@ export function SkillDetailDialog({
               </TooltipContent>
             ) : null}
           </Tooltip>
-          <Button type="button" size="sm" disabled={!shareable} onClick={onShare}>
-            <Share2 className="size-3.5" />
-            {t('auto.components.skills.SkillCard.d25a1b8ae6', 'Share skill')}
-          </Button>
+          {onShare ? (
+            <Button type="button" size="sm" disabled={!shareable} onClick={onShare}>
+              <Share2 className="size-3.5" />
+              {t('auto.components.skills.SkillCard.d25a1b8ae6', 'Share skill')}
+            </Button>
+          ) : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>
