@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { build } from 'esbuild'
 
 const root = path.resolve(import.meta.dirname, '../..')
-const workflowTopics = ['week-planning', 'version-acceptance', 'metrics-refresh']
+const workflowTopics = ['week-planning', 'version-acceptance', 'metrics-refresh', 'acceptance-meeting']
 const featureMatrix = path.join(root, 'docs/05-features/README.md')
 const feedbackScripts = [
   'codex-session-feedback.mjs',

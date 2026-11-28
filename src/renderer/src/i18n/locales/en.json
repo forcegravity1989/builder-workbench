@@ -30758,7 +30758,7 @@
       "specFormat": "spec-format",
       "incidentTimeline": "incident-timeline",
       "workspaceHygiene": "workspace-hygiene",
-      "versionAcceptance": "version-acceptance",
+      "acceptanceMeeting": "acceptance-meeting",
       "lines": {
         "pr-review-checklist": "Read a diff for behaviour changes, missing tests and risky edits; cite each finding.",
         "bug-reproduction": "Write down the exact steps that show the bug before looking for its cause.",
@@ -30773,7 +30773,7 @@
         "spec-format": "A one-page spec: problem, decision, scope, open questions.",
         "incident-timeline": "Keep a timestamped timeline, then draft a blameless write-up.",
         "workspace-hygiene": "When a workspace is done or abandoned, and what to check before removing it.",
-        "version-acceptance": "The BW version acceptance journey: prepare, book the WeLink meeting, minutes, archive."
+        "acceptance-meeting": "Book the WeLink acceptance meeting for a BW version and write it back to the acceptance material."
       }
     },
     "notices": {

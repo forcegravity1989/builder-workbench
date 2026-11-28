@@ -43,7 +43,7 @@ export const BOT_TEMPLATE_SKILLS = [
 ] as const
 /** A BW workflow skill a template ships whole from the workbench skill package: SKILL.md plus its
  *  references, unpacked from the archive instead of written from a single text. */
-export const BOT_TEMPLATE_BUNDLE_SKILLS = ['version-acceptance'] as const
+export const BOT_TEMPLATE_BUNDLE_SKILLS = ['acceptance-meeting'] as const
 export type BotTemplateBundleSkill = (typeof BOT_TEMPLATE_BUNDLE_SKILLS)[number]
 export type BotTemplateSkill = (typeof BOT_TEMPLATE_SKILLS)[number] | BotTemplateBundleSkill
 export function isBotTemplateBundleSkill(skill: BotTemplateSkill): skill is BotTemplateBundleSkill {

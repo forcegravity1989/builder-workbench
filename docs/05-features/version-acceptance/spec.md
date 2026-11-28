@@ -20,7 +20,7 @@
 
 用户点击“开始验收”后，专用入口准备完整 Skill，打开原生会话并预填可编辑请求。只有会话实际打开成功才显示四区。计划未合入不阻断启动，助手在会话中提醒并由人处理。普通终端存在不算验收已开始。
 
-Bots 的「BW 验收会议助手」模板是第二个入口：建 Bot 时从同一 Skill 包正源解包完整验收 Skill（含 references）进 bot 主目录，不依赖 Orca 云连接器；bot 会话不在工作树内，身份按人给定的版本从 `worktree list` 找绑定的验收工作树读回，找不到或多个匹配交人指认。WeLink 沿 bot 所在宿主的 `welink-cli`，建会前先核对材料可写，不可写不建会。
+Bots 的「BW 验收会议助手」模板是第二个入口：建 Bot 时从同一 Skill 包正源解包独立的 `acceptance-meeting` 会议技能（含 references）进 bot 主目录，不依赖 Orca 云连接器；该技能只管会议预订与材料 `meeting` 写回，验收屏其余步骤仍由 `version-acceptance` 承接，两边同期并存、互不替代。bot 会话不在工作树内，身份按人给定的版本从 `worktree list` 找绑定的验收工作树读回，找不到或多个匹配交人指认。WeLink 沿 bot 所在宿主的 `welink-cli`，建会前先核对材料可写，不可写不建会。
 
 ## 行为
 

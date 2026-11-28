@@ -152,8 +152,8 @@ function translatedSkillName(skill: BotTemplateSkill, t: Translate): string {
       return t('bots.templateSkills.incidentTimeline', 'incident-timeline')
     case 'workspace-hygiene':
       return t('bots.templateSkills.workspaceHygiene', 'workspace-hygiene')
-    case 'version-acceptance':
-      return t('bots.templateSkills.versionAcceptance', 'version-acceptance')
+    case 'acceptance-meeting':
+      return t('bots.templateSkills.acceptanceMeeting', 'acceptance-meeting')
   }
 }
 

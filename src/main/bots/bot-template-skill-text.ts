@@ -1,5 +1,5 @@
 // Our own SKILL.md for each template skill, written into a template bot's home. Bundle skills
-// (version-acceptance) have no single text: the host unpacks their whole folder from the BW
+// (acceptance-meeting) have no single text: the host unpacks their whole folder from the BW
 // skill package archive instead.
 import type { BotTemplateBundleSkill, BotTemplateSkill } from '../../shared/bots/bot-templates'
 import { SKILL as bugReproduction } from './bot-template-skills/bug-reproduction'

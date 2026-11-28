@@ -51,18 +51,18 @@ describe('a bot made from the BW meeting template', () => {
     await rm(root, { recursive: true, force: true })
   })
 
-  it('gets the whole version-acceptance skill folder from the BW skill package', async () => {
+  it('gets the whole acceptance-meeting skill folder from the BW skill package', async () => {
     const bot = await createBotFromTemplate(deps(root), {
       name: 'BW acceptance meeting',
       agent: 'claude',
-      fromTemplate: { id: 'bw-meeting', skills: ['version-acceptance'] }
+      fromTemplate: { id: 'bw-meeting', skills: ['acceptance-meeting'] }
     })
-    const skill = join(root, bot.folder, 'skills', 'version-acceptance')
+    const skill = join(root, bot.folder, 'skills', 'acceptance-meeting')
 
-    expect(await readFile(join(skill, 'SKILL.md'), 'utf8')).toContain('name: version-acceptance')
+    expect(await readFile(join(skill, 'SKILL.md'), 'utf8')).toContain('name: acceptance-meeting')
     // The references the first session must read ship with the folder, not as bare SKILL.md text.
     expect(await readFile(join(skill, 'references', 'meeting-preparation.md'), 'utf8')).toContain(
-      '预订会议与纪要同步'
+      '预订验收会议'
     )
     expect(await readFile(join(skill, 'references', 'shared', 'execution.md'), 'utf8')).toContain(
       'BW 业务会话执行规范'
@@ -76,7 +76,7 @@ describe('a bot made from the BW meeting template', () => {
       fromTemplate: { id: 'bw-meeting', skills: [] }
     })
     await expect(
-      readFile(join(root, bot.folder, 'skills', 'version-acceptance', 'SKILL.md'), 'utf8')
+      readFile(join(root, bot.folder, 'skills', 'acceptance-meeting', 'SKILL.md'), 'utf8')
     ).rejects.toThrow()
   })
 })

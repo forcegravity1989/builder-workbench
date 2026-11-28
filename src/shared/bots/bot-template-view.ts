@@ -30,8 +30,8 @@ export const BOT_TEMPLATE_SKILL_LINES: Record<BotTemplateSkill, string> = {
   'incident-timeline': 'Keep a timestamped timeline, then draft a blameless write-up.',
   'workspace-hygiene':
     'When a workspace is done or abandoned, and what to check before removing it.',
-  'version-acceptance':
-    'The BW version acceptance journey: prepare, book the WeLink meeting, minutes, archive.'
+  'acceptance-meeting':
+    'Book the WeLink acceptance meeting for a BW version and write it back to the acceptance material.'
 }
 
 /** A template event's name split into its trigger and what it does ("…: review it and post here"). */

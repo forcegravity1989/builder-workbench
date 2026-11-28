@@ -28219,7 +28219,7 @@
       "specFormat": "规格说明格式",
       "incidentTimeline": "事故时间线",
       "workspaceHygiene": "工作区整理规范",
-      "versionAcceptance": "版本验收",
+      "acceptanceMeeting": "验收会议",
       "lines": {
         "pr-review-checklist": "阅读差异，查找行为变化、缺失的测试和有风险的修改；每项发现都要注明出处",
         "bug-reproduction": "在寻找原因之前，先写下能重现 Bug 的确切步骤",
@@ -28234,7 +28234,7 @@
         "spec-format": "一页规格说明：问题、决策、范围、待定问题",
         "incident-timeline": "维护带时间戳的时间线，然后起草不追责的事后报告",
         "workspace-hygiene": "工作区何时算已完成或已废弃，以及移除前要检查什么",
-        "version-acceptance": "BW 版本验收旅程：准备、预订 WeLink 会议、纪要、归档"
+        "acceptance-meeting": "为 BW 版本预订 WeLink 验收会议并写回验收材料"
       }
     },
     "firstScreen": {

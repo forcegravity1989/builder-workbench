@@ -119,7 +119,7 @@ export const BOT_TEMPLATES_PLANNING: readonly BotTemplate[] = [
     connectors: [],
     schedules: [],
     events: [],
-    skills: ['version-acceptance'],
+    skills: ['acceptance-meeting'],
     needsSetup: 'welink-cli signed in on this machine; run welink-cli auth status to check.',
     example: [
       'v1.2 acceptance meeting: Friday 10:00–11:30, booked via WeLink.',

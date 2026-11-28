@@ -1900,6 +1900,7 @@
     },
     "templateSkills": {
       "lines": {
+        "acceptance-meeting": "Book the WeLink acceptance meeting for a BW version and write it back to the acceptance material.",
         "bug-reproduction": "Write down the exact steps that show the bug before looking for its cause.",
         "ci-failure-triage": "Tell a flaky check from a real failure or broken infrastructure, and find the commit that started it.",
         "dependency-upgrade": "Upgrade one group at a time, read the changelog, run the tests, one pull request each.",
@@ -1979,6 +1980,17 @@
         "name": "Bug investigation",
         "reports": "Here, when it has a repro and a cause",
         "watches": "Bug reports you hand it, and Linear issues assigned to you"
+      },
+      "bw-meeting": {
+        "does": "Prepares and books the version acceptance meeting via WeLink, and writes it back to the acceptance material.",
+        "example1": "v1.2 acceptance meeting: Friday 10:00–11:30, booked via WeLink.",
+        "example2": "Meeting ID written back to the acceptance material; the board shows it.",
+        "firstChat": "Asks which version, checks the acceptance worktree and its material on this machine, then books the WeLink meeting after you confirm the preview.",
+        "line": "Books the WeLink acceptance meeting for a BW version and writes it back to the acceptance material.",
+        "name": "BW acceptance meeting",
+        "needsSetup": "welink-cli signed in on this machine; run welink-cli auth status to check.",
+        "reports": "Here, when you ask",
+        "watches": "The BW acceptance worktree and its material on this machine"
       },
       "ci-failures": {
         "does": "Tells flaky checks from real failures, explains each failure, and keeps a list of flaky checks.",
